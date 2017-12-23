@@ -1,5 +1,7 @@
-Common Library
-==============
+![Travis CI Build Status](https://travis-ci.org/aj-kip/util-common.svg?branch=master)
+
+Personal Common/Utility Library
+===============================
 
 This library is needed by multiple projects. I've reduced the code size as much as possible. <br />
 So far two project depends on this library:

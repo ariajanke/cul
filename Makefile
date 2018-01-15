@@ -1,6 +1,6 @@
 CXX = g++
 LD = g++
-CXXFLAGS = -std=c++14 -I./inc -Wall -pedantic -Werror -DMACRO_PLATFORM_LINUX
+CXXFLAGS = -std=c++14 -I./inc -g -Wall -pedantic -Werror -DMACRO_PLATFORM_LINUX
 SOURCES  = $(shell find src | grep '[.]cpp$$')
 OBJECTS_DIR = .debug-build
 OUTPUT = libcommon-d.a

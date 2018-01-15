@@ -40,7 +40,7 @@ public:
 
     DrawRectangle();
 
-	DrawRectangle
+    DrawRectangle
         (float x_, float y_, float width_ = 0.f, float height_ = 0.f,
          sf::Color clr_ = sf::Color::White);
 

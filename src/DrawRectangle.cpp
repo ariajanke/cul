@@ -46,7 +46,7 @@ void DrawRectangle::set_position(float x_, float y_) {
     // position
     for (sf::Vertex & vtx : m_vertices)
         vtx.position = sf::Vector2f(x_, y_);
-	
+
     // impl detail, must reset size, since we erased it with overwriting each
     // of the Quad's points
     set_size(w, h);

@@ -129,7 +129,7 @@ sf::Vector2<T> major(const sf::Vector2<T> & v);
 template <typename T>
     constexpr typename std::enable_if<std::is_floating_point<T>::value, bool>::type
     float_equals(T a, T b)
-{ return !(a < b) and !(b < a); }
+{ return !(a < b) && !(b < a); }
 
 template <typename T>
     typename std::enable_if<std::is_floating_point<T>::value, bool>::type

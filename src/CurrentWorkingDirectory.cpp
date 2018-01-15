@@ -27,7 +27,7 @@
 #   include <linux/limits.h>
 #   include <unistd.h>
 #elif defined(MACRO_PLATFORM_WINDOWS)
-#	include <windows.h>
+#   include <windows.h>
 #endif
 
 #include <mutex>
@@ -45,6 +45,8 @@ namespace {
     int find_null_terminator(const std::string & str);
 #endif
 } // end of <anonymous> namespace
+
+namespace util {
 
 void get_current_working_directory(std::string & rv) {
     rv.clear();
@@ -69,8 +71,8 @@ void get_current_working_directory(std::string & rv) {
     //
     rv.resize(MAX_PATH, '\0');
     GetCurrentDirectoryA((DWORD)rv.size(), &rv.front());
-	// there seems to be a bug in msvc's STL string library, I'll have to code
-	// my own as a temporary work around
+    // there seems to be a bug in msvc's STL string library, I'll have to code
+    // my own as a temporary work around
     rv.erase(rv.begin() + find_null_terminator(rv), rv.end());
 #   endif
 }
@@ -81,7 +83,7 @@ bool set_current_working_directory(const char * path) {
     const int UNINIT  = -1;
     int rv = UNINIT;
 
-#	if defined (MACRO_PLATFORM_LINUX)
+#   if defined (MACRO_PLATFORM_LINUX)
     //
     //                  LINUX IMPLEMENTATION
     //
@@ -89,21 +91,21 @@ bool set_current_working_directory(const char * path) {
     static std::mutex cwd_change_mutex;
     std::lock_guard<std::mutex> lock(cwd_change_mutex); (void)lock;
     rv = (::chdir(path) == 0) ? SUCCESS : FAILURE;
-#	elif defined (MACRO_PLATFORM_WINDOWS)
+#   elif defined (MACRO_PLATFORM_WINDOWS)
     rv = (SetCurrentDirectoryA(path) == TRUE) ? SUCCESS : FAILURE;
-#	endif
+#   endif
 
     assert(rv != UNINIT);
     return rv == SUCCESS;
 }
 
 bool is_absolute_file_path(const char * path) {
-#	if defined (MACRO_PLATFORM_LINUX)
+#   if defined (MACRO_PLATFORM_LINUX)
     return path[0] == '/';
-#	elif defined (MACRO_PLATFORM_WINDOWS)
+#   elif defined (MACRO_PLATFORM_WINDOWS)
     if (path[0] == '\0') return false;
     return path[1] == ':';
-#	endif
+#   endif
 
 }
 
@@ -118,6 +120,8 @@ bool set_current_working_directory(const std::string & path)
 
 bool is_absolute_file_path(const std::string & path)
     { return is_absolute_file_path(path.c_str()); }
+
+} // end of util namespace
 
 DirectoryChangerRaii::DirectoryChangerRaii(const std::string & path):
     DirectoryChangerRaii(path.c_str())
@@ -147,9 +151,9 @@ namespace {
 
 #ifdef MACRO_PLATFORM_WINDOWS
 int find_null_terminator(const std::string & str) {
-	const char * c = str.data();
-	while (*c) ++c;
-	return int(c - str.data());
+    const char * c = str.data();
+    while (*c) ++c;
+    return int(c - str.data());
 }
 #endif
 

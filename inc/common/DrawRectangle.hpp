@@ -56,6 +56,12 @@ public:
 
     void set_position(float x_, float y_);
 
+    void set_position(const sf::Vector2f & r);
+
+    void move(const sf::Vector2f & r);
+
+    void move(float x_, float y_);
+
     void set_size(float width, float height);
 
     void set_color(sf::Color);
@@ -67,6 +73,8 @@ public:
     float x() const;
 
     float y() const;
+
+    sf::Vector2f position() const;
 
     sf::Color color() const;
 

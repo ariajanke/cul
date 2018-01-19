@@ -52,6 +52,15 @@ void DrawRectangle::set_position(float x_, float y_) {
     set_size(w, h);
 }
 
+void DrawRectangle::set_position(const sf::Vector2f & r)
+    { set_position(r.x, r.y); }
+
+void DrawRectangle::move(const sf::Vector2f & r)
+    { move(r.x, r.y); }
+
+void DrawRectangle::move(float x_, float y_)
+    { set_position(x_ + x(), y_ + y()); }
+
 void DrawRectangle::set_size(float w, float h) {
     // impl detail, position accessors x() and y() only access the first
     // vertex, which this function does not change
@@ -85,6 +94,9 @@ float DrawRectangle::x() const
 
 float DrawRectangle::y() const
     { return m_vertices[TOP_LEFT].position.y; }
+
+sf::Vector2f DrawRectangle::position() const
+    { return sf::Vector2f(x(), y()); }
 
 sf::Color DrawRectangle::color() const
     { return m_vertices[TOP_LEFT].color; }

@@ -58,12 +58,12 @@ void quad_range(std::initializer_list<T> && ilist, Func && f);
 // <------------------------------ vector math ------------------------------->
 
 template <typename T>
-T mag(const sf::Vector2<T> & v)
+T magnitude(const sf::Vector2<T> & v)
     { return std::sqrt(v.x*v.x + v.y*v.y); }
 
 template <typename T>
     typename std::enable_if<std::is_arithmetic<T>::value, T>::type
-    mag(T t)
+    magnitude(T t)
     { return (t < T(0)) ? -t : t; }
 
 template <typename T> T sign(T t) { return (t < T(0)) ? T(-1) : T(1); }

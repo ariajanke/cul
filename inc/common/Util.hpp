@@ -57,9 +57,21 @@ void quad_range(std::initializer_list<T> && ilist, Func && f);
 
 // <------------------------------ vector math ------------------------------->
 
+float square_root(float);
+double square_root(double);
+
+float sine(float);
+double sine(double);
+
+float cosine(float);
+double cosine(double);
+
+float arc_cosine(float);
+double arc_cosine(double);
+
 template <typename T>
 T magnitude(const sf::Vector2<T> & v)
-    { return std::sqrt(v.x*v.x + v.y*v.y); }
+    { return square_root(v.x*v.x + v.y*v.y); }
 
 template <typename T>
     typename std::enable_if<std::is_arithmetic<T>::value, T>::type
@@ -189,7 +201,7 @@ template <typename T>
 sf::Vector2<T> normalize(const sf::Vector2<T> & v) {
     if (v == sf::Vector2<T>())
         throw std::invalid_argument("Attempting to normalize the zero vector");
-    return v*(T(1) / mag(v));
+    return v*(T(1) / magnitude(v));
 }
 
 template <typename T>
@@ -231,30 +243,30 @@ sf::Vector2<T> rotate_vector(sf::Vector2<T> r, T rot) {
     // [r.x] * [ cos(rot) sin(rot)]
     // [r.y]   [-sin(rot) cos(rot)]
     return sf::Vector2<T>
-        ( r.x*std::cos(rot) - r.y*std::sin(rot),
-          r.x*std::sin(rot) + r.y*std::cos(rot));
+        ( r.x*cosine(rot) - r.y*sine  (rot),
+          r.x*sine  (rot) + r.y*cosine(rot));
 }
 
 template <typename T>
 T angle_between(const sf::Vector2<T> & v, const sf::Vector2<T> & u) {
-    T frac = dot(v, u) / (mag(u)*mag(v));
+    T frac = dot(v, u) / (magnitude(u)*magnitude(v));
     if (frac > T(1))
         frac = T(1);
     else if (frac < T(-1))
         frac = T(-1);
-    return std::acos(frac);
+    return arc_cosine(frac);
 }
 
 template <typename T>
 sf::Vector2<T> project_unto(const sf::Vector2<T> & a, const sf::Vector2<T> & b) {
-    if (util::mag(a) < T(0.00005))
+    if (util::magnitude(a) < T(0.00005))
         throw std::invalid_argument("Cannot project unto the zero vector.");
     return (util::dot(a, b)/(a.x*a.x + a.y*a.y))*a;
 }
 
 template <typename T>
 sf::Vector2<T> major(const sf::Vector2<T> & v) {
-    if (mag(v.x) < mag(v.y))
+    if (magnitude(v.x) < magnitude(v.y))
         return sf::Vector2<T>(T(0), v.y);
     else
         return sf::Vector2<T>(v.x, T(0));

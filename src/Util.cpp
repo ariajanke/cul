@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <cassert>
+#include <cmath>
 
 namespace {
 
@@ -17,12 +18,24 @@ bool is_dir_slash(char c) { return c == '\\' || c == '/'; }
 } // end of <anonymous> namespace
 
 namespace util {
+	
+float  square_root(float  x) { return std::sqrt(x); }
+double square_root(double x) { return std::sqrt(x); }
+
+float  sine(float  x) { return std::sin(x); }
+double sine(double x) { return std::sin(x); }
+
+float  cosine(float  x) { return std::cos(x); }
+double cosine(double x) { return std::cos(x); }
+
+
+float  arc_cosine(float  x) { return std::acos(x); }
+double arc_cosine(double x) { return std::acos(x); }
 
 void message_assert(const char * msg, bool cond) {
-    if (!cond) {
-        std::cerr << msg << std::endl;
-        std::terminate();
-    }
+    if (cond) return;
+	std::cerr << msg << std::endl;
+	std::terminate();
 }
 
 void fix_path

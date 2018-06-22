@@ -57,16 +57,16 @@ void quad_range(std::initializer_list<T> && ilist, Func && f);
 
 // <------------------------------ vector math ------------------------------->
 
-float square_root(float);
+float  square_root(float );
 double square_root(double);
 
-float sine(float);
+float  sine(float );
 double sine(double);
 
-float cosine(float);
+float  cosine(float );
 double cosine(double);
 
-float arc_cosine(float);
+float  arc_cosine(float );
 double arc_cosine(double);
 
 template <typename T>

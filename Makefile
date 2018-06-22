@@ -19,9 +19,11 @@ $(OBJECTS_DIR)/src:
 clean:
 	rm -rf $(OBJECTS_DIR)
 
+libcommon-d.a : default
+
 test: $(OUTPUT)
-	$(CXX) $(CXXFLAGS) unit-tests/TestFixedLengthArray.cpp -o unit-tests/.utfla
-	$(CXX) $(CXXFLAGS) unit-tests/TestUtil.cpp -o unit-tests/.tu
+	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestFixedLengthArray.cpp -lcommon-d -o unit-tests/.utfla
+	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestUtil.cpp -lcommon-d -o unit-tests/.tu
 	./unit-tests/.utfla
 	./unit-tests/.tu
 

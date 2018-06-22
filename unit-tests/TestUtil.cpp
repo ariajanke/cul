@@ -22,7 +22,7 @@
 #include <common/Util.hpp>
 
 #include <iostream>
-
+#include <vector>
 #include <stdexcept>
 #include <algorithm>
 

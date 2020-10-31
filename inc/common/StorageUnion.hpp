@@ -1,7 +1,7 @@
 /****************************************************************************
 
     File: StorageUnion.hpp
-    Author: Andrew Janke
+    Author: Aria Janke
     License: GPLv3
 
     This program is free software: you can redistribute it and/or modify

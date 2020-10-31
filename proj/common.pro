@@ -5,7 +5,8 @@
 #-----------------------------------------------------
 
 QT      -= core gui
-TEMPLATE = lib
+# try to make this a test application
+# TEMPLATE = lib
 CONFIG  += staticlib
 CONFIG  -= c++11
 
@@ -28,7 +29,7 @@ debug {
     TARGET          = common-d
     QMAKE_CXXFLAGS += -DMACRO_DEBUG
 }
-message($$CONFIG)
+#message($$CONFIG)
 contains(CONFIG, release) {
     TARGET = common
 }
@@ -42,7 +43,8 @@ SOURCES += \
     ../src/ConstString.cpp             \
     ../src/CurrentWorkingDirectory.cpp \
     ../src/DrawRectangle.cpp           \
-    ../src/Util.cpp
+    ../src/Util.cpp                    \
+    ../src/TestSuite.cpp
 
 HEADERS += \
     ../inc/common/ConstString.hpp             \
@@ -54,7 +56,20 @@ HEADERS += \
     ../inc/common/MultiType.hpp               \
     ../inc/common/TypeList.hpp                \
     ../inc/common/FixedLengthArray.hpp        \
-    ../inc/common/StringUtil.hpp
+    ../inc/common/StringUtil.hpp              \
+    ../inc/common/TestSuite.hpp               \
+    ../inc/common/Grid.hpp                    \
+    ../inc/common/ParseOptions.hpp
+
+# unit tests rounded into a single program (note, this is for dev/debug/IDE
+# purposes, NOT for general/automated testing)
+SOURCES += \
+    ../unit-tests/all-tests-driver.cpp \
+    ../unit-tests/TestGrid.cpp \
+    ../unit-tests/TestUtil.cpp \
+    ../unit-tests/TestFixedLengthArray.cpp \
+    ../unit-tests/TestMultiType.cpp
+
 
 INCLUDEPATH += \
     ../inc

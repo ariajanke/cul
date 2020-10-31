@@ -187,34 +187,6 @@ void FixedLengthArray<T, SIZE>::destruct_objects_in_stores() {
     }
 }
 
-#if 0
-template <typename T, std::size_t SIZE, bool IS_CONST>
-using FixedLengthArrayIterImpl =
-    typename FixedLengthArray<T, SIZE>::template IterImpl<IS_CONST>;
-
-template <typename T, std::size_t SIZE, bool IS_CONST>
-typename FixedLengthArray<T, SIZE>::template IterImpl<IS_CONST>
-    operator + (const typename FixedLengthArray<T, SIZE>::template IterImpl<IS_CONST> & lhs,
-                std::ptrdiff_t rhs)
-{
-    auto temp = lhs;
-    temp += rhs;
-    return temp;
-}
-
-template <typename T, std::size_t SIZE, bool IS_CONST>
-FixedLengthArrayIterImpl<T, SIZE, IS_CONST>
-    operator + (std::ptrdiff_t lhs,
-                const FixedLengthArrayIterImpl<T, SIZE, IS_CONST> & rhs)
-{ return rhs + lhs; }
-
-template <typename T, std::size_t SIZE, bool IS_CONST>
-FixedLengthArrayIterImpl<T, SIZE, IS_CONST>
-    operator - (const FixedLengthArrayIterImpl<T, SIZE, IS_CONST> & lhs,
-                std::ptrdiff_t rhs)
-{ return lhs + (-rhs); }
-#endif
-
 template <typename T, std::size_t SIZE>
 typename FixedLengthArray<T, SIZE>::Iter
     FixedLengthArray<T, SIZE>::end()

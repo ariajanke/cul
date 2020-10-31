@@ -19,6 +19,8 @@
 
 *****************************************************************************/
 
+// usefulness disputed, which projects use these classes?
+
 #pragma once
 
 #include <common/TypeList.hpp>
@@ -51,7 +53,7 @@ class BitMaskable :
 {
 public:
     template <typename T>
-    friend typename std::enable_if<TypeList<Types...>::template HasType<T>::VALUE, T>::
+    friend typename std::enable_if<TypeList<Types...>::template HasType<T>::k_value, T>::
     type cast_bit_maskable_to(const BitMaskable<Types...> &);
 
     BitMaskable(): m_state(0) {}
@@ -60,7 +62,7 @@ public:
     using HasType = typename TypeList<Types...>::template HasType<T>;
 
     template <typename T,
-              typename = typename std::enable_if<HasType<T>::VALUE>::type>
+              typename = typename std::enable_if<HasType<T>::k_value>::type>
     BitMaskable(T t): m_state(static_cast<int>(t)) {}
 
     explicit operator bool() const { return m_state != 0; }
@@ -85,7 +87,7 @@ private:
 };
 
 template <typename T, typename ... Types>
-    typename std::enable_if<TypeList<Types...>::template HasType<T>::VALUE, T>::
+    typename std::enable_if<TypeList<Types...>::template HasType<T>::k_value, T>::
 type cast_bit_maskable_to(const BitMaskable<Types...> & bm) {
     static_assert(!std::is_same<T, int>::value, "");
     return T(bm.m_state);

@@ -36,7 +36,7 @@
 class DrawRectangle final : public sf::Drawable {
 public:
 
-    static constexpr const unsigned VERTEX_COUNT = 4;
+    static constexpr const unsigned k_vertex_count = 4;
 
     DrawRectangle();
 
@@ -46,37 +46,37 @@ public:
 
     ~DrawRectangle() override;
 
-    void set_x(float);
+    void set_x(float) noexcept;
 
-    void set_y(float);
+    void set_y(float) noexcept;
 
-    void set_width(float);
+    void set_width(float) noexcept;
 
-    void set_height(float);
+    void set_height(float) noexcept;
 
-    void set_position(float x_, float y_);
+    void set_position(float x_, float y_) noexcept;
 
-    void set_position(const sf::Vector2f & r);
+    void set_position(const sf::Vector2f & r) noexcept;
 
-    void move(const sf::Vector2f & r);
+    void move(const sf::Vector2f & r) noexcept;
 
-    void move(float x_, float y_);
+    void move(float x_, float y_) noexcept;
 
-    void set_size(float width, float height);
+    void set_size(float width, float height) noexcept;
 
-    void set_color(sf::Color);
+    void set_color(sf::Color) noexcept;
 
-    float width() const;
+    float width() const noexcept;
 
-    float height() const;
+    float height() const noexcept;
 
-    float x() const;
+    float x() const noexcept;
 
-    float y() const;
+    float y() const noexcept;
 
-    sf::Vector2f position() const;
+    sf::Vector2f position() const noexcept;
 
-    sf::Color color() const;
+    sf::Color color() const noexcept;
 
 protected:
 
@@ -84,11 +84,11 @@ protected:
 
 private:
 
-    static constexpr const unsigned TOP_LEFT     = 0;
-    static constexpr const unsigned TOP_RIGHT    = 1;
-    static constexpr const unsigned BOTTOM_RIGHT = 2;
-    static constexpr const unsigned BOTTOM_LEFT  = 3;
+    static constexpr const unsigned k_top_left     = 0;
+    static constexpr const unsigned k_top_right    = 1;
+    static constexpr const unsigned k_bottom_right = 2;
+    static constexpr const unsigned k_bottom_left  = 3;
 
     // use that dank af copy semantics
-    FixedLengthArray<sf::Vertex, VERTEX_COUNT> m_vertices;
+    FixedLengthArray<sf::Vertex, k_vertex_count> m_vertices;
 };

@@ -54,7 +54,6 @@
 namespace {
 
 using Error = std::runtime_error;
-using namespace util;
 
 void test_quad_range();
 void test_normalize();

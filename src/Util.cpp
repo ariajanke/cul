@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <fstream>
+#include <sstream>
 
 #include <cstring>
 #include <cassert>
@@ -16,11 +18,10 @@ using Error = std::runtime_error;
 bool is_dir_slash(char c) { return c == '\\' || c == '/'; }
 
 } // end of <anonymous> namespace
-
-namespace util {
 	
 float  square_root(float  x) { return std::sqrt(x); }
 double square_root(double x) { return std::sqrt(x); }
+int    square_root(int    x) { return std::sqrt(x); }
 
 float  sine(float  x) { return std::sin(x); }
 double sine(double x) { return std::sin(x); }
@@ -65,15 +66,12 @@ void fix_path
     dest_path.insert(dest_path.begin(), referer.begin(), itr + 1);
 }
 
-void clean_whitespace(std::string & str) {
-    auto b = str.begin(), e = str.end();
-    e = find_first_non_whitespace(b, e);
-    str.erase(b, e);
-    if (str.empty()) return;
-    auto rb = str.rbegin(), re = str.rend();
-    re = find_first_non_whitespace(rb, re);
-    str.erase(re.base(), rb.base());
+std::string load_file_contents_to_string(const char * filename) {
+    std::ifstream fin;
+    fin.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    fin.open(filename);
+    std::stringstream sstrm;
+    sstrm << fin.rdbuf();
+    fin.close();
+    return sstrm.str();
 }
-
-} // end of util namespace
-

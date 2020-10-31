@@ -46,8 +46,6 @@ namespace {
 #endif
 } // end of <anonymous> namespace
 
-namespace util {
-
 void get_current_working_directory(std::string & rv) {
     rv.clear();
 #   if defined(MACRO_PLATFORM_LINUX)
@@ -121,29 +119,27 @@ bool set_current_working_directory(const std::string & path)
 bool is_absolute_file_path(const std::string & path)
     { return is_absolute_file_path(path.c_str()); }
 
-} // end of util namespace
-
 DirectoryChangerRaii::DirectoryChangerRaii(const std::string & path):
     DirectoryChangerRaii(path.c_str())
 {}
 
 DirectoryChangerRaii::DirectoryChangerRaii(const char * path):
-    m_old_directory(util::get_current_working_directory())
+    m_old_directory(get_current_working_directory())
 {
     std::string filepath = path;
     trim_to_parent_path(filepath);
     // make absolute, if not already
-    if (!util::is_absolute_file_path(filepath))
+    if (!is_absolute_file_path(filepath))
         filepath = m_old_directory + '/' + filepath;
-    if (!util::set_current_working_directory(filepath)) {
+    if (!set_current_working_directory(filepath)) {
         throw Error("Failed to change working directory to: \"" +
                     filepath + "\".");
     }
 }
 
 DirectoryChangerRaii::~DirectoryChangerRaii() {
-    if (!util::set_current_working_directory(m_old_directory)) {
-        util::message_assert("Failed to change directory back (programming error.)", false);
+    if (!set_current_working_directory(m_old_directory)) {
+        message_assert("Failed to change directory back (programming error.)", false);
     }
 }
 

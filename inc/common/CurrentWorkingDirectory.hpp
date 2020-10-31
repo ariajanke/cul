@@ -23,8 +23,6 @@
 
 #include <string>
 
-namespace util {
-
 /** @note Implementation is platform specific
  *  @return Process's current working directory.
  */
@@ -57,8 +55,6 @@ bool is_absolute_file_path(const std::string & path);
 
 /** @copydoc bool file_path_is_absolute(const std::string&) */
 bool is_absolute_file_path(const char * path);
-
-} // end of util namespace
 
 /** Automatic directory changing class. This RAII object will change the
  *  process' working directory until this object is destoryed.

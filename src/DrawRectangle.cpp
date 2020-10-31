@@ -35,72 +35,71 @@ DrawRectangle::DrawRectangle
 
 /* override */ DrawRectangle::~DrawRectangle() {}
 
-void DrawRectangle::set_x(float x_) { set_position(x_, y()); }
+void DrawRectangle::set_x(float x_) noexcept { set_position(x_, y()); }
 
-void DrawRectangle::set_y(float y_) { set_position(x(), y_); }
+void DrawRectangle::set_y(float y_) noexcept { set_position(x(), y_); }
 
-void DrawRectangle::set_position(float x_, float y_) {
+void DrawRectangle::set_position(float x_, float y_) noexcept {
     // save old width and height
     float w = width(), h = height();
 
     // position
-    for (sf::Vertex & vtx : m_vertices)
-        vtx.position = sf::Vector2f(x_, y_);
+    for (auto & vtx : m_vertices) vtx.position = sf::Vector2f(x_, y_);
 
     // impl detail, must reset size, since we erased it with overwriting each
     // of the Quad's points
     set_size(w, h);
 }
 
-void DrawRectangle::set_position(const sf::Vector2f & r)
+void DrawRectangle::set_position(const sf::Vector2f & r) noexcept
     { set_position(r.x, r.y); }
 
-void DrawRectangle::move(const sf::Vector2f & r)
+void DrawRectangle::move(const sf::Vector2f & r) noexcept
     { move(r.x, r.y); }
 
-void DrawRectangle::move(float x_, float y_)
+void DrawRectangle::move(float x_, float y_) noexcept
     { set_position(x_ + x(), y_ + y()); }
 
-void DrawRectangle::set_size(float w, float h) {
+void DrawRectangle::set_size(float w, float h) noexcept {
     // impl detail, position accessors x() and y() only access the first
     // vertex, which this function does not change
     set_width (w);
     set_height(h);
 }
 
-void DrawRectangle::set_color(sf::Color clr)
-    { for (sf::Vertex & vtx : m_vertices) vtx.color = clr; }
+void DrawRectangle::set_color(sf::Color clr) noexcept
+    { for (auto & vtx : m_vertices) vtx.color = clr; }
 
-void DrawRectangle::set_width(float w) {
+void DrawRectangle::set_width(float w) noexcept {
     // clear width, add new width
-    m_vertices[TOP_RIGHT   ].position.x = x() + w;
-    m_vertices[BOTTOM_RIGHT].position.x = x() + w;
+    m_vertices[k_top_right   ].position.x = x() + w;
+    m_vertices[k_bottom_right].position.x = x() + w;
 }
 
-void DrawRectangle::set_height(float h) {
+void DrawRectangle::set_height(float h) noexcept {
     // clear height, and new height
-    m_vertices[BOTTOM_RIGHT].position.y = y() + h;
-    m_vertices[BOTTOM_LEFT ].position.y = y() + h;
+    m_vertices[k_bottom_right].position.y = y() + h;
+    m_vertices[k_bottom_left ].position.y = y() + h;
 }
 
-float DrawRectangle::width() const
-    { return m_vertices[TOP_RIGHT].position.x - x(); }
+float DrawRectangle::width() const noexcept
+    { return m_vertices[k_top_right].position.x - x(); }
 
-float DrawRectangle::height() const
-    { return m_vertices[BOTTOM_RIGHT].position.y - y(); }
+float DrawRectangle::height() const noexcept
+    { return m_vertices[k_bottom_right].position.y - y(); }
 
-float DrawRectangle::x() const
-    { return m_vertices[TOP_LEFT].position.x; }
+float DrawRectangle::x() const noexcept
+    { return m_vertices[k_top_left].position.x; }
 
-float DrawRectangle::y() const
-    { return m_vertices[TOP_LEFT].position.y; }
+float DrawRectangle::y() const noexcept
+    { return m_vertices[k_top_left].position.y; }
 
-sf::Vector2f DrawRectangle::position() const
+sf::Vector2f DrawRectangle::position() const noexcept
     { return sf::Vector2f(x(), y()); }
 
-sf::Color DrawRectangle::color() const
-    { return m_vertices[TOP_LEFT].color; }
+sf::Color DrawRectangle::color() const noexcept
+    { return m_vertices[k_top_left].color; }
 
 /* virtual protected */ void DrawRectangle::draw
     (sf::RenderTarget & target, sf::RenderStates) const
-    { target.draw(&*m_vertices.begin(), VERTEX_COUNT, sf::Quads); }
+    { target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads); }

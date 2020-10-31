@@ -1,7 +1,7 @@
 /****************************************************************************
 
     File: Util.hpp
-    Author: Andrew Janke
+    Author: Aria Janke
     License: GPLv3
 
     This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,7 @@
 
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 #include <stdexcept>
 #include <iosfwd>
@@ -32,8 +33,6 @@
 
 #include <common/TypeList.hpp>
 #include <common/ConstString.hpp>
-
-namespace util {
 
 // imperfect protection, other includes can still disurpt it
 // This problem so far exist on GCC
@@ -55,10 +54,35 @@ void quad_range(Cont & container, Func && func);
 template <typename T, typename Func>
 void quad_range(std::initializer_list<T> && ilist, Func && f);
 
+namespace fc_signal {
+
+enum FlowControlSignal_e { k_continue, k_break };
+
+}
+
+using FlowControlSignal = fc_signal::FlowControlSignal_e;
+
+template <typename Func, typename ... Types>
+typename std::enable_if<
+    std::is_same_v<typename std::result_of<Func && (Types && ...)>::type, FlowControlSignal>,
+    FlowControlSignal>::
+type adapt_to_flow_control_signal(Func && f, Types &&... args)
+    { return f(std::forward<Types>(args)...); }
+
+template <typename Func, typename ... Types>
+typename std::enable_if<
+    std::is_same_v<typename std::result_of<Func && (Types && ...)>::type, void>,
+    FlowControlSignal>::
+type adapt_to_flow_control_signal(Func && f, Types &&... args) {
+    f(std::forward<Types>(args)...);
+    return fc_signal::k_continue;
+}
+
 // <------------------------------ vector math ------------------------------->
 
 float  square_root(float );
 double square_root(double);
+int    square_root(int   );
 
 float  sine(float );
 double sine(double);
@@ -78,8 +102,6 @@ template <typename T>
     magnitude(T t)
     { return (t < T(0)) ? -t : t; }
 
-template <typename T> T sign(T t) { return (t < T(0)) ? T(-1) : T(1); }
-
 template <typename T>
 sf::Vector2<T> normalize(const sf::Vector2<T> & v);
 
@@ -89,7 +111,7 @@ template <typename T>
 
 template <typename T>
     constexpr typename std::enable_if<std::is_arithmetic<T>::value, T>::type
-    pi() { return T(3.141592653589793238462643383279); }
+    get_pi() { return T(3.141592653589793238462643383279); }
 
 template <typename T>
 sf::Vector2<T> rectangle_location(const sf::Rect<T> & rect)
@@ -101,19 +123,12 @@ T right_of(const sf::Rect<T> & rect) { return rect.left + rect.width; }
 template <typename T>
 T bottom_of(const sf::Rect<T> & rect) { return rect.top + rect.height; }
 
-template <typename T, typename U>
-sf::Vector2<T> cast_vector2_to(const sf::Vector2<U> & v)
-    { return sf::Vector2<T>(T(v.x), T(v.y)); }
-
-template <typename T, typename U>
-sf::Vector2<T> cast_vector2_to(U x, U y)
-    { return sf::Vector2<T>(T(x), T(y)); }
+template <typename T>
+sf::Vector2<T> center_of(const sf::Rect<T> &);
 
 template <typename T>
-sf::Vector2<T> center_of(const sf::Rect<T> & rect);
-
-template <typename T>
-sf::Rect<T> and_rectangles(const sf::Rect<T> & a, const sf::Rect<T> & b);
+sf::Rect<T> compute_rectangle_intersection
+    (const sf::Rect<T> &, const sf::Rect<T> &);
 
 template <typename T>
 T area_of(const sf::Rect<T> & a) { return a.width*a.height; }
@@ -129,19 +144,12 @@ T dot(const sf::Vector2<T> & v, const sf::Vector2<T> & u)
 template <typename T>
 T angle_between(const sf::Vector2<T> & v, const sf::Vector2<T> & u);
 
+// reads: project a onto b
 template <typename T>
-sf::Vector2<T> project_unto(const sf::Vector2<T> & a, const sf::Vector2<T> & b);
+sf::Vector2<T> project_onto(const sf::Vector2<T> & a, const sf::Vector2<T> & b);
 
 template <typename T>
 sf::Vector2<T> major(const sf::Vector2<T> & v);
-
-/** @note Unsafe float equals, use for sentinel values only!
- *
- */
-template <typename T>
-    constexpr typename std::enable_if<std::is_floating_point<T>::value, bool>::type
-    float_equals(T a, T b)
-{ return !(a < b) && !(b < a); }
 
 template <typename T>
     typename std::enable_if<std::is_floating_point<T>::value, bool>::type
@@ -152,36 +160,17 @@ template <typename T>
 
 void message_assert(const char * msg, bool cond);
 
-} // end of util namespace
-
-class Printable {
-public:
-    template <typename T>
-    explicit Printable(const T * ptr):
-        m_value(reinterpret_cast<const void *>(ptr))
-    {}
-    void print(std::ostream & out) const { out << m_value; }
-private:
-    const void * m_value;
-};
-
-inline std::ostream & operator << (std::ostream & out, const Printable & p)
-    { p.print(out); return out; }
-
-using RectD   = sf::Rect<double>;
-using VectorD = sf::Vector2<double>;
-using VectorI = sf::Vector2i;
-
 // ----------------------------------------------------------------------------
 // ----------------------- Implementation Details -----------------------------
-
-namespace util {
 
 template <typename T, typename Func, typename Iter>
 void quad_range(Iter beg, Iter end, Func && func) {
     for (Iter itr = beg; itr != end; ++itr) {
     for (Iter jtr = beg; jtr != itr; ++jtr) {
-        func(*itr, *jtr);
+        auto & i_obj = *itr;
+        auto & j_obj = *jtr;
+        if (adapt_to_flow_control_signal(std::move(func), i_obj, j_obj) == fc_signal::k_break)
+            break;
     }}
 }
 
@@ -222,14 +211,16 @@ sf::Vector2<T> center_of(const sf::Rect<T> & rect) {
 }
 
 template <typename T>
-sf::Rect<T> and_rectangles(const sf::Rect<T> & a, const sf::Rect<T> & b) {
+sf::Rect<T> compute_rectangle_intersection
+    (const sf::Rect<T> & a, const sf::Rect<T> & b)
+{
     using TVec = sf::Vector2<T>;
     auto high_a = TVec(right_of(a), bottom_of(a));
     auto high_b = TVec(right_of(b), bottom_of(b));
 
     auto low_rv  = TVec(std::max(a.left, b.left), std::max(a.top, b.top));
     auto high_rv = TVec(std::min(high_a.x, high_b.x), std::min(high_a.y, high_b.y));
-    if (low_rv.x >= high_rv.x or low_rv.y >= high_rv.y) {
+    if (low_rv.x >= high_rv.x || low_rv.y >= high_rv.y) {
         return sf::Rect<T>();
     } else {
         return sf::Rect<T>(low_rv.x, low_rv.y,
@@ -249,19 +240,24 @@ sf::Vector2<T> rotate_vector(sf::Vector2<T> r, T rot) {
 
 template <typename T>
 T angle_between(const sf::Vector2<T> & v, const sf::Vector2<T> & u) {
+    static const constexpr T k_error = 0.00005;
+    if (   (v.x*v.x + v.y*v.y) < k_error*k_error
+        || (u.x*u.x + u.y*u.y) < k_error*k_error)
+    {
+        throw std::invalid_argument("angle_between: both vectors must be non-zero vectors.");
+    }
     T frac = dot(v, u) / (magnitude(u)*magnitude(v));
-    if (frac > T(1))
-        frac = T(1);
-    else if (frac < T(-1))
-        frac = T(-1);
+    if      (frac > T( 1)) { frac = T( 1); }
+    else if (frac < T(-1)) { frac = T(-1); }
     return arc_cosine(frac);
 }
 
 template <typename T>
-sf::Vector2<T> project_unto(const sf::Vector2<T> & a, const sf::Vector2<T> & b) {
-    if (util::magnitude(a) < T(0.00005))
-        throw std::invalid_argument("Cannot project unto the zero vector.");
-    return (util::dot(a, b)/(a.x*a.x + a.y*a.y))*a;
+sf::Vector2<T> project_onto(const sf::Vector2<T> & a, const sf::Vector2<T> & b) {
+    static const constexpr T k_error = 0.00005;
+    if ((a.x*a.x + a.y*a.y) < k_error*k_error)
+        throw std::invalid_argument("project_onto: cannot project onto the zero vector.");
+    return (dot(b, a)/(b.x*b.x + b.y*b.y))*b;
 }
 
 template <typename T>
@@ -272,4 +268,3 @@ sf::Vector2<T> major(const sf::Vector2<T> & v) {
         return sf::Vector2<T>(v.x, T(0));
 }
 
-} // end of util namespace

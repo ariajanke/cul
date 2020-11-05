@@ -34,8 +34,8 @@ contains(CONFIG, release) {
     TARGET = common
 }
 
-QMAKE_CXXFLAGS += -std=c++14
-QMAKE_LFLAGS   += -std=c++14
+QMAKE_CXXFLAGS += -std=c++17
+QMAKE_LFLAGS   += -std=c++17
 LIBS           += \
                   -L/usr/lib/x86_64-linux-gnu
 
@@ -68,7 +68,8 @@ SOURCES += \
     ../unit-tests/TestGrid.cpp \
     ../unit-tests/TestUtil.cpp \
     ../unit-tests/TestFixedLengthArray.cpp \
-    ../unit-tests/TestMultiType.cpp
+    ../unit-tests/TestMultiType.cpp \
+    ../unit-tests/test-string-utils.cpp
 
 
 INCLUDEPATH += \

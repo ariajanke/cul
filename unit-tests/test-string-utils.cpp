@@ -17,6 +17,7 @@ namespace {
 bool run_for_split_tests();
 bool run_string_to_number_tests();
 bool run_trim_tests();
+bool run_wrap_tests();
 
 } // end of <anonymous> namespace
 
@@ -24,7 +25,8 @@ int main() {
     auto test_list = {
         run_for_split_tests,
         run_string_to_number_tests,
-        run_trim_tests
+        run_trim_tests,
+        run_wrap_tests
     };
     
     bool all_good = true;
@@ -50,7 +52,7 @@ bool run_for_split_tests() {
         std::string samp = "a b c";
         
         for_split<is_whitespace>(samp.begin(), samp.end(), 
-            [&count](Iter beg, Iter end)
+            [&count](Iter, Iter)
         { ++count; });
         return ts::test(count == 3);
     });
@@ -69,7 +71,7 @@ bool run_for_split_tests() {
         std::string samp = "a b c e f";
         
         for_split<is_whitespace>(samp.begin(), samp.end(), 
-            [&count](Iter beg, Iter end)
+            [&count](Iter, Iter)
         {
             ++count;
             return (count == 3) ? fc_signal::k_break : fc_signal::k_continue;
@@ -79,7 +81,7 @@ bool run_for_split_tests() {
     suite.test([]() {
         int count = 0;
         std::string samp = " a b c  e    f           ";
-        for_split<is_whitespace>(samp, [&count](ConstIter beg, ConstIter end)
+        for_split<is_whitespace>(samp, [&count](ConstIter, ConstIter)
             { ++count; });
         return ts::test(count == 5);
     });
@@ -215,6 +217,78 @@ bool run_trim_tests() {
         auto end = samp.end();
         trim<is_whitespace>(beg, end);
         return ts::test(end == beg);
+    });
+    return suite.has_successes_only();
+}
+
+bool run_wrap_tests() {
+    ts::TestSuite suite("wrap_string_as_monowidth");
+    static auto do_wrap_tests = [](const char * in, int max_width, std::initializer_list<const char *> list) {
+        std::vector<std::string> correct { list.begin(), list.end() };
+        for (const auto & str : correct) {
+            if (int(str.size()) > max_width) return false;
+        }
+
+        std::vector<std::string> res;
+        // render_wrapped_lines_to(inv, max_width, 100, res);
+        wrap_string_as_monowidth(in, in + strlen(in), max_width,
+            [&res](const char * beg, const char * end)
+        {
+            trim<is_whitespace>(beg, end);
+            res.emplace_back(beg, end);
+        }, is_whitespace);
+        return std::equal(res.begin(), res.end(), correct.begin(), correct.end());
+    };
+    // tests "stolen" from MemR suite
+    suite.test([]() {
+        return ts::test(do_wrap_tests("Hello world.", 9, { "Hello", "world." }));
+    });
+    suite.test([]() {
+        return ts::test(
+        //             0123456789012345678901234
+        do_wrap_tests("This is a short sentence.", 20, { "This is a short", "sentence." })
+        );
+    });
+    suite.test([]() {
+        return ts::test(
+        //             0123456789012345678901234
+        do_wrap_tests("This is a short sentence.", 10, { "This is a", "short", "sentence." })
+        );
+    });
+    suite.test([]() {
+        return ts::test(
+        do_wrap_tests("-------------------------", 15, { "---------------", "----------" })
+        );
+    });
+    suite.test([]() {
+        return ts::test(
+        do_wrap_tests("-------------------------", 10, { "----------", "----------", "-----" })
+        );
+    });
+    suite.test([]() {
+        return ts::test(
+        //             0123456789012345678901234
+        do_wrap_tests("0 1 2 3333 4 55 6 777 8", 8, { "0 1 2", "3333 4", "55 6 777", "8" })
+        );
+    });
+    // test is ok with UString
+    suite.test([]() {
+        //                      0123456789ABCDEFG
+        std::u32string samp = U"  -  --   ---  -";
+        auto output =       { U"  -  --", U"   ---  ", U"-" };
+        using ConstUIter = std::u32string::const_iterator;
+        auto itr = output.begin();
+        bool rv = true;
+        wrap_string_as_monowidth(samp.begin(), samp.end(), 8,
+        [&itr, &rv, &output](ConstUIter beg, ConstUIter end) {
+            if (itr == output.end()) {
+                rv = false;
+            } else if (!std::equal(beg, end, *itr++)) {
+                rv = false;
+            }
+            return rv ? fc_signal::k_continue : fc_signal::k_break;
+        }, [](u_char c) { return c == u_char('-'); });
+        return ts::test(rv);
     });
     return suite.has_successes_only();
 }

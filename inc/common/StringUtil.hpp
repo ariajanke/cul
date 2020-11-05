@@ -165,7 +165,38 @@ typename EnableStrToNum<decltype(std::begin(ContType())), RealType>::type
     (const ContType & cont, RealType & out, const int k_base = 10) noexcept
 { return string_to_number(std::begin(cont), std::end(cont), out, k_base); }
 
-// ----------------------------------------------------------------------------
+/** @brief Wraps text as if it were monowidth by a set number of characters.
+ *  @note Like all features in this library, this was added because it is used
+ *        by multiple projects.
+ *  @tparam IterType string iterator type, any random access iterator type
+ *  @param beg beginning of character sequence to wrap
+ *  @param end end (one past the end) of the character sequence to wrap
+ *  @param max_chars The maximum number of characters
+ *  @param handle_seq called for each wrapped segment
+ *                    must take the form: void(IterType beg, IterType end);
+ *                    where beg is the beginning of the sequence, and
+ *                    end is the "one past the end" of the sequence
+ *  @param is_breaking called to determine if a character is breaking or not
+ *                     the wrapping algorithm will endeavor wrap the text such
+ *                     that non-breaking sequences are not cut by the wrap
+ *                     must take the form bool(decltype(*IterType());
+ */
+template <typename IterType, typename HandleSequenceFunc, typename IsBreakingFunc>
+void wrap_string_as_monowidth
+    (IterType beg, IterType end, int max_chars,
+     HandleSequenceFunc && handle_seq, IsBreakingFunc && is_breaking);
+
+/** @brief A specialized version of the five parameter overload.
+ *  @note In this overload, is_breaking is set with a functor that classifies
+ *        whitespace characters as breaking. @n
+ *        (specifically: newline, return carriage, tab, and space)
+ */
+template <typename IterType, typename HandleSequenceFunc>
+void wrap_string_as_monowidth
+    (IterType beg, IterType end, int max_chars,
+     HandleSequenceFunc && handle_seq);
+
+// <---------------------------- implementations ----------------------------->
 
 template <auto is_seperator, typename IterType, typename Func>
 void for_split(IterType beg, IterType end, Func && f) {
@@ -193,6 +224,8 @@ template <auto is_seperator, typename ContainerType, typename Func>
 void for_split(const ContainerType & cont, Func && f)
     { for_split<is_seperator>(std::begin(cont), std::end(cont), std::move(f)); }
 
+// ----------------------------------------------------------------------------
+
 template <auto is_tchar, typename IterType>
 void trim(IterType & beg, IterType & end) {
     while (beg != end) {
@@ -204,6 +237,8 @@ void trim(IterType & beg, IterType & end) {
         --end;
     }
 }
+
+// ----------------------------------------------------------------------------
 
 template <typename IterType, typename RealType>
 typename EnableStrToNum<IterType, RealType>::type
@@ -352,88 +387,76 @@ typename EnableStrToNum<IterType, RealType>::type
     return true;
 }
 
-#if 0
-template <typename IterType, typename RealType>
-typename EnableStrToNum<IterType, RealType>::type
-/* bool */ string_to_number
-    (IterType start, IterType end, RealType & out, const RealType base_c)
-{
-    if (base_c < RealType(2) || base_c > RealType(16)) {
-        throw std::runtime_error("bool string_to_number(...): "
-                                 "This function supports only bases 2 to 16.");
-    }
+// ----------------------------------------------------------------------------
 
-    using CharType = decltype(*start);
-    static constexpr bool k_is_signed = std::is_signed<RealType>::value;
-    static constexpr bool k_is_integer = !std::is_floating_point<RealType>::value;
-    static constexpr RealType k_sign_fix = k_is_signed ? -1 : 1;
-    const bool c_is_negative = (*start) == CharType('-');
-
-    // negative numbers cannot be parsed into an unsigned type
-    if (!k_is_signed && c_is_negative)
-        return false;
-
-    if (c_is_negative) ++start;
-
-    auto working = RealType(0);
-    auto multi   = RealType(1);
-    // the adder is a one digit number that corresponds to a character
-    auto adder     = RealType(0);
-    bool found_dot = false;
-
-    // main digit reading loop, iterates characters in the selection in reverse
-    do {
-        switch (*--end) {
-        case CharType('.'):
-            if (found_dot) return false;
-            found_dot = true;
-            if (k_is_integer) {
-                if (adder <= k_sign_fix*base_c / RealType(2))
-                    working = k_sign_fix*RealType(1);
-                else
-                    working = RealType(0);
-            } else {
-                working /= multi;
+class WrapStringAsMonowidthPriv {
+public:
+    template <typename IterType, typename HandleSequenceFunc, typename IsBreakingFunc>
+    static void wrap_string_as_monowidth
+        (IterType beg, IterType end, int max_chars,
+         HandleSequenceFunc && handle_seq, IsBreakingFunc && is_breaking)
+    {
+        auto jtr_last = beg;
+        auto jtr      = constrain_offset(beg, end, max_chars);
+        while (true) {
+            if (jtr == end) {
+                handle_seq(jtr_last, jtr);
+                break;
             }
-            adder = RealType(0);
-            multi = RealType(1);
-            continue;
-        case CharType('0'): case CharType('1'): case CharType('2'):
-        case CharType('3'): case CharType('4'): case CharType('5'):
-        case CharType('6'): case CharType('7'): case CharType('8'):
-        case CharType('9'):
-            adder = k_sign_fix*RealType(*end - CharType('0'));
-            break;
-        case CharType('a'): case CharType('b'): case CharType('c'):
-        case CharType('d'): case CharType('e'): case CharType('f'):
-            adder = k_sign_fix*RealType(*end - 'a' + 10);
-            break;
-        case CharType('A'): case CharType('B'): case CharType('C'):
-        case CharType('D'): case CharType('E'): case CharType('F'):
-            adder = k_sign_fix*RealType(*end - 'A' + 10);
-            break;
-        default: return false;
-        }
-        // detect overflow
-        RealType temp = working + adder*multi;
-        if ( k_is_signed && temp > working) return false;
-        if (!k_is_signed && temp < working) return false;
-        multi *= base_c;
-        working = temp;
-    }
-    while (end != start);
+            auto gv = find_last_from(is_breaking, jtr_last, jtr, end);
 
-    // we've produced a positive integer, so make the adjustment if needed
-    if (!c_is_negative && k_is_signed) {
-        // edge case, cannot flip the sign for minimum value int
-        if (k_is_integer && working == std::numeric_limits<RealType>::min()) {
-            return false;
+            if (gv != end) ++gv;
+            if (gv == end) gv = jtr;
+            {
+            auto sent_beg = jtr_last;
+            auto sent_end = gv;
+            // need to test for "bad" argument type (by reference)
+            if (adapt_to_flow_control_signal
+                    (std::move(handle_seq), sent_beg, sent_end) == fc_signal::k_break)
+            { return; }
+#           if 0
+            handle_seq(sent_beg, sent_end);
+#           endif
+            }
+            jtr_last = gv;
+            jtr      = constrain_offset(gv, end, max_chars);
         }
-        working *= RealType(-1);
     }
+private:
+    template <typename IterType>
+    static IterType constrain_offset(IterType itr, IterType end, int offset)
+        { return (offset > end - itr) ? end : itr + offset; }
 
-    // write to parameter
-    out = working;
-    return true;
+    template <typename IterType, typename IsBreakingFunc>
+    static IterType find_last_from
+        (const IsBreakingFunc & is_breaking,
+         IterType beg, IterType itr, IterType end)
+    {
+        while (!is_breaking(*itr)) {
+           if (itr == beg) return end;
+           --itr;
+       }
+       return itr;
+    }
+};
+
+template <typename IterType, typename HandleSequenceFunc, typename IsBreakingFunc>
+void wrap_string_as_monowidth
+    (IterType beg, IterType end, int max_chars,
+     HandleSequenceFunc && handle_seq, IsBreakingFunc && is_breaking)
+{
+    WrapStringAsMonowidthPriv::wrap_string_as_monowidth
+        (beg, end, max_chars, std::move(handle_seq), std::move(is_breaking));
 }
-#endif
+
+template <typename IterType, typename HandleSequenceFunc>
+void wrap_string_as_monowidth
+    (IterType beg, IterType end, int max_chars,
+     HandleSequenceFunc && handle_seq)
+{
+    using CharType = decltype(*beg);
+    wrap_string_as_monowidth(
+        beg, end, max_chars, std::move(handle_seq),
+        [](CharType c) { return c == CharType(' ' ) || c == CharType('\n') ||
+                                c == CharType('\t') || c == CharType('\r'); });
+}

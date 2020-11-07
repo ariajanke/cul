@@ -1,6 +1,6 @@
 langange: cpp
 compiler: gcc
-dist: trusty
+dist: bionic
 os: linux
 script:
     - make test

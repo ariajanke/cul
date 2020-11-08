@@ -178,6 +178,12 @@ bool run_string_to_number_tests() {
         bool res = string_to_number(samp, out);
         return ts::test(res && out == 10);
     });
+    suite.test([]() {
+        std::string samp = "7995";
+        int out = 0;
+        bool res = string_to_number_multibase(samp, out);
+        return ts::test(res && out == 7995);
+    });
     return suite.has_successes_only();
 }
 

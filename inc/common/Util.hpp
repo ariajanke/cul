@@ -1,21 +1,26 @@
 /****************************************************************************
 
-    File: Util.hpp
-    Author: Aria Janke
-    License: GPLv3
+    MIT License
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    Copyright (c) 2020 Aria Janke
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 
 *****************************************************************************/
 
@@ -156,6 +161,21 @@ template <typename T>
     is_nan(T a)
 { return a != a; }
 
+// first  low  bounds where f(first ) = false
+// second high bounds where f(second) = true
+template <typename Func>
+std::pair<double, double> find_smallest_diff(Func && f, double hint = 0.5, double error = 0.0005);
+
+template <typename Func>
+double find_highest_false(Func && f, double hint = 0.5, double error = 0.0005) {
+    return find_smallest_diff(std::move(f), hint, error).first;
+}
+
+template <typename Func>
+double find_lowest_true(Func && f, double hint = 0.5, double error = 0.0005) {
+    return find_smallest_diff(std::move(f), hint, error).second;
+}
+
 // <-------------------------------- debugging ------------------------------->
 
 void message_assert(const char * msg, bool cond);
@@ -268,3 +288,26 @@ sf::Vector2<T> major(const sf::Vector2<T> & v) {
         return sf::Vector2<T>(v.x, T(0));
 }
 
+template <typename Func>
+std::pair<double, double> find_smallest_diff(Func && f, double hint, double error) {
+    if (f(0)) {
+        throw std::invalid_argument("find_smallest_diff: f(0) is true");
+    }
+    if (!f(1)) {
+        throw std::invalid_argument("find_smallest_diff: f(1) is false");
+    }
+
+    bool   fg   = f(hint);
+    double low  = fg ? 0    : hint;
+    double high = fg ? hint : 1   ;
+
+    while ((high - low) > error) {
+        double t = low + (high - low)*0.5;
+        if (f(t)) {
+            high = t;
+        } else {
+            low = t;
+        }
+    }
+    return std::make_pair(low, high);
+}

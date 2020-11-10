@@ -106,5 +106,5 @@ sf::Color DrawRectangle::color() const noexcept
     { return m_vertices[k_top_left].color; }
 
 /* virtual protected */ void DrawRectangle::draw
-    (sf::RenderTarget & target, sf::RenderStates) const
-    { target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads); }
+    (sf::RenderTarget & target, sf::RenderStates states) const
+    { target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads, states); }

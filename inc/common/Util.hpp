@@ -29,9 +29,9 @@
 #include <iterator>
 #include <type_traits>
 #include <utility>
-
 #include <stdexcept>
 #include <iosfwd>
+#include <limits>
 
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/Rect.hpp>
@@ -160,6 +160,13 @@ template <typename T>
     typename std::enable_if<std::is_floating_point<T>::value, bool>::type
     is_nan(T a)
 { return a != a; }
+
+
+template <typename T>
+std::enable_if_t<std::is_floating_point_v<T>, bool> is_real(T x) {
+    using Lims = std::numeric_limits<T>;
+    return x == x && Lims::infinity() != x && -Lims::infinity() != x;
+}
 
 // first  low  bounds where f(first ) = false
 // second high bounds where f(second) = true

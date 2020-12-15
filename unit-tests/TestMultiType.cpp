@@ -23,6 +23,7 @@
 #include <common/TestSuite.hpp>
 
 #include <iostream>
+#include <variant>
 
 #include <cassert>
 
@@ -64,7 +65,23 @@ Base::~Base() {}
 
 SideBase::~SideBase() {}
 
+static_assert(TypeList<A, B, C, int>::HasType<int>::k_value, "");
+static_assert(TypeList<A, B, C, int>::HasType<  A>::k_value, "");
+static_assert(TypeList<A, B, C, int>::HasType<  B>::k_value, "");
+static_assert(TypeList<A, B, C, int>::HasType<  C>::k_value, "");
+
+using ABCTypeList = TypeList<A, B, C>;
+
+class D {};
+class E {};
+using ABCDETypeList = ABCTypeList::CombineWith<D, E>;
+
 int main() {
+    {
+    using MyVariant = TypeList<A, B, C>::DefineWithListTypes<std::variant>::Type;
+    MyVariant var { A() };
+    assert(std::holds_alternative<A>(var));
+    }
 	// assert fails: the tests/utils for the tests are badly designed
 	// test on the ts fails: the MultiType class has the issue
 	using TestMt = MultiType<int, double, A, B>;

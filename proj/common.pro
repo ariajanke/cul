@@ -36,7 +36,7 @@ contains(CONFIG, release) {
 
 QMAKE_CXXFLAGS += -std=c++17
 QMAKE_LFLAGS   += -std=c++17
-LIBS           += \
+LIBS           += -lsfml-graphics \
                   -L/usr/lib/x86_64-linux-gnu
 
 SOURCES += \
@@ -59,17 +59,18 @@ HEADERS += \
     ../inc/common/StringUtil.hpp              \
     ../inc/common/TestSuite.hpp               \
     ../inc/common/Grid.hpp                    \
-    ../inc/common/ParseOptions.hpp
+    ../inc/common/ParseOptions.hpp            \
+    ../inc/common/SubGrid.hpp
 
 # unit tests rounded into a single program (note, this is for dev/debug/IDE
 # purposes, NOT for general/automated testing)
 SOURCES += \
     ../unit-tests/all-tests-driver.cpp \
-    ../unit-tests/TestGrid.cpp \
-    ../unit-tests/TestUtil.cpp \
-    ../unit-tests/TestFixedLengthArray.cpp \
-    ../unit-tests/TestMultiType.cpp \
-    ../unit-tests/test-string-utils.cpp
+    \#../unit-tests/TestGrid.cpp \
+    \#../unit-tests/TestUtil.cpp \
+    \#../unit-tests/TestFixedLengthArray.cpp \
+    ../unit-tests/TestGrid.cpp
+    #../unit-tests/test-string-utils.cpp
 
 
 INCLUDEPATH += \

@@ -70,6 +70,11 @@ struct TypeList {
         using Type = Other<Types...>;
     };
 
+    template <typename ... OtherTypes>
+    struct CombineWith {
+        using Type = TypeList<Types..., OtherTypes...>;
+    };
+
     using HeadType = TypeTag<void>;
     using InheritedType = TypeTag<void>;
 };
@@ -97,6 +102,12 @@ struct TypeList<Head, Types...> : TypeList<Types...> {
     struct DefineWithListTypes {
         using Type = Other<Head, Types...>;
     };
+
+    template <typename ... OtherTypes>
+    struct CombineWith {
+        using Type = TypeList<Head, Types..., OtherTypes...>;
+    };
+
     // trying a new linear approach, to save complier time
     static_assert(!TypeList<Types...>::template HasType<Head>::k_value,
                   "All types in type list, must be unique.");

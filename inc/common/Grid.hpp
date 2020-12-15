@@ -42,6 +42,15 @@ public:
     using ReferenceType      = typename std::vector<T>::reference      ;
     using ConstReferenceType = typename std::vector<T>::const_reference;
 
+    Grid() {}
+    explicit Grid(std::initializer_list<std::initializer_list<T>>);
+    Grid(const Grid &) = default;
+    Grid(Grid &&) = default;
+    ~Grid() {}
+
+    Grid & operator = (const Grid &) = default;
+    Grid & operator = (Grid &&) = default;
+
     // --------------------------- cul/Grid specific ---------------------------
 
     /** @return grid width in number of elements */
@@ -149,6 +158,28 @@ private:
 };
 
 // ----------------------------------------------------------------------------
+
+template <typename T>
+Grid<T>::Grid(std::initializer_list<std::initializer_list<T>> init_list) {
+    static constexpr const int k_uninit = -1;
+    int width_ = k_uninit;
+    for (const auto & inner_list : init_list) {
+        // I cannot test this, I cannot create a text file large enough
+        if (inner_list.size() > std::numeric_limits<int>::max()) {
+            throw std::invalid_argument("Grid<T>::Grid: exceeds maximum value of integer type.");
+        }
+        if (width_ == k_uninit) {
+            width_ = int(inner_list.size());
+        } else if (width_ != int(inner_list.size())) {
+            throw std::invalid_argument("Grid<T>::Grid: all inner lists must be the same size.");
+        }
+    }
+    m_elements.reserve(width_*init_list.size());
+    for (const auto & inner_list : init_list) {
+        m_elements.insert(m_elements.end(), inner_list.begin(), inner_list.end());
+    }
+    m_width = width_;
+}
 
 template <typename T>
 int Grid<T>::width() const noexcept { return m_width; }

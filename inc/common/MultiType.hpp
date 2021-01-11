@@ -28,6 +28,10 @@
 
 #include <type_traits>
 
+#if 0 // WIP
+#   include <array>
+#endif
+
 #include <common/TypeList.hpp>
 #include <common/StorageUnion.hpp>
 
@@ -57,6 +61,7 @@ public:
     using Error = std::runtime_error;
 
     static constexpr const int k_no_type = TypeList<Types...>::k_not_any_type;
+    static constexpr const int k_type_count = sizeof...(Types);
 
     template <typename Type>
     struct GetTypeId {
@@ -184,6 +189,11 @@ public:
     template <typename T>
     ConstUpcastPair<T> get_by_type_id_and_upcast(int type_id) const;
 
+#   if 0
+    template <typename ... FuncTypes>
+    void visit(const std::tuple<FuncTypes...> &);
+#   endif
+
     // -------------- static_cast and dynamic_cast replacements ---------------
 
     /** Allows you to perform a static_cast on the object without knowing the
@@ -205,7 +215,6 @@ public:
     const T * dynamic_cast_() const;
 
 private:
-
     template <typename T>
     const T * as_back() const noexcept;
 
@@ -516,7 +525,30 @@ typename MultiType<Types...>::template UpcastPair<T> MultiType<Types...>::
     rv.object_pointer   = const_cast<void *>(gv.object_pointer  );
     return rv;
 }
+#if 0
+template <typename ... TupleTypes>
+class DefineSomething {
+public:
+    using Fp = void(*)(const std::tuple<TupleTypes...>, void *);
 
+    template <typename ... Types>
+    static Fp make_entry() {
+        return nullptr;
+    }
+
+    template <typename Head, typename ... Types>
+    static Fp make_entry() {
+        return nullptr;
+    }
+};
+
+template <typename ... Types>
+template <typename ... FuncTypes>
+void MultiType<Types...>::visit(const std::tuple<FuncTypes...> & tuple_) {
+    using Fp = void(*)(const std::tuple<FuncTypes...>, void *);
+    std::array<Fp, k_type_count> indirect_call_array;
+}
+#endif
 template <typename ... Types>
 template <typename T>
 typename MultiType<Types...>::template ConstUpcastPair<T> MultiType<Types...>::

@@ -233,8 +233,9 @@ template <typename T>
 
 template <typename T>
 sf::Vector2<T> center_of(const sf::Rect<T> & rect) {
-    return sf::Vector2<T>(rect.left - rect.width/T(2),
-                          rect.top  - rect.height/T(2));
+    // omg, what's wrong with me?!
+    return sf::Vector2<T>(rect.left + rect.width  / T(2),
+                          rect.top  + rect.height / T(2));
 }
 
 template <typename T>

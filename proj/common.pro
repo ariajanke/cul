@@ -69,8 +69,8 @@ SOURCES += \
     \#../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestFixedLengthArray.cpp \
-    ../unit-tests/TestGrid.cpp
-    #../unit-tests/test-string-utils.cpp
+    \#../unit-tests/TestGrid.cpp
+    ../unit-tests/test-string-utils.cpp
 
 
 INCLUDEPATH += \

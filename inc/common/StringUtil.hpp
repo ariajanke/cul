@@ -303,6 +303,7 @@ typename EnableStrToNum<IterType, RealType>::type
             break;
         default: return false;
         }
+        if (k_sign_fix*adder >= RealType(k_base)) return false;
         // detect overflow
         RealType temp = working + adder*multi;
         if ( k_is_signed && temp > working) return false;

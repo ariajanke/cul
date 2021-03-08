@@ -210,6 +210,13 @@ bool run_string_to_number_tests() {
         bool res = string_to_number_multibase(samp, out);
         return ts::test(res && out == 7995);
     });
+    // 15 tests now
+    suite.test([]() {
+        std::string samp = "a0";
+        int out = 0;
+        bool res = string_to_number_multibase(samp, out);
+        return ts::test(!res); // no prefix... strictly decimal
+    });
     return suite.has_successes_only();
 }
 

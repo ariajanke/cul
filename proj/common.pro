@@ -56,7 +56,6 @@ HEADERS += \
     ../inc/common/StorageUnion.hpp            \
     ../inc/common/MultiType.hpp               \
     ../inc/common/TypeList.hpp                \
-    ../inc/common/FixedLengthArray.hpp        \
     ../inc/common/StringUtil.hpp              \
     ../inc/common/TestSuite.hpp               \
     ../inc/common/Grid.hpp                    \

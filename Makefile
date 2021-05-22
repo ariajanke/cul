@@ -21,9 +21,6 @@ clean:
 
 libcommon.a : default
 
-#removed:
-#	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestFixedLengthArray.cpp -lcommon -o unit-tests/.utfla
-#	./unit-tests/.utfla
 test: $(OUTPUT)
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestUtil.cpp -lcommon -o unit-tests/.tu
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestMultiType.cpp -lcommon -o unit-tests/.tmt

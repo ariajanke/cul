@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #pragma once
 
 #include <string>
+
+namespace cul {
 
 /** This is a c-string class wrapper. It maybe treated much like std::string.
  *  This class is essentially syntax sugar. I find that this "sugar" is better
@@ -106,3 +108,5 @@ inline bool operator < (const char * rhs, const ConstString & lhs)
 
 inline bool operator > (const char * rhs, const ConstString & lhs)
     { return lhs <= rhs; }
+
+} // end of cul namespace

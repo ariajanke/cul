@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,8 @@
 
 #include <common/TypeList.hpp>
 #include <common/StorageUnion.hpp>
+
+namespace cul {
 
 template <typename T> struct MultiTypeUpcastPair;
 template <typename T> struct MultiTypeConstUpcastPair;
@@ -72,6 +74,12 @@ public:
     struct HasType {
         static const bool k_value = MtTypeList::template HasType<Type>::k_value;
     };
+
+    template <typename Type>
+    static constexpr const int k_type_id_of = GetTypeId<Type>::k_value;
+
+    template <typename Type>
+    static constexpr const bool k_has_type_of = HasType<Type>::k_value;
 
     template <typename T>
     using UpcastPair = MultiTypeUpcastPair<T>;
@@ -608,3 +616,5 @@ template <typename ... Types>
 /* private static */ void MultiType<Types...>::copy
     (int id, void * dest, const void * src)
 { MultiTypePriv::copy(MtTypeList(), id, dest, src); }
+
+} // end of cul namespace

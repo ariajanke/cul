@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,8 @@
 
 #include <common/TypeList.hpp>
 
+namespace cul {
+
 /** An alternative to std::array, meant to be safe for use with non-trivially
  *  constructible objects.
  *  This provides many methods which both have the same name and function as
@@ -44,30 +46,30 @@ public:
     using StorageArray = std::array<Storage, SIZE>;
     using ValueType = T;
 
-    FixedLengthArray();
-    FixedLengthArray(const FixedLengthArray & rhs);
+    [[deprecated]] FixedLengthArray();
+    [[deprecated]] FixedLengthArray(const FixedLengthArray & rhs);
     // can't move!
-    FixedLengthArray(FixedLengthArray && rhs) = delete;
+    [[deprecated]] FixedLengthArray(FixedLengthArray && rhs) = delete;
     ~FixedLengthArray();
 
     FixedLengthArray & operator = (const FixedLengthArray & rhs);
     // can't move!
     FixedLengthArray & operator = (FixedLengthArray && rhs) = delete;
 
-    std::size_t size() const { return SIZE; }
+    [[deprecated]] std::size_t size() const { return SIZE; }
 
-    T & operator [] (std::size_t index);
+    [[deprecated]] T & operator [] (std::size_t index);
 
-    const T & operator [] (std::size_t index) const;
+    [[deprecated]] const T & operator [] (std::size_t index) const;
 
     template <bool IS_CONST>
     class IterImpl {
     public:
         friend class FixedLengthArray<T, SIZE>;
-        using PointerType = typename TypeSelect<IS_CONST, const T *, T *>::Type;
-        using ReferenceType = typename TypeSelect<IS_CONST, const T &, T &>::Type;
+        using PointerType = typename std::conditional_t<IS_CONST, const T *, T *>;
+        using ReferenceType = typename std::conditional_t<IS_CONST, const T &, T &>;
         using StoragePointerType =
-            typename TypeSelect<IS_CONST, const Storage *, Storage *>::Type;
+            typename std::conditional_t<IS_CONST, const Storage *, Storage *>;
         using DiffType = std::intptr_t;
 
         IterImpl(): m_itr(nullptr) {}
@@ -103,19 +105,19 @@ public:
     using Iter      = IterImpl<false>;
     using ConstIter = IterImpl<true >;
 
-    Iter      begin()       { return Iter     (&m_stores[0]); }
-    ConstIter begin() const { return ConstIter(&m_stores[0]); }
+    [[deprecated]] Iter      begin()       { return Iter     (&m_stores[0]); }
+    [[deprecated]] ConstIter begin() const { return ConstIter(&m_stores[0]); }
 
-    Iter      end()      ;
-    ConstIter end() const;
+    [[deprecated]] Iter      end()      ;
+    [[deprecated]] ConstIter end() const;
 
-    T & front() { return *reinterpret_cast<T *>(&m_stores[0       ]);  }
-    T & back () { return *reinterpret_cast<T *>(&m_stores[SIZE - 1]);  }
+    [[deprecated]] T & front() { return *reinterpret_cast<T *>(&m_stores[0       ]);  }
+    [[deprecated]] T & back () { return *reinterpret_cast<T *>(&m_stores[SIZE - 1]);  }
 
-    const T & front() const
+    [[deprecated]] const T & front() const
         { return *reinterpret_cast<const T *>(&m_stores[0]); }
 
-    const T & back() const
+    [[deprecated]] const T & back() const
         { return *reinterpret_cast<const T *>(&m_stores[SIZE - 1]); }
 
 private:
@@ -201,3 +203,5 @@ template <typename T, std::size_t SIZE>
 typename FixedLengthArray<T, SIZE>::ConstIter
     FixedLengthArray<T, SIZE>::end() const
     { return ConstIter(&m_stores[0] + SIZE); }
+
+} // end of cul namespace

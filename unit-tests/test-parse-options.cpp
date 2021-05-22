@@ -28,7 +28,7 @@ const char * to_string(bool v) { return v ? "true" : "false"; }
 
 int main(int argc, char ** argv) {
     using namespace std;
-    Example a = parse_options<Example>(argc, argv, {
+    Example a = cul::parse_options<Example>(argc, argv, {
         { "option-a", 'a', parse_a },
         { "option-b", 'b', parse_b },
         { "option-c", 'c', parse_c },

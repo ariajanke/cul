@@ -1,4 +1,4 @@
-![Travis CI Build Status](https://travis-ci.org/aj-kip/util-common.svg?branch=master)
+![Travis CI Build Status](https://travis-ci.org/ariajanke/util-common.svg?branch=master)
 
 Personal Common/Utility Library
 ===============================

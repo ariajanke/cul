@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,8 @@
 #include <functional>
 
 #include <SFML/System/Vector2.hpp>
+
+namespace cul {
 
 template <typename T>
 class Grid {
@@ -339,3 +341,5 @@ template <typename T>
                                  "field size: width " + std::to_string(width()) +
                                  " height " + std::to_string(height()));
 }
+
+} // end of cul namespace

@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -28,10 +28,13 @@
 
 #include <SFML/Graphics/Drawable.hpp>
 #include <SFML/Graphics/Vertex.hpp>
-
+#if 0
 #include <common/FixedLengthArray.hpp>
-
+#endif
+#include <array>
 #include <type_traits>
+
+namespace cul {
 
 /** A drawing rectangle by default is zero-sized white "box" located at the
  *  origin. @n
@@ -94,6 +97,7 @@ private:
     static constexpr const unsigned k_bottom_right = 2;
     static constexpr const unsigned k_bottom_left  = 3;
 
-    // use that dank af copy semantics
-    FixedLengthArray<sf::Vertex, k_vertex_count> m_vertices;
+    std::array<sf::Vertex, k_vertex_count> m_vertices;
 };
+
+} // end of cul namespace

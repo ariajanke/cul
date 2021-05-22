@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #pragma once
 
 #include <common/Grid.hpp>
+
+namespace cul {
 
 template <bool k_is_const_t, typename T>
 class SubGridIteratorImpl;
@@ -700,3 +702,5 @@ template <bool k_is_const_t, typename T>
                              + ": cannot move iterator's position without "
                                "a subgrid row size, and parent grid width.");
 }
+
+} // end of cul namespace

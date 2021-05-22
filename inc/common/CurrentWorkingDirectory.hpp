@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #pragma once
 
 #include <string>
+
+namespace cul {
 
 /** @note Implementation is platform specific
  *  @return Process's current working directory.
@@ -68,8 +70,10 @@ class DirectoryChangerRaii {
 public:
     DirectoryChangerRaii(const std::string & path);
     DirectoryChangerRaii(const char * path);
-    ~DirectoryChangerRaii();
+    ~DirectoryChangerRaii() noexcept(false);
 
 private:
     std::string m_old_directory;
 };
+
+} // end of cul namespace

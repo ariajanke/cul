@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,8 @@ namespace {
 std::string to_padded_string(int);
 
 } // end of <anonymous> namespace
+
+namespace cul {
 
 namespace ts {
 
@@ -104,7 +106,9 @@ void TestSuite::finish_up() {
 bool TestSuite::has_successes_only() const
     { return m_test_successes == m_test_count; }
 
-} // end of ts namespace
+} // end of ts namespace -> into ::cul
+
+} // end of cul namespace
 
 namespace {
 

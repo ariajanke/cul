@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #include <common/DrawRectangle.hpp>
 
 #include <SFML/Graphics.hpp>
+
+namespace cul {
 
 DrawRectangle::DrawRectangle() {}
 
@@ -108,3 +110,5 @@ sf::Color DrawRectangle::color() const noexcept
 /* virtual protected */ void DrawRectangle::draw
     (sf::RenderTarget & target, sf::RenderStates states) const
     { target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads, states); }
+
+} // end of cul namespace

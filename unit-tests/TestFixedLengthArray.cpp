@@ -30,6 +30,8 @@
 
 namespace {
 
+using namespace cul;
+
 struct CountedType {
     CountedType(): number(++inst_created_so_far) { ++counter; }
     ~CountedType() { --counter; }

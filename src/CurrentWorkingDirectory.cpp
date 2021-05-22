@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -50,6 +50,8 @@ namespace {
     int find_null_terminator(const std::string & str);
 #endif
 } // end of <anonymous> namespace
+
+namespace cul {
 
 void get_current_working_directory(std::string & rv) {
     rv.clear();
@@ -142,11 +144,14 @@ DirectoryChangerRaii::DirectoryChangerRaii(const char * path):
     }
 }
 
-DirectoryChangerRaii::~DirectoryChangerRaii() {
+DirectoryChangerRaii::~DirectoryChangerRaii() noexcept(false) {
     if (!set_current_working_directory(m_old_directory)) {
-        message_assert("Failed to change directory back (programming error.)", false);
+        if (std::uncaught_exceptions() > 0) return;
+        throw Error("Failed to change directory back (programming error.)");
     }
 }
+
+} // end of cul namespace
 
 namespace {
 

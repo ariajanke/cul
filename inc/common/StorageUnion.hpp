@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #pragma once
 
 #include <type_traits>
+
+namespace cul {
 
 template <std::size_t LHS, std::size_t RHS>
 struct StaticMax {
@@ -60,6 +62,9 @@ struct StorageUnion<InType, Types...> : public StorageUnion<Types...> {
     using Type = typename std::aligned_storage<k_size, k_alignment>::type;
 };
 
+template <typename ... Types>
+using StorageUnionType = typename StorageUnion<Types...>::Type;
+
 // one arguement
 template <typename BaseType, typename ... Types>
 struct IsBaseOfMulti {
@@ -75,3 +80,8 @@ struct IsBaseOfMulti<BaseType, OtherType, Types...> :
            std::is_base_of<BaseType, OtherType>::value
         && IsBaseOfMulti<BaseType, Types...>::k_value;
 };
+
+template <typename BaseType, typename ... Types>
+constexpr const bool k_is_base_of_multiple = IsBaseOfMulti<BaseType, Types...>::k_value;
+
+} // end of cul namespace

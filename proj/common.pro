@@ -7,7 +7,7 @@
 QT      -= core gui
 # try to make this a test application
 # TEMPLATE = lib
-CONFIG  += staticlib
+#CONFIG  += staticlib
 CONFIG  -= c++11
 
 linux {
@@ -26,12 +26,12 @@ debug {
 }
 
 debug {
-    TARGET          = common-d
+    TARGET          = common-test-app-d
     QMAKE_CXXFLAGS += -DMACRO_DEBUG
 }
 #message($$CONFIG)
 contains(CONFIG, release) {
-    TARGET = common
+    TARGET = common-test-app
 }
 
 QMAKE_CXXFLAGS += -std=c++17
@@ -44,7 +44,8 @@ SOURCES += \
     ../src/CurrentWorkingDirectory.cpp \
     ../src/DrawRectangle.cpp           \
     ../src/Util.cpp                    \
-    ../src/TestSuite.cpp
+    ../src/TestSuite.cpp               \
+    ../src/DrawTriangle.cpp
 
 HEADERS += \
     ../inc/common/ConstString.hpp             \
@@ -55,22 +56,24 @@ HEADERS += \
     ../inc/common/StorageUnion.hpp            \
     ../inc/common/MultiType.hpp               \
     ../inc/common/TypeList.hpp                \
-    ../inc/common/FixedLengthArray.hpp        \
     ../inc/common/StringUtil.hpp              \
     ../inc/common/TestSuite.hpp               \
     ../inc/common/Grid.hpp                    \
     ../inc/common/ParseOptions.hpp            \
-    ../inc/common/SubGrid.hpp
+    ../inc/common/SubGrid.hpp                 \
+    ../inc/common/DrawTriangle.hpp \
+    ../inc/common/Vector2Util.hpp
 
 # unit tests rounded into a single program (note, this is for dev/debug/IDE
 # purposes, NOT for general/automated testing)
 SOURCES += \
-    ../unit-tests/all-tests-driver.cpp \
+    \#../unit-tests/all-tests-driver.cpp \
     \#../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestFixedLengthArray.cpp \
-    \#../unit-tests/TestGrid.cpp
-    ../unit-tests/test-string-utils.cpp
+    ../unit-tests/TestMultiType.cpp \
+    #/../unit-tests/test-string-utils.cpp
+    #../unit-tests/test-math-utils.cpp
 
 
 INCLUDEPATH += \

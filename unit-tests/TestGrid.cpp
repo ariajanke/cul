@@ -37,6 +37,7 @@
 
 namespace {
 
+using namespace cul;
 using ts::TestSuite;
 using VectorI = sf::Vector2i;
 
@@ -144,12 +145,12 @@ void test_make_sub_grid() {
     p.set_size(3, 3);
     {
     // Grid -> SubGrid
-    auto a = make_sub_grid(p);
-    auto b = make_sub_grid(p, VectorI(1, 2));
-    auto c = make_sub_grid(p, 2);
-    auto d = make_sub_grid(p, 2, 2);
-    auto e = make_sub_grid(p, VectorI(1, 1), 1);
-    auto f = make_sub_grid(p, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_sub_grid(p);
+    [[maybe_unused]] auto b = make_sub_grid(p, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_sub_grid(p, 2);
+    [[maybe_unused]] auto d = make_sub_grid(p, 2, 2);
+    [[maybe_unused]] auto e = make_sub_grid(p, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_sub_grid(p, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<SubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(c)>, "");
@@ -160,12 +161,12 @@ void test_make_sub_grid() {
     {
     // const Grid & -> ConstSubGrid
     const auto & cref_p = p;
-    auto a = make_sub_grid(cref_p);
-    auto b = make_sub_grid(cref_p, VectorI(1, 2));
-    auto c = make_sub_grid(cref_p, 2);
-    auto d = make_sub_grid(cref_p, 2, 2);
-    auto e = make_sub_grid(cref_p, VectorI(1, 1), 1);
-    auto f = make_sub_grid(cref_p, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_sub_grid(cref_p);
+    [[maybe_unused]] auto b = make_sub_grid(cref_p, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_sub_grid(cref_p, 2);
+    [[maybe_unused]] auto d = make_sub_grid(cref_p, 2, 2);
+    [[maybe_unused]] auto e = make_sub_grid(cref_p, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_sub_grid(cref_p, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
@@ -175,12 +176,12 @@ void test_make_sub_grid() {
     }
     {
     // Grid & -> ConstSubGrid
-    auto a = make_const_sub_grid(p);
-    auto b = make_const_sub_grid(p, VectorI(1, 2));
-    auto c = make_const_sub_grid(p, 2);
-    auto d = make_const_sub_grid(p, 2, 2);
-    auto e = make_const_sub_grid(p, VectorI(1, 1), 1);
-    auto f = make_const_sub_grid(p, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_const_sub_grid(p);
+    [[maybe_unused]] auto b = make_const_sub_grid(p, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_const_sub_grid(p, 2);
+    [[maybe_unused]] auto d = make_const_sub_grid(p, 2, 2);
+    [[maybe_unused]] auto e = make_const_sub_grid(p, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_const_sub_grid(p, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
@@ -190,12 +191,12 @@ void test_make_sub_grid() {
     }
     {
     const auto & cref_p = p;
-    auto a = make_const_sub_grid(cref_p);
-    auto b = make_const_sub_grid(cref_p, VectorI(1, 2));
-    auto c = make_const_sub_grid(cref_p, 2);
-    auto d = make_const_sub_grid(cref_p, 2, 2);
-    auto e = make_const_sub_grid(cref_p, VectorI(1, 1), 1);
-    auto f = make_const_sub_grid(cref_p, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_const_sub_grid(cref_p);
+    [[maybe_unused]] auto b = make_const_sub_grid(cref_p, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_const_sub_grid(cref_p, 2);
+    [[maybe_unused]] auto d = make_const_sub_grid(cref_p, 2, 2);
+    [[maybe_unused]] auto e = make_const_sub_grid(cref_p, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_const_sub_grid(cref_p, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
@@ -210,12 +211,12 @@ void test_make_sub_grid() {
     //                      ConstSubGrid -> ConstSubGrid
     {
     auto subg = make_sub_grid(p);
-    auto a = make_sub_grid(subg);
-    auto b = make_sub_grid(subg, VectorI(1, 2));
-    auto c = make_sub_grid(subg, 2);
-    auto d = make_sub_grid(subg, 2, 2);
-    auto e = make_sub_grid(subg, VectorI(1, 1), 1);
-    auto f = make_sub_grid(subg, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_sub_grid(subg);
+    [[maybe_unused]] auto b = make_sub_grid(subg, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_sub_grid(subg, 2);
+    [[maybe_unused]] auto d = make_sub_grid(subg, 2, 2);
+    [[maybe_unused]] auto e = make_sub_grid(subg, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_sub_grid(subg, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<SubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(c)>, "");
@@ -225,12 +226,12 @@ void test_make_sub_grid() {
     }
     {
     auto subg = make_const_sub_grid(p);
-    auto a = make_sub_grid(subg);
-    auto b = make_sub_grid(subg, VectorI(1, 2));
-    auto c = make_sub_grid(subg, 2);
-    auto d = make_sub_grid(subg, 2, 2);
-    auto e = make_sub_grid(subg, VectorI(1, 1), 1);
-    auto f = make_sub_grid(subg, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_sub_grid(subg);
+    [[maybe_unused]] auto b = make_sub_grid(subg, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_sub_grid(subg, 2);
+    [[maybe_unused]] auto d = make_sub_grid(subg, 2, 2);
+    [[maybe_unused]] auto e = make_sub_grid(subg, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_sub_grid(subg, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
@@ -240,12 +241,12 @@ void test_make_sub_grid() {
     }
     {
     auto subg = make_sub_grid(p);
-    auto a = make_const_sub_grid(subg);
-    auto b = make_const_sub_grid(subg, VectorI(1, 2));
-    auto c = make_const_sub_grid(subg, 2);
-    auto d = make_const_sub_grid(subg, 2, 2);
-    auto e = make_const_sub_grid(subg, VectorI(1, 1), 1);
-    auto f = make_const_sub_grid(subg, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_const_sub_grid(subg);
+    [[maybe_unused]] auto b = make_const_sub_grid(subg, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_const_sub_grid(subg, 2);
+    [[maybe_unused]] auto d = make_const_sub_grid(subg, 2, 2);
+    [[maybe_unused]] auto e = make_const_sub_grid(subg, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_const_sub_grid(subg, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
@@ -255,12 +256,12 @@ void test_make_sub_grid() {
     }
     {
     auto subg = make_const_sub_grid(p);
-    auto a = make_const_sub_grid(subg);
-    auto b = make_const_sub_grid(subg, VectorI(1, 2));
-    auto c = make_const_sub_grid(subg, 2);
-    auto d = make_const_sub_grid(subg, 2, 2);
-    auto e = make_const_sub_grid(subg, VectorI(1, 1), 1);
-    auto f = make_const_sub_grid(subg, VectorI(1, 1), 1, 1);
+    [[maybe_unused]] auto a = make_const_sub_grid(subg);
+    [[maybe_unused]] auto b = make_const_sub_grid(subg, VectorI(1, 2));
+    [[maybe_unused]] auto c = make_const_sub_grid(subg, 2);
+    [[maybe_unused]] auto d = make_const_sub_grid(subg, 2, 2);
+    [[maybe_unused]] auto e = make_const_sub_grid(subg, VectorI(1, 1), 1);
+    [[maybe_unused]] auto f = make_const_sub_grid(subg, VectorI(1, 1), 1, 1);
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");

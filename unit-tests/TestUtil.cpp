@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 *****************************************************************************/
 
 #include <common/Util.hpp>
+#include <common/Vector2Util.hpp>
 
 #include <iostream>
 #include <vector>
@@ -58,6 +59,7 @@
 
 namespace {
 
+using namespace cul;
 using Error = std::runtime_error;
 
 void test_quad_range();
@@ -123,7 +125,7 @@ void test_quad_range() {
     auto do_obj_compare = [](std::initializer_list<char> && charas) {
         std::vector<Obj> objs;
         for (auto c : charas) { objs.emplace_back(c); }
-        quad_range<Obj>(objs, [&](Obj & a, Obj & b) {
+        quad_range(objs, [&](Obj & a, Obj & b) {
             a.mark_off(b);
             b.mark_off(a);
         });

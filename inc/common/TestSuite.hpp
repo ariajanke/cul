@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #pragma once
 
 #include <iosfwd>
+
+namespace cul {
 
 namespace ts {
 
@@ -70,4 +72,6 @@ private:
     std::ostream * m_out;
 };
 
-} // end of ts namespace
+} // end of ts namespace -> into ::cul
+
+} // end of cul namespace

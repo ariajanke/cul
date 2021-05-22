@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,8 @@
 
 #include <common/ConstString.hpp>
 #include <common/Util.hpp>
+
+namespace cul {
 
 // <------------------------- Implementation Detail -------------------------->
 // <------------------- Public Interface is further below -------------------->
@@ -466,3 +468,5 @@ void wrap_string_as_monowidth
         [](CharType c) { return c == CharType(' ' ) || c == CharType('\n') ||
                                 c == CharType('\t') || c == CharType('\r'); });
 }
+
+} // end of cul namespace

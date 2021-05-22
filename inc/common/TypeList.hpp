@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,8 @@
 #include <type_traits>
 #include <bitset>
 #include <stdexcept>
+
+namespace cul {
 
 template <bool TF_VAL, int A, int B>
 struct ConstIntSelect { static const constexpr int k_value = A; };
@@ -135,8 +137,4 @@ void find_bitset_intersection
         (bs, TypeList<ReadTypes...>(), TypeList<HostTypes...>());
 }
 
-template <bool TF_VAL, typename A, typename B>
-struct TypeSelect { using Type = A; };
-
-template <typename A, typename B>
-struct TypeSelect<false, A, B> { using Type = B; };
+} // end of cul namespace

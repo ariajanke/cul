@@ -22,16 +22,16 @@ clean:
 libcommon.a : default
 
 test: $(OUTPUT)
-	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestFixedLengthArray.cpp -lcommon -o unit-tests/.utfla
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestUtil.cpp -lcommon -o unit-tests/.tu
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestMultiType.cpp -lcommon -o unit-tests/.tmt
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/TestGrid.cpp -lcommon -o unit-tests/.tg
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/test-parse-options.cpp -lcommon -o unit-tests/.tpo
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/test-string-utils.cpp -lcommon -o unit-tests/.tsu
-	./unit-tests/.utfla
+	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/test-math-utils.cpp -lcommon -o unit-tests/.tmu
 	./unit-tests/.tu
 	./unit-tests/.tmt
 	./unit-tests/.tg
 	./unit-tests/.tsu
 	./unit-tests/test-po.sh
+	./unit-tests/.tmu
 

@@ -40,6 +40,7 @@
 
 namespace {
 
+using namespace cul;
 bool run_for_split_tests();
 bool run_string_to_number_tests();
 bool run_trim_tests();

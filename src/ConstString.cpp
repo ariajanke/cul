@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2020 Aria Janke
+    Copyright (c) 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -28,8 +28,8 @@
 
 #include <cstring>
 
-int ConstString::compare_result(const ConstString & rhs) const noexcept
+int cul::ConstString::compare_result(const ConstString & rhs) const noexcept
     { return std::strcmp(m_str, rhs.m_str); }
 
-unsigned ConstString::length() const noexcept
+unsigned cul::ConstString::length() const noexcept
     { return unsigned(::strlen(m_str)); }

@@ -90,10 +90,7 @@ static void test_v2() {
     vd1 = project_onto(VectorD(12., -100.), VectorD(1., 1.1));
     vd1 = find_intersection(VectorD(0, 0), VectorD(1, 1), VectorD(100, 1), VectorD(101, 0));
     assert(!is_real(vd1));
-    assert(!is_real(vd1 = get_find_intersection_no_solution<double>()));
-
-    auto ballisticsr = std::get<0>(get_compute_velocities_to_target_no_solution<double>());
-    std::cout << ballisticsr.x << ", " << ballisticsr.y << std::endl;
+    assert(!is_real(vd1 = get_no_solution_sentinel<VectorD>()));
 
     vd1 = find_closest_point_to_line(VectorD(0, 0), VectorD(1, 1), VectorD(0.2, 0.4));
 
@@ -115,13 +112,10 @@ static void test_v2() {
     i1 = bottom_of(recti);
     szd = size_of(rectd);
     vd1 = center_of(rectd);
-    recti = compute_rectangle_intersection(recti, RectI(10, 5, 1000, 50));
+    recti = find_rectangle_intersection(recti, RectI(10, 5, 1000, 50));
     d1 = area_of(rectd);
     recti = compose(VectorI(15, 45), SizeI(size_of(rectd)));
     std::tie(vd1, szd) = decompose(rectd);
     [](SizeI) {}(szi);
     [](SizeD) {}(SizeD(szi));
-
-    assert(std::get<0>(get_compute_velocities_to_target_no_solution<double>())
-           == get_find_intersection_no_solution<double>());
 }

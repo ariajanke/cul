@@ -28,9 +28,7 @@
 
 #include <SFML/Graphics/Drawable.hpp>
 #include <SFML/Graphics/Vertex.hpp>
-#if 0
-#include <common/FixedLengthArray.hpp>
-#endif
+
 #include <array>
 #include <type_traits>
 

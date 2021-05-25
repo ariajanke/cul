@@ -62,7 +62,10 @@ HEADERS += \
     ../inc/common/ParseOptions.hpp            \
     ../inc/common/SubGrid.hpp                 \
     ../inc/common/DrawTriangle.hpp \
-    ../inc/common/Vector2Util.hpp
+    ../inc/common/Vector2Util.hpp \
+    ../inc/common/Vector2Traits.hpp \
+    ../inc/common/Vector2.hpp \
+    ../inc/common/SfmlVectorTraits.hpp
 
 # unit tests rounded into a single program (note, this is for dev/debug/IDE
 # purposes, NOT for general/automated testing)
@@ -71,9 +74,10 @@ SOURCES += \
     \#../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestFixedLengthArray.cpp \
-    ../unit-tests/TestMultiType.cpp \
-    #/../unit-tests/test-string-utils.cpp
-    #../unit-tests/test-math-utils.cpp
+    \#../unit-tests/TestMultiType.cpp \
+    \#../unit-tests/test-string-utils.cpp
+    \#../unit-tests/test-math-utils.cpp
+    ../unit-tests/vector-tests.cpp
 
 
 INCLUDEPATH += \

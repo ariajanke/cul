@@ -27,124 +27,176 @@
 #pragma once
 
 #include <common/Util.hpp>
-
-#include <SFML/System/Vector2.hpp>
-#include <SFML/Graphics/Rect.hpp>
+#include <common/Vector2.hpp>
 
 #include <tuple>
 
-/* Styling note: "inline" is used for every function that are implemented
- * where they are declared, including template functions.
- *
- */
+/** @defgroup vec2utils Vector2 Utility Functions */
+
 namespace cul {
-
-template <typename T>
-using Vector2 = sf::Vector2<T>;
-
-template <typename T>
-using Rectangle = sf::Rect<T>;
-
-template <typename T>
-using EnableVector2 = std::enable_if_t<std::is_arithmetic_v<T>, Vector2<T>>;
 
 template <typename T>
 using EnableRectangle = std::enable_if_t<std::is_arithmetic_v<T>, Rectangle<T>>;
 
+template <typename T>
+constexpr const bool k_is_convertible_vector2
+    = std::is_same_v<typename Vector2Scalar<T>::Type, void> ?
+      false :
+         Vector2Traits<typename Vector2Scalar<T>::Type, T>::k_is_vector_type
+      && !std::is_same_v<T, Vector2<typename Vector2Scalar<T>::Type>>;
+
+template <typename T>
+constexpr const bool k_is_vector2_util_suitable
+    = k_is_convertible_vector2<T> ?
+        std::is_arithmetic_v<typename Vector2Scalar<T>::Type> :
+        false;
+
+template <typename Vec, typename Rt>
+using EnableVec2Util
+    = std::enable_if_t<
+         k_is_vector2_util_suitable<Vec>
+      || std::is_same_v<Vec, Vector2<typename Vector2Scalar<Vec>::Type>>
+      , Rt>;
+
+template <typename Vec>
+using EnableVec2UtilRetScalar
+    = std::enable_if_t<
+         k_is_vector2_util_suitable<Vec>
+      || std::is_same_v<Vec, Vector2<typename Vector2Scalar<Vec>::Type>>
+      , typename Vector2Scalar<Vec>::Type>;
+
+/** @addtogroup vec2utils
+ *  @{
+ */
+
 /** @returns magnitude of v
  *
- *  @throws if v does not have real components
- *  @tparam T must be arithmetic
- *  @param v must be a vector of real components
+ *  @throws if r does not have real components
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param r must be a vector of real components
  */
-template <typename T>
-EnableArithmetic<T> magnitude(const Vector2<T> & v);
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> magnitude(const Vec & r);
 
-/** @returns normal vector of v
+/** @returns normal vector of r
  *
- *  @throws if v does not have real components or is the zero vector
- *  @tparam T must be arithmetic
- *  @param v must be a vector of real components
+ *  @throws if r does not have real components or is the zero vector
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param r must be a vector of real components
  */
-template <typename T>
-EnableVector2<T> normalize(const Vector2<T> & v);
+template <typename Vec>
+EnableVec2Util<Vec, Vec> normalize(const Vec & r);
 
-template <typename T>
-inline std::enable_if_t<std::is_arithmetic_v<T>, bool>
-    are_within(const Vector2<T> & a, const Vector2<T> & b, T error)
-{ return are_within(a.x, b.x, error) && are_within(a.y, b.y, error); }
+/** @returns true if both vectors are within some number of units within each
+ *           other.
+ *  @throws if any are not real numbers: either vector's component, the error
+ *          parameter
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param a any real vector
+ *  @param b any real vector
+ *  @param error any non-negative real number, providing a negative number will
+ *         cause this function to always return true
+ */
+template <typename Vec>
+EnableVec2Util<Vec, bool> are_within
+    (const Vec & a, const Vec & b, typename Vector2Scalar<Vec>::Type error);
 
 /** Rotates vector r along the unit circle of some given number of radians rot.
  *
  *  @throws if rot or the components of r are not real numbers
- *  @tparam T must be arithmetic
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
  *  @param r must be a vector of real components
  *  @param rot must be a real number, in radians
  *  @return the rotated vector
  */
-template <typename T>
-EnableVector2<T> rotate_vector(const Vector2<T> & r, T rot);
+template <typename Vec>
+EnableVec2Util<Vec, Vec> rotate_vector
+    (const Vec & r, typename Vector2Scalar<Vec>::Type rot);
 
 /** @returns the dot product of two vectors
  *
- *  @tparam T must be arithmetic
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param v
+ *  @param u
  *  @note no checks if components are real numbers
  */
-template <typename T>
-inline EnableArithmetic<T> dot(const Vector2<T> & v, const Vector2<T> & u) noexcept
-    { return v.x*u.x + v.y*u.y; }
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> dot(const Vec & v, const Vec & u) noexcept;
 
 /** @returns the "z" component of the cross product of two 2D vectors.
  *
- *  @tparam T must be arithmetic
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param v
+ *  @param u
  *  @note no checks if components are real numbers
  */
-template <typename T>
-inline EnableArithmetic<T> cross(const Vector2<T> & v, const Vector2<T> & u) noexcept
-    { return v.x*u.y - u.x*v.y; }
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> cross(const Vec & v, const Vec & u) noexcept;
 
-/** @returns the magnitude of the angle between two vectors
+/** @returns the magnitude of the angle between two vectors, in radians
  *
  *  @throws if any component of either vector is not a real number
- *  @note if direction is also desired std::atan2 can be used
- *  @tparam T must be arithmetic
+ *  @note if direction is also desired directed_angle_between can be used
+ *  @see rotate_vector, directed_angle_between
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param v
+ *  @param u
  */
-template <typename T>
-EnableArithmetic<T> angle_between(const Vector2<T> & v, const Vector2<T> & u);
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> angle_between(const Vec & v, const Vec & u);
+
+/** @returns the angle between the "from" and "to" vectors such that,
+ *           rotate_vector(from, this_return_value) is roughly equal to vector
+ *           "to".
+ *
+ *  @throws if any component of either vector is not a real number
+ *  @see rotate_vector, angle_between
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param from starting vector prerotation
+ *  @param to   destination vector of any magnitude
+ */
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> directed_angle_between(const Vec & from, const Vec & to);
 
 /** @returns the projection of vector a onto vector b
  *
  *  @throws if either a or b have non real components or if b is the zero
  *          vector
- *  @tparam T must be arithmetic
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ *  @param a
+ *  @param b
  */
-template <typename T>
-EnableVector2<T> project_onto(const Vector2<T> & a, const Vector2<T> & b);
+template <typename Vec>
+EnableVec2Util<Vec, Vec> project_onto(const Vec & a, const Vec & b);
 
 /** @returns The intersection between two lines "a" and "b", or a special
  *           sentinel value if no intersection can be found.
  *
- *  @note You can find the "no intersection" sentinel value by given vectors
- *        that you know will produce it. Unfortunately revealing this value
- *        directly is not possible while no "constexpr" constructor exists for
- *        the Vector2 type.
+ *  @note You can find the "no intersection" sentinel value by calling the
+ *        "get_no_solution_sentinel"
+ *  @see get_no_solution_sentinel
  *
  *  @throws if any vector as a non real component
- *  @tparam T must be arithmetic
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
  *  @param a_first the first point of line "a"
  *  @param a_second the second point of line "a"
  *  @param b_first the first point of line "b"
  *  @param b_second the second point of line "b"
  */
-template <typename T>
-EnableVector2<T> find_intersection
-    (const Vector2<T> & a_first, const Vector2<T> & a_second,
-     const Vector2<T> & b_first, const Vector2<T> & b_second);
-
-/** @returns the "no intersection" value for the find_intersection function.
- */
-template <typename T>
-EnableVector2<T> get_find_intersection_no_solution();
+template <typename Vec>
+EnableVec2Util<Vec, Vec> find_intersection
+    (const Vec & a_first, const Vec & a_second,
+     const Vec & b_first, const Vec & b_second);
 
 /** @returns A vector rounded from a floating point to an integer type.
  *
@@ -159,69 +211,61 @@ inline std::enable_if_t<std::is_integral_v<T> && std::is_floating_point_v<U>, Ve
 /** Computes velocties in which a projectile can reach a target from a source
  *  given speed and influencing_acceleration (like gravity).
  *
- *  @returns a tuple with two solutions to this problem, special sentinel
- *           values are returned if there is no solution, and if there is only
- *           one solution to this ballistics problem, then both values returned
- *           will be the same
+ *  @returns a tuple with two solutions to this problem. Special sentinel
+ *           values are returned if there is no solution
+ *           (@see get_no_solution_sentinel), and if there is only one, then
+ *           both values returned will be the same
  *
  *  @note much like find_intersection, the special "no solutions" sentinel
- *        value can be found by providing parameters which you no there is no
- *        solution (like shooting at a target with a gravity which is *far* too
- *        strong), this value does not have real components
+ *        value can be found by calling "get_no_solution_sentinel"
  *
- *  @tparam T must be a floating point
  *  @throws if any component of any vector or scalar is not a real number
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
  *  @param source projectile starting point
  *  @param target projectile's target
  *  @param influencing_acceleration any influencing force (without the mass
  *         portion, e.g. gravity)
  *  @param speed The speed at which to fire the projectile
  */
-template <typename T>
-std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>, Vector2<T>>>
-    compute_velocities_to_target
-    (const Vector2<T> & source, const Vector2<T> & target,
-     const Vector2<T> & influencing_acceleration, T speed);
-
-/** @returns the "no solution" vector for the compute_velocities_to_target
- *           function.
- */
-template <typename T>
-std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>, Vector2<T>>>
-    get_compute_velocities_to_target_no_solution();
+template <typename Vec>
+EnableVec2Util<Vec, std::tuple<Vec, Vec>>
+    find_velocities_to_target
+    (const Vec & source, const Vec & target,
+     const Vec & influencing_acceleration, typename Vector2Scalar<Vec>::Type speed);
 
 /** @returns the closest point on the line defined by points "a" and "b" to
- *           some given external point
- *  @tparam T must be arithmetic
+ *           some given external point.
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
  *  @throws if any component of any vector is not a real number
  *  @param a one extreme point of the line segment
  *  @param b another extreme point of the line segment
  *  @param external_point some point outside of the line
  */
-template <typename T>
-EnableVector2<T> find_closest_point_to_line
-    (const Vector2<T> & a, const Vector2<T> & b, const Vector2<T> & external_point);
+template <typename Vec>
+EnableVec2Util<Vec, Vec> find_closest_point_to_line
+    (const Vec & a, const Vec & b, const Vec & external_point);
 
-/** @returns true if both components are real numbers, false otherwise */
-template <typename T>
-inline std::enable_if_t<std::is_arithmetic_v<T>, bool> is_real
-    (const Vector2<T> & r)
-    { return is_real(r.x) && is_real(r.y); }
+/** @returns true if both components are real numbers, false otherwise.
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ */
+template <typename Vec>
+EnableVec2Util<Vec, bool> is_real(const Vec & r);
+
+/** @returns the "no solution" sentinel value returned by many functions which
+ *           may not have a solution for any given set of parameters.
+ *
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ */
+template <typename Vec>
+EnableVec2Util<Vec, Vec> get_no_solution_sentinel();
+
+/** @}*/
 
 // ------------------ everything pretaining to rectangles ---------------------
-
-/** Size in two dimensions, a width and a height. */
-template <typename T>
-struct Size2 {
-    Size2() {}
-    Size2(T w_, T h_): width(w_), height(h_) {}
-
-    template <typename U>
-    explicit Size2(const Size2<U> & rhs):
-        width(T(rhs.width)), height(T(rhs.height)) {}
-
-    T width = 0, height = 0;
-};
 
 template <typename T>
 std::enable_if_t<std::is_arithmetic_v<T>, Size2<T>>
@@ -238,19 +282,19 @@ inline void set_top_left_of(EnableRectangle<T> & rect, const Vector2<T> & r)
     { set_top_left_of(rect, r.x, r.y); }
 
 template <typename T>
-inline void set_size_of(EnableRectangle<T> & rect, const Size2<T> & r)
+void set_size_of(EnableRectangle<T> & rect, const Size2<T> & r)
     { set_size_of(rect, r.width, r.height); }
 
 template <typename T>
-inline Vector2<T> top_left_of(const Rectangle<T> & rect)
+Vector2<T> top_left_of(const Rectangle<T> & rect)
     { return Vector2<T>(rect.left, rect.top); }
 
 template <typename T>
-inline EnableArithmetic<T>
+EnableArithmetic<T>
     right_of(const Rectangle<T> & rect) { return rect.left + rect.width; }
 
 template <typename T>
-inline EnableArithmetic<T>
+EnableArithmetic<T>
     bottom_of(const Rectangle<T> & rect) { return rect.top + rect.height; }
 
 template <typename T>
@@ -258,79 +302,354 @@ std::enable_if_t<std::is_arithmetic_v<T>, Size2<T>>
     size_of(const Rectangle<T> &);
 
 template <typename T>
-EnableVector2<T> center_of(const Rectangle<T> &);
+std::enable_if_t<std::is_arithmetic_v<T>, Vector2<T>>
+    center_of(const Rectangle<T> &);
 
 template <typename T>
-EnableRectangle<T> compute_rectangle_intersection
+EnableRectangle<T> find_rectangle_intersection
     (const Rectangle<T> &, const Rectangle<T> &);
 
 template <typename T>
-inline EnableArithmetic<T> area_of(const Rectangle<T> & a)
+EnableArithmetic<T> area_of(const Rectangle<T> & a)
     { return a.width*a.height; }
 
 template <typename T>
 EnableRectangle<T> compose(const Vector2<T> & top_left, const Size2<T> &);
 
 template <typename T>
-inline std::enable_if_t<std::is_arithmetic_v<T>, Tuple<Vector2<T>, Size2<T>>>
+std::enable_if_t<std::is_arithmetic_v<T>, Tuple<Vector2<T>, Size2<T>>>
     decompose(const Rectangle<T> & rect)
 { return std::make_tuple(top_left_of(rect), size_of(rect)); }
 
 // ----------------------- Implementation Details -----------------------------
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
+namespace detail {
 
 template <typename T>
-EnableArithmetic<T> magnitude(const Vector2<T> & v) {
+Vector2<T> find_intersection
+    (const Vector2<T> & a_first, const Vector2<T> & a_second,
+     const Vector2<T> & b_first, const Vector2<T> & b_second);
+
+template <typename T>
+std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>,Vector2<T>>>
+    find_velocities_to_target
+    (const Vector2<T> & source, const Vector2<T> & target,
+     const Vector2<T> & influencing_acceleration, T speed);
+
+template <typename T>
+Vector2<T> find_closest_point_to_line
+    (const Vector2<T> & a, const Vector2<T> & b,
+     const Vector2<T> & external_point);
+
+} // end of detail namespace -> into ::cul
+
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> magnitude(const Vec & r) {
+    using T = typename Vector2Scalar<Vec>::Type;
     using namespace exceptions_abbr;
-    if (is_real(v)) return std::sqrt(v.x*v.x + v.y*v.y);
-    throw InvArg("magnitude: given vector must have real number components.");
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        if (is_real(r)) return std::sqrt(r.x*r.x + r.y*r.y);
+        throw InvArg("magnitude: given vector must have real number components.");
+    } else if constexpr (k_is_vector2_util_suitable<Vec>) {
+        return magnitude(convert_to<Vector2<T>>(r));
+    } else {
+        throw RtError("Bad branch");
+    }
 }
 
-template <typename T>
-EnableVector2<T> normalize(const Vector2<T> & v) {
+template <typename Vec>
+EnableVec2Util<Vec, Vec> normalize(const Vec & r) {
+    using T = typename Vector2Scalar<Vec>::Type;
     using namespace exceptions_abbr;
-    if (is_real(v) && v != Vector2<T>()) return v*(T(1) / magnitude(v));
-    throw InvArg("normalize: attempting to normalize a non real or zero vector.");
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        if (is_real(r) && r != Vector2<T>()) return r*(T(1) / magnitude(r));
+        throw InvArg("normalize: attempting to normalize a non real or zero vector.");
+    } else {
+        static_assert(k_is_vector2_util_suitable<Vec>, "Type Vec not suitible for conversion.");
+        return convert_to<Vec>(normalize(convert_to<Vector2<T>>(r)));
+    }
 }
 
-template <typename T>
-EnableVector2<T> rotate_vector(const Vector2<T> & r, T rot) {
+template <typename Vec>
+EnableVec2Util<Vec, bool> are_within
+    (const Vec & a, const Vec & b, typename Vector2Scalar<Vec>::Type error)
+{
+    using T = typename Vector2Scalar<Vec>::Type;
+    using namespace exceptions_abbr;
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        auto diff = a - b;
+        if (is_real(diff)) return magnitude(diff) <= error;
+        throw InvArg("normalize: attempting to normalize a non real or zero vector.");
+    } else {
+        static_assert(k_is_vector2_util_suitable<Vec>, "Type Vec not suitible for conversion.");
+        using VecImp = Vector2<T>;
+        return are_within(convert_to<VecImp>(a), convert_to<VecImp>(b), error);
+    }
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, Vec> rotate_vector
+    (const Vec & r, typename Vector2Scalar<Vec>::Type rot)
+{
+    if (!is_real(r) || !is_real(rot)) {
+        throw std::invalid_argument("rotate_vector: r must be a real vector "
+                                    "and rot a real number.");
+    }
+    using Scalar = typename Vector2Scalar<Vec>::Type;
+    using Tr     = Vector2Traits<Scalar, Vec>;
+    typename Tr::GetX get_x;
+    typename Tr::GetY get_y;
+    Vec rv;
     // [r.x] * [ cos(rot) sin(rot)]
     // [r.y]   [-sin(rot) cos(rot)]
-    return Vector2<T>(r.x*std::cos(rot) - r.y*std::sin(rot),
-                      r.x*std::sin(rot) + r.y*std::cos(rot));
+    get_x(rv) = get_x(r)*std::cos(rot) - get_y(r)*std::sin(rot);
+    get_x(rv) = get_x(r)*std::sin(rot) + get_y(r)*std::cos(rot);
+    return rv;
 }
 
-template <typename T>
-EnableArithmetic<T> angle_between(const Vector2<T> & v, const Vector2<T> & u) {
-    using namespace exceptions_abbr;
-    static const constexpr T k_error = 0.00005;
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> dot(const Vec & v, const Vec & u) noexcept {
+    using Scalar  = typename Vector2Scalar<Vec>::Type;
+    using Tr      = Vector2Traits<Scalar, Vec>;
+    typename Tr::GetX get_x;
+    typename Tr::GetY get_y;
+    return get_x(v)*get_x(u) + get_y(v)*get_y(u);
+}
 
-    if (!is_real(v) || !is_real(u)
-        || (v.x*v.x + v.y*v.y) < k_error*k_error
-        || (u.x*u.x + u.y*u.y) < k_error*k_error)
-    {
-        throw InvArg("angle_between: both vectors must be non-zero vectors "
-                     "with real components.");
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> cross(const Vec & v, const Vec & u) noexcept {
+    using Scalar  = typename Vector2Scalar<Vec>::Type;
+    using Tr      = Vector2Traits<Scalar, Vec>;
+    typename Tr::GetX get_x;
+    typename Tr::GetY get_y;
+    return get_x(v)*get_y(u) - get_x(u)*get_y(v);
+}
+
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> angle_between(const Vec & v, const Vec & u) {
+    // problematic with integer vectors...
+    using namespace exceptions_abbr;
+    if (!is_real(v) || !is_real(u)) {
+        throw InvArg("angle_between: both vectors must be real vectors.");
     }
-    T frac = dot(v, u) / (magnitude(u)*magnitude(v));
+    using T = typename Vector2Scalar<Vec>::Type;
+    static const constexpr T k_error = 0.00005;
+    auto mag_v = magnitude(v);
+    auto mag_u = magnitude(u);
+    if (   are_within(mag_v / mag_u, T(0), k_error)
+        || are_within(mag_u / mag_v, T(0), k_error))
+    {
+        // this will have to be tested with my game and other stuff
+        throw InvArg("angle_between: both vectors must not be too far in magnitude.");
+    }
+    auto frac = dot(v, u) / (mag_v*mag_u);
     if      (frac > T( 1)) { frac = T( 1); }
     else if (frac < T(-1)) { frac = T(-1); }
     return std::acos(frac);
 }
 
-template <typename T>
-EnableVector2<T> project_onto(const Vector2<T> & a, const Vector2<T> & b) {
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec> directed_angle_between(const Vec & from, const Vec & to) {
     using namespace exceptions_abbr;
-    static const constexpr T k_error = 0.00005;
-    if ((a.x*a.x + a.y*a.y) < k_error*k_error)
-        throw InvArg("project_onto: cannot project onto the zero vector.");
-    if (!is_real(a) || !is_real(b))
-        throw InvArg("project_onto: both vectors must be real.");
-    return (dot(b, a)/(b.x*b.x + b.y*b.y))*b;
+    if (!is_real(from) || !is_real(to)) {
+        throw InvArg("directed_angle_between: both vectors must be real vectors.");
+    }
+
+    using Scalar = typename Vector2Scalar<Vec>::Type;
+    using Tr     = Vector2Traits<Scalar, Vec>;
+    typename Tr::GetX get_x;
+    typename Tr::GetY get_y;
+    return std::atan2(get_y(from), get_x(from)) - std::atan2(get_y(to), get_x(to));
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, Vec> project_onto(const Vec & a, const Vec & b) {
+    using T = typename Vector2Scalar<Vec>::Type;
+    using namespace exceptions_abbr;
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        static const constexpr T k_error = 0.00005;
+        if ((a.x*a.x + a.y*a.y) < k_error*k_error)
+            throw InvArg("project_onto: cannot project onto the zero vector.");
+        if (!is_real(a) || !is_real(b))
+            throw InvArg("project_onto: both vectors must be real.");
+        return (dot(b, a)/(b.x*b.x + b.y*b.y))*b;
+    } else {
+        static_assert(k_is_vector2_util_suitable<Vec>,
+                      "Type Vec not suitible for conversion.");
+        using VecImp = Vector2<T>;
+        return convert_to<Vec>(project_onto(convert_to<VecImp>(a),
+                                            convert_to<VecImp>(b)));
+    }
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, Vec> find_intersection
+    (const Vec & a_first, const Vec & a_second,
+     const Vec & b_first, const Vec & b_second)
+{
+    using namespace exceptions_abbr;
+    using VecImp = Vector2<typename Vector2Scalar<Vec>::Type>;
+    if constexpr (std::is_same_v<Vec, VecImp>) {
+        if (   !is_real(a_first) || !is_real(a_second)
+            || !is_real(b_first) || !is_real(b_second))
+        {
+            throw InvArg("find_intersection: each vector parameter must be a "
+                         "real vector.");
+        }
+        return detail::find_intersection(a_first, a_second, b_first, b_second);
+    } else {
+        static_assert(k_is_vector2_util_suitable<Vec>,
+                      "Type Vec not suitible for conversion.");
+        return convert_to<Vec>(find_intersection(
+            convert_to<VecImp>(a_first), convert_to<VecImp>(a_second),
+            convert_to<VecImp>(b_first), convert_to<VecImp>(b_second)));
+    }
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, std::tuple<Vec, Vec>>
+    find_velocities_to_target
+    (const Vec & source, const Vec & target,
+     const Vec & influencing_acceleration,
+     typename Vector2Scalar<Vec>::Type speed)
+{
+    using T = typename Vector2Scalar<Vec>::Type;
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        return detail::find_velocities_to_target(
+            source, target, influencing_acceleration, speed);
+    } else {
+        static_assert(k_is_vector2_util_suitable<Vec>,
+                      "Type Vec not suitible for conversion.");
+        using VecImp = Vector2<T>;
+        auto [s0, s1] = find_velocities_to_target(
+            convert_to<VecImp>(source), convert_to<VecImp>(target),
+            convert_to<VecImp>(influencing_acceleration), speed);
+        return std::make_tuple(convert_to<Vec>(s0), convert_to<Vec>(s1));
+    }
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, Vec> find_closest_point_to_line
+    (const Vec & a, const Vec & b, const Vec & external_point)
+{
+    using T = typename Vector2Scalar<Vec>::Type;
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        return detail::find_closest_point_to_line(a, b, external_point);
+    } else {
+        static_assert(k_is_vector2_util_suitable<Vec>,
+                      "Type Vec not suitible for conversion.");
+        using VecImp = Vector2<T>;
+        return convert_to<Vec>(find_closest_point_to_line(
+            convert_to<VecImp>(a), convert_to<VecImp>(b),
+            convert_to<VecImp>(external_point)));
+    }
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, bool> is_real(const Vec & r) {
+    using Tr = Vector2Traits<typename Vector2Scalar<Vec>::Type, Vec>;
+    typename Tr::GetX get_x;
+    typename Tr::GetY get_y;
+    return is_real(get_x(r)) && is_real(get_y(r));
+}
+
+template <typename Vec>
+EnableVec2Util<Vec, Vec> get_no_solution_sentinel() {
+    static const Vec k_rv = []() {
+        using Scalar  = typename Vector2Scalar<Vec>::Type;
+        using NumLims = std::numeric_limits<Scalar>;
+        using Tr      = Vector2Traits<Scalar, Vec>;
+        Scalar comp;
+        if constexpr (NumLims::has_infinity) {
+            comp = NumLims::infinity();
+        } else if constexpr (std::is_signed_v<Scalar>) {
+            comp = NumLims::min();
+        } else {
+            comp = NumLims::max();
+        }
+
+        typename Tr::GetX get_x;
+        typename Tr::GetY get_y;
+        Vec rv;
+        get_y(rv) = get_x(rv) = comp;
+        return rv;
+    } ();
+    return k_rv;
+}
+
+// ----------------------- Implementation Details -----------------------------
+// ------------------ everything pretaining to rectangles ---------------------
+
+template <typename T>
+std::enable_if_t<std::is_arithmetic_v<T>, Size2<T>>
+    make_size(T width_, T height_)
+{
+    Size2<T> rv;
+    rv.width  = width_ ;
+    rv.height = height_;
+    return rv;
 }
 
 template <typename T>
-EnableVector2<T> find_intersection
+void set_top_left_of(EnableRectangle<T> & rect, T left, T top) {
+    rect.left = left;
+    rect.top  = top ;
+}
+
+template <typename T>
+void set_size_of(EnableRectangle<T> & rect, T width, T height) {
+    rect.width  = width ;
+    rect.height = height;
+}
+
+template <typename T>
+std::enable_if_t<std::is_arithmetic_v<T>, Size2<T>>
+    size_of(const Rectangle<T> & rect)
+{
+    Size2<T> size;
+    size.width  = rect.width ;
+    size.height = rect.height;
+    return size;
+}
+
+template <typename T>
+std::enable_if_t<std::is_arithmetic_v<T>, Vector2<T>>
+    center_of(const Rectangle<T> & rect)
+{
+    return Vector2<T>(rect.left + rect.width  / T(2),
+                      rect.top  + rect.height / T(2));
+}
+
+template <typename T>
+EnableRectangle<T> find_rectangle_intersection
+    (const Rectangle<T> & a, const Rectangle<T> & b)
+{
+    using TVec = Vector2<T>;
+    auto high_a = TVec(right_of(a), bottom_of(a));
+    auto high_b = TVec(right_of(b), bottom_of(b));
+
+    auto low_rv  = TVec(std::max(a.left, b.left), std::max(a.top, b.top));
+    auto high_rv = TVec(std::min(high_a.x, high_b.x), std::min(high_a.y, high_b.y));
+    if (low_rv.x >= high_rv.x || low_rv.y >= high_rv.y) {
+        return Rectangle<T>();
+    } else {
+        return Rectangle<T>(low_rv.x, low_rv.y,
+                            high_rv.x - low_rv.x, high_rv.y - low_rv.y);
+    }
+}
+
+template <typename T>
+EnableRectangle<T> compose(const Vector2<T> & top_left, const Size2<T> & size) {
+    return Rectangle<T>(top_left.x, top_left.y, size.width, size.height);
+}
+
+// ------------------- Vector Utility Helper Implementations ------------------
+
+namespace detail {
+
+template <typename T>
+Vector2<T> find_intersection
     (const Vector2<T> & a_first, const Vector2<T> & a_second,
      const Vector2<T> & b_first, const Vector2<T> & b_second)
 {
@@ -339,8 +658,7 @@ EnableVector2<T> find_intersection
         throw RtError("find_intersection: finding intersections on integer "
                       "vectors is not defined (perhaps a future feature?).");
     }
-    static const Vector2<T> k_no_intersection = Vector2<T>
-        (std::numeric_limits<T>::infinity(), std::numeric_limits<T>::infinity());
+    static const Vector2<T> k_no_intersection = get_no_solution_sentinel<Vector2<T>>();
 
     auto p = a_first;
     auto r = a_second - p;
@@ -364,15 +682,11 @@ EnableVector2<T> find_intersection
     return p + t*r;
 }
 
-template <typename T>
-EnableVector2<T> get_find_intersection_no_solution() {
-    return find_intersection(Vector2<T>(0, 0), Vector2<T>(1, 0)
-                            ,Vector2<T>(0, 2), Vector2<T>(1, 2));
-}
+// still in cul::detail namespace
 
 template <typename T>
 std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>,Vector2<T>>>
-    compute_velocities_to_target
+    find_velocities_to_target
     (const Vector2<T> & source, const Vector2<T> & target,
      const Vector2<T> & influencing_acceleration, T speed)
 {
@@ -383,14 +697,14 @@ std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>,Vector2<T>>>
 
     // note: I plan on relocating many of my utils to the commons library
     //       in order to release them under a more permissive license
-    using Vec = sf::Vector2<T>;
+    using Vec = Vector2<T>;
     static constexpr const T k_error = 0.00025;
     static auto are_very_close_v = [](const Vec & a, const Vec & b)
         { return are_within(a, b, k_error); };
     static auto are_very_close_s = [](const T & a, const T & b)
         { return are_within(a, b, k_error); };
-    static const auto k_no_solution = std::make_tuple
-        (get_find_intersection_no_solution<T>(), get_find_intersection_no_solution<T>());
+    static const auto k_no_solution = std::make_tuple(
+        get_no_solution_sentinel<Vector2<T>>(), get_no_solution_sentinel<Vector2<T>>());
     using std::make_tuple;
     if (   !is_real(source) || !is_real(speed)
         || !is_real(target) || !is_real(influencing_acceleration))
@@ -449,16 +763,7 @@ std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>,Vector2<T>>>
 }
 
 template <typename T>
-std::enable_if_t<std::is_floating_point_v<T>, std::tuple<Vector2<T>, Vector2<T>>>
-    get_compute_velocities_to_target_no_solution()
-{
-    return compute_velocities_to_target
-        (Vector2<T>(0, 0), Vector2<T>(10000, 10000)
-        ,Vector2<T>(-10000, -10000), T(1));
-}
-
-template <typename T>
-EnableVector2<T> find_closest_point_to_line
+Vector2<T> find_closest_point_to_line
     (const Vector2<T> & a, const Vector2<T> & b,
      const Vector2<T> & external_point)
 {
@@ -479,80 +784,10 @@ EnableVector2<T> find_closest_point_to_line
         auto num = (c.x - a.x)*(b.x - a.x) + (c.y - a.y)*(b.y - a.y);
         auto denom = magnitude(b - a);
         return num / (denom*denom);
-    }();
+    } ();
     return Vec(a.x, a.y) + mag*Vec(b.x - a.x, b.y - a.y);
 }
 
-// ----------------------- Implementation Details -----------------------------
-// ------------------ everything pretaining to rectangles ---------------------
-
-template <typename T>
-std::enable_if_t<std::is_arithmetic_v<T>, Size2<T>>
-    make_size(T width_, T height_)
-{
-    Size2<T> rv;
-    rv.width  = width_ ;
-    rv.height = height_;
-    return rv;
-}
-
-template <typename T>
-void set_top_left_of(EnableRectangle<T> & rect, T left, T top) {
-    rect.left = left;
-    rect.top  = top ;
-}
-
-template <typename T>
-void set_size_of(EnableRectangle<T> & rect, T width, T height) {
-    rect.width  = width ;
-    rect.height = height;
-}
-
-template <typename T>
-std::enable_if_t<std::is_arithmetic_v<T>, Size2<T>>
-    size_of(const Rectangle<T> & rect)
-{
-    Size2<T> size;
-    size.width  = rect.width ;
-    size.height = rect.height;
-    return size;
-}
-
-template <typename T>
-EnableVector2<T> center_of(const Rectangle<T> & rect) {
-    return sf::Vector2<T>(rect.left + rect.width  / T(2),
-                          rect.top  + rect.height / T(2));
-}
-
-template <typename T>
-EnableRectangle<T> compute_rectangle_intersection
-    (const Rectangle<T> & a, const Rectangle<T> & b)
-{
-    using TVec = sf::Vector2<T>;
-    auto high_a = TVec(right_of(a), bottom_of(a));
-    auto high_b = TVec(right_of(b), bottom_of(b));
-
-    auto low_rv  = TVec(std::max(a.left, b.left), std::max(a.top, b.top));
-    auto high_rv = TVec(std::min(high_a.x, high_b.x), std::min(high_a.y, high_b.y));
-    if (low_rv.x >= high_rv.x || low_rv.y >= high_rv.y) {
-        return sf::Rect<T>();
-    } else {
-        return sf::Rect<T>(low_rv.x, low_rv.y,
-                           high_rv.x - low_rv.x, high_rv.y - low_rv.y);
-    }
-}
-
-template <typename T>
-EnableRectangle<T> compose(const Vector2<T> & top_left, const Size2<T> & size) {
-    return Rectangle<T>(top_left.x, top_left.y, size.width, size.height);
-}
-
+} // end of detail namespace -> into ::cul
+#endif
 } // end of cul namespace
-
-template <typename T>
-bool operator == (const cul::Size2<T> & lhs, const cul::Size2<T> & rhs)
-    { return rhs.width == lhs.width && rhs.height == lhs.height; }
-
-template <typename T>
-bool operator != (const cul::Size2<T> & lhs, const cul::Size2<T> & rhs)
-    { return rhs.width != lhs.width && rhs.height != lhs.height; }

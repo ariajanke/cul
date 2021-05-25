@@ -26,6 +26,9 @@
 
 #include <common/Util.hpp>
 #include <common/Vector2Util.hpp>
+#include <common/SfmlVectorTraits.hpp>
+
+#include <SFML/System/Vector2.hpp>
 
 #include <iostream>
 #include <vector>
@@ -155,7 +158,7 @@ void test_normalize() {
     }
     flag = false;
     try {
-        normalize(sf::Vector2<double>(0.0, 0.0));
+        cul::normalize(sf::Vector2<double>(0.0, 0.0));
     } catch (std::exception &) {
         flag = true;
     }

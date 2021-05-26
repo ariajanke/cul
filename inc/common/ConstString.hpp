@@ -91,22 +91,22 @@ private:
     const char * m_str;
 };
 
-inline bool operator == (const char * rhs, const ConstString & lhs)
+} // end of cul namespace
+
+inline bool operator == (const char * rhs, const cul::ConstString & lhs)
     { return lhs == rhs; }
 
-inline bool operator != (const char * rhs, const ConstString & lhs)
+inline bool operator != (const char * rhs, const cul::ConstString & lhs)
     { return lhs != rhs; }
 
-inline bool operator <= (const char * rhs, const ConstString & lhs)
+inline bool operator <= (const char * rhs, const cul::ConstString & lhs)
     { return lhs > rhs; }
 
-inline bool operator >= (const char * rhs, const ConstString & lhs)
+inline bool operator >= (const char * rhs, const cul::ConstString & lhs)
     { return lhs < rhs; }
 
-inline bool operator < (const char * rhs, const ConstString & lhs)
+inline bool operator < (const char * rhs, const cul::ConstString & lhs)
     { return lhs >= rhs; }
 
-inline bool operator > (const char * rhs, const ConstString & lhs)
+inline bool operator > (const char * rhs, const cul::ConstString & lhs)
     { return lhs <= rhs; }
-
-} // end of cul namespace

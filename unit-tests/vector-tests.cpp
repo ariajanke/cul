@@ -5,6 +5,7 @@
 #include <common/Vector2.hpp>
 #include <common/Vector2Util.hpp>
 #include <common/SfmlVectorTraits.hpp>
+#include <common/ConstString.hpp>
 
 #include <iostream>
 
@@ -37,6 +38,18 @@ struct Vector2Traits<glm::vec2::value_type, glm::vec2> {
 struct A {};
 
 int main() {
+    {
+    cul::Vector2<float> a, b;
+    (void)(a != b);
+    (void)(a == b);
+    const auto & ca = a;
+    const auto & cb = b;
+    (void)(ca != cb);
+    (void)(ca == cb);
+    sf::Vector2f c(40.f, 30.f);
+    static constexpr const float k_scalar = 50.f;
+    c = cul::normalize(c)*k_scalar;
+    }
     {
     sf::Vector2i a { 50, 20 }, b;
     a + b;
@@ -121,6 +134,7 @@ int main() {
     {
         auto a = cul::normalize(VecF(-89.f, 10.f));
         auto b = cul::normalize(glm::vec2(-89.f, 10.f));
+        cul::normalize(sf::Vector2f(10.f, -56.f));
         // their values should actually be exactly equal
         assert(a == convert_to<VecF>(b));
         auto abm_a = cul::are_within(a, convert_to<VecF>(b), 0.01f);

@@ -39,7 +39,7 @@ namespace {
 
 using namespace cul;
 using ts::TestSuite;
-using VectorI = sf::Vector2i;
+using VectorI = cul::Vector2<int>;
 
 void test_grid();
 void test_make_sub_grid();
@@ -58,7 +58,7 @@ namespace {
 
 void test_grid() {
     // I need "call everything" tests for any template class!
-
+    using cul::ts::test;
     TestSuite tsuite;
     tsuite.start_series("Grid tests");
     tsuite.test([]() {
@@ -84,7 +84,7 @@ void test_grid() {
         auto gv = g.position_of(e);
         std::cout << g.width() << "x" << g.height() << std::endl;
         std::cout << gv.x << ", " << gv.y << std::endl;
-        return ts::test(g.position_of(e) == sf::Vector2i(3, 4));
+        return ts::test(g.position_of(e) == VectorI(3, 4));
     });
     tsuite.test([]() {
         Grid<int> g;
@@ -141,8 +141,16 @@ void test_grid() {
 }
 
 void test_make_sub_grid() {
+    using SizeG = Grid<int>::Size;
+    using RectG = Rectangle<Grid<int>::IndexType>;
     Grid<int> p;
     p.set_size(3, 3);
+    // 16 new overloads as of 5-25-21
+    // design issue: "overload explosion"
+    // It isn't clear to me how I can use varidiac templates to reduce the
+    // shear number of overloads, especially with so much special handling
+    // that would be necessary depending on type and position
+
     {
     // Grid -> SubGrid
     [[maybe_unused]] auto a = make_sub_grid(p);
@@ -151,12 +159,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_sub_grid(p, 2, 2);
     [[maybe_unused]] auto e = make_sub_grid(p, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_sub_grid(p, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_sub_grid(p, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_sub_grid(p, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<SubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<SubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<SubGrid<int>, decltype(h)>, "");
     }
     {
     // const Grid & -> ConstSubGrid
@@ -167,12 +181,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_sub_grid(cref_p, 2, 2);
     [[maybe_unused]] auto e = make_sub_grid(cref_p, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_sub_grid(cref_p, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_sub_grid(cref_p, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_sub_grid(cref_p, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(h)>, "");
     }
     {
     // Grid & -> ConstSubGrid
@@ -182,12 +202,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_const_sub_grid(p, 2, 2);
     [[maybe_unused]] auto e = make_const_sub_grid(p, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_const_sub_grid(p, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_const_sub_grid(p, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_const_sub_grid(p, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(h)>, "");
     }
     {
     const auto & cref_p = p;
@@ -197,12 +223,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_const_sub_grid(cref_p, 2, 2);
     [[maybe_unused]] auto e = make_const_sub_grid(cref_p, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_const_sub_grid(cref_p, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_const_sub_grid(cref_p, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_const_sub_grid(cref_p, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(h)>, "");
     }
     // ------------------------------ SubGrid ------------------------------
     // make_sub_grid      : SubGrid      -> SubGrid
@@ -217,12 +249,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_sub_grid(subg, 2, 2);
     [[maybe_unused]] auto e = make_sub_grid(subg, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_sub_grid(subg, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_sub_grid(subg, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_sub_grid(subg, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<SubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<SubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<SubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<SubGrid<int>, decltype(h)>, "");
     }
     {
     auto subg = make_const_sub_grid(p);
@@ -232,12 +270,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_sub_grid(subg, 2, 2);
     [[maybe_unused]] auto e = make_sub_grid(subg, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_sub_grid(subg, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_sub_grid(subg, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_sub_grid(subg, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(h)>, "");
     }
     {
     auto subg = make_sub_grid(p);
@@ -247,12 +291,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_const_sub_grid(subg, 2, 2);
     [[maybe_unused]] auto e = make_const_sub_grid(subg, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_const_sub_grid(subg, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_const_sub_grid(subg, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_const_sub_grid(subg, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(h)>, "");
     }
     {
     auto subg = make_const_sub_grid(p);
@@ -262,12 +312,18 @@ void test_make_sub_grid() {
     [[maybe_unused]] auto d = make_const_sub_grid(subg, 2, 2);
     [[maybe_unused]] auto e = make_const_sub_grid(subg, VectorI(1, 1), 1);
     [[maybe_unused]] auto f = make_const_sub_grid(subg, VectorI(1, 1), 1, 1);
+    // new as of 5-26-21
+    [[maybe_unused]] auto g = make_const_sub_grid(subg, VectorI(1, 1), SizeG(1, 1));
+    [[maybe_unused]] auto h = make_const_sub_grid(subg, RectG(1, 1, 1, 1));
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(a)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(b)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(c)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(d)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(e)>, "");
     static_assert(std::is_same_v<ConstSubGrid<int>, decltype(f)>, "");
+    // new as of 5-26-21
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(g)>, "");
+    static_assert(std::is_same_v<ConstSubGrid<int>, decltype(h)>, "");
     }
     // need to test const ref to sub grid
 }

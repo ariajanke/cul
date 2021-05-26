@@ -31,10 +31,13 @@
 #include <utility>
 #include <functional>
 
-#include <SFML/System/Vector2.hpp>
+#include <common/Vector2.hpp>
 
 namespace cul {
 
+/** Container class meant to be like std::vector but laid out in two
+ *  diminsions.
+ */
 template <typename T>
 class Grid {
 public:
@@ -42,7 +45,11 @@ public:
     using ConstIterator      = typename std::vector<T>::const_iterator ;
     using Element            = typename std::vector<T>::value_type     ;
     using ReferenceType      = typename std::vector<T>::reference      ;
+    using IndexType          = int;
     using ConstReferenceType = typename std::vector<T>::const_reference;
+    using Vector             = Vector2<IndexType>;
+    using Size               = Size2<IndexType>;
+
 
     Grid() {}
     explicit Grid(std::initializer_list<std::initializer_list<T>>);
@@ -102,12 +109,34 @@ public:
     bool has_position(int x, int y) const noexcept;
     
     /** @returns true if position is inside the grid */
-    bool has_position(const sf::Vector2i &) const noexcept;
+    bool has_position(const Vector &) const noexcept;
 
-    sf::Vector2i next(const sf::Vector2i &) const noexcept;
-    sf::Vector2i end_position() const noexcept;
+    /** Advances the given vector to the next grid position.
+     *  @returns either a valid grid position (if the given position is inside
+     *           the grid), or the "end_position" of the grid, if the given
+     *           position is *not* inside the grid, then this value is not
+     *           defined.
+     */
+    Vector next(const Vector &) const noexcept;
 
-    sf::Vector2i position_of(ConstIterator) const;
+    /** The end position of the grid is the "one past the end" position
+     *  expressed as a vector.
+     *
+     *  It is not a valid grid position and should be treated the same way you
+     *  would treat a value given by "end()"
+     *
+     *  @returns the end position
+     */
+    Vector end_position() const noexcept;
+
+    /** Gets the vector position based on an iterator.
+     *  @throws An attempt is made to identify whether the given iterator is
+     *          contained in the underlying container. This cannot be guarenteed
+     *          to work, as comparisons between iterators of two different
+     *          parent containers is not defined by the standard.
+     *  @returns the vector position of the iterator.
+     */
+    Vector position_of(ConstIterator) const;
     
     /** @returns position of the element, if the actual element instance lives 
      *           inside the container (that is passing any copies will trigger
@@ -117,12 +146,12 @@ public:
      *        behavior (citation will be provided when Internet becomes 
      *        available).
      */
-    sf::Vector2i position_of(const Element &) const;
+    Vector position_of(const Element &) const;
 
     // -------------------------- STL like functions ---------------------------
 
-    ReferenceType      operator () (const sf::Vector2i &);
-    ConstReferenceType operator () (const sf::Vector2i &) const;
+    ReferenceType      operator () (const Vector &);
+    ConstReferenceType operator () (const Vector &) const;
 
     ReferenceType      operator () (int x, int y);
     ConstReferenceType operator () (int x, int y) const;
@@ -146,12 +175,12 @@ protected:
     ReferenceType      element(int x, int y);
     ConstReferenceType element(int x, int y) const;
 
-    ReferenceType      element(const sf::Vector2i &);
-    ConstReferenceType element(const sf::Vector2i &) const;
+    ReferenceType      element(const Vector &);
+    ConstReferenceType element(const Vector &) const;
 
 private:
     std::size_t to_index(int x, int y) const noexcept;
-    sf::Vector2i to_position(std::ptrdiff_t) const noexcept;
+    Vector to_position(std::ptrdiff_t) const noexcept;
 
     std::invalid_argument make_out_of_range_error() const noexcept;
 
@@ -223,12 +252,12 @@ template <typename T>
 void Grid<T>::reserve(std::size_t n) { m_elements.reserve(n); }
 
 template <typename T>
-typename Grid<T>::ReferenceType Grid<T>::operator ()(const sf::Vector2i & r)
+typename Grid<T>::ReferenceType Grid<T>::operator ()(const Vector & r)
     { return element(r); }
 
 template <typename T>
 typename Grid<T>::ConstReferenceType
-    Grid<T>::operator () (const sf::Vector2i & r) const
+    Grid<T>::operator () (const Vector & r) const
     { return element(r); }
 
 template <typename T>
@@ -244,11 +273,11 @@ bool Grid<T>::has_position(int x, int y) const noexcept
     { return x >= 0 && y >= 0 && x < width() && y < height(); }
 
 template <typename T>
-bool Grid<T>::has_position(const sf::Vector2i & r) const noexcept
+bool Grid<T>::has_position(const Vector & r) const noexcept
     { return has_position(r.x, r.y); }
 
 template <typename T>
-sf::Vector2i Grid<T>::next(const sf::Vector2i & r) const noexcept {
+typename Grid<T>::Vector Grid<T>::next(const Vector & r) const noexcept {
     // possible invalid argument (r is out of range)
     auto pos = r;
     if (++pos.x == width()) {
@@ -259,10 +288,11 @@ sf::Vector2i Grid<T>::next(const sf::Vector2i & r) const noexcept {
 }
 
 template <typename T>
-sf::Vector2i Grid<T>::end_position() const noexcept { return sf::Vector2i(0, height()); }
+typename Grid<T>::Vector Grid<T>::end_position() const noexcept
+    { return Vector(0, height()); }
 
 template <typename T>
-sf::Vector2i Grid<T>::position_of(ConstIterator itr) const {
+typename Grid<T>::Vector Grid<T>::position_of(ConstIterator itr) const {
     if (is_empty() ? true : itr < begin() || itr > end()) {
         throw std::out_of_range("Grid::position_of: positions are only "
                                 "findable for iterators contained in this "
@@ -272,7 +302,7 @@ sf::Vector2i Grid<T>::position_of(ConstIterator itr) const {
 }
 
 template <typename T>
-sf::Vector2i Grid<T>::position_of(const Element & obj) const {
+typename Grid<T>::Vector Grid<T>::position_of(const Element & obj) const {
     static constexpr const char * const k_oor_msg = "Grid::position_of: "
         "positions are only findable for references contained in this "
         "container.";
@@ -315,12 +345,12 @@ template <typename T>
 
 template <typename T>
 /* protected */ typename Grid<T>::ReferenceType
-    Grid<T>::element(const sf::Vector2i & r)
+    Grid<T>::element(const Vector & r)
     { return element(r.x, r.y); }
 
 template <typename T>
 /* protected */ typename Grid<T>::ConstReferenceType
-    Grid<T>::element(const sf::Vector2i & r) const
+    Grid<T>::element(const Vector & r) const
     { return element(r.x, r.y); }
 
 // keep these two functions together so that index/position conversion stays 
@@ -331,9 +361,9 @@ template <typename T>
     { return std::size_t(x + y*width()); }
 
 template <typename T>
-/* private */ sf::Vector2i Grid<T>::to_position
+/* private */ typename Grid<T>::Vector Grid<T>::to_position
     (std::ptrdiff_t r) const noexcept
-{ return sf::Vector2i(r % width(), r / width()); }
+{ return Vector(r % width(), r / width()); }
 
 template <typename T>
 /* private */ std::invalid_argument Grid<T>::make_out_of_range_error() const noexcept {

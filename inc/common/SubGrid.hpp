@@ -33,6 +33,15 @@ namespace cul {
 template <bool k_is_const_t, typename T>
 class SubGridIteratorImpl;
 
+/** This constant describes that a either a width or height parameter for calls
+ *  make_sub_grid and make_const_sub_grid should use the width or height of the
+ *  parent container whether root parent or any sub grid.
+ *
+ *  @note hopefully the "grid" part will distinguish it with it being a global
+ *        constant.
+ */
+static constexpr const int k_rest_of_grid = -1;
+
 /** @brief SubGrid class allows selecting a writable/readable reference to a 
  *         chunk of a grid.
  *  @note That the specializations (const SubGrid<T> &), (ConstSubGrid<T> &),
@@ -46,24 +55,19 @@ class SubGridImpl {
     struct Dummy {};
 public:
     friend class SubGridImpl<!k_is_const_t, T>;
-    using ParentPointer      = typename std::conditional<k_is_const_t, const Grid<T> *, Grid<T> *>::type;
-    using ParentReference    = typename std::conditional<k_is_const_t, const Grid<T> &, Grid<T> &>::type;
-    using Element            = typename Grid<T>::Element;
-    using Reference          = typename Grid<T>::ReferenceType;
-    using ConstReference     = typename Grid<T>::ConstReferenceType;
-    using Iterator           = SubGridIteratorImpl<k_is_const_t, T>;
-    using ConstIterator      = SubGridIteratorImpl<true, T>;
-    using VectorI            = sf::Vector2i;
+    using ParentPointer   = typename std::conditional<k_is_const_t, const Grid<T> *, Grid<T> *>::type;
+    using ParentReference = typename std::conditional<k_is_const_t, const Grid<T> &, Grid<T> &>::type;
+    using Element         = typename Grid<T>::Element;
+    using Reference       = typename Grid<T>::ReferenceType;
+    using ConstReference  = typename Grid<T>::ConstReferenceType;
+    using Iterator        = SubGridIteratorImpl<k_is_const_t, T>;
+    using ConstIterator   = SubGridIteratorImpl<true, T>;
+    using Vector          = typename Grid<T>::Vector;
+    using Size            = typename Grid<T>::Size;
 
     static constexpr const bool k_is_const = k_is_const_t;
 
-    /** special sentinel value for width, and height parameters meaning "extend
-     *  the length to the end of the parent" (whether sub grid or root parent 
-     *  grid)
-     */
-    static constexpr const int  k_rest_of_grid = -1;
-
-    /** The default sub grid, is zero sized and has no parent. This is 
+    /** The default sub grid, is zero sized and has no parent. This is
      *  essentially useless.
      */
     SubGridImpl() {}
@@ -75,7 +79,7 @@ public:
      *        a type for this constructor in the other template case. This type
      *        is then made inaccessible by making it private.
      */
-    SubGridImpl(typename std::conditional<k_is_const, const SubGridImpl<false, T> &, Dummy>::type);
+    SubGridImpl(typename std::conditional_t<k_is_const, const SubGridImpl<false, T> &, Dummy>);
 
     SubGridImpl(const SubGridImpl &) = default;
     
@@ -102,7 +106,7 @@ public:
      *  @throws if the width or height does not fit within the parent minus the 
      *          offset
      */
-    SubGridImpl(ParentReference, VectorI offset,
+    SubGridImpl(ParentReference, Vector offset,
                 int width_ = k_rest_of_grid, int height_ = k_rest_of_grid);
 
     SubGridImpl & operator = (const SubGridImpl &) = default;
@@ -113,18 +117,28 @@ public:
     const Grid<T> & parent() const { return *m_parent; }
 
     template <bool k_is_const_ = k_is_const_t>
-    typename std::enable_if<!k_is_const_, Reference>::type operator () (const VectorI & r) { return element(r.x, r.y); }
+    typename std::enable_if<!k_is_const_, Reference>::type operator ()
+        (const Vector & r) { return element(r.x, r.y); }
 
-    ConstReference operator () (const VectorI & r) const { return element(r.x, r.y); }
+    ConstReference operator () (const Vector & r) const { return element(r.x, r.y); }
 
     template <bool k_is_const_ = k_is_const_t>
-    typename std::enable_if<!k_is_const_, Reference>::type operator () (int x, int y) { return element(x, y); }
+    typename std::enable_if<!k_is_const_, Reference>::type operator ()
+        (int x, int y) { return element(x, y); }
 
     ConstReference operator () (int x, int y) const { return element(x, y); }
 
+    /** @returns total number of elements on the sub grid.
+     *  @note not to be confused for the data structure describing width and
+     *        height
+     */
     std::size_t size() const noexcept { return std::size_t(m_width*m_height); }
 
-    bool is_empty() const noexcept { return m_width == 0 && m_height == 0; }
+    /** @returns true if the grid has no elements
+     *  @note (to self) semantic issue was here: size() == 0 implies
+     *        is_empty() == true.
+     */
+    bool is_empty() const noexcept { return m_width == 0 || m_height == 0; }
 
     /** @return grid width in number of elements */
     int width() const noexcept { return m_width; }
@@ -136,18 +150,18 @@ public:
     bool has_position(int x, int y) const noexcept;
 
     /** @returns true if position is inside the grid */
-    bool has_position(const sf::Vector2i & r) const noexcept
+    bool has_position(const Vector & r) const noexcept
         { return has_position(r.x, r.y); }
 
-    sf::Vector2i next(const sf::Vector2i &) const noexcept;
+    Vector next(const Vector &) const noexcept;
 
-    sf::Vector2i end_position() const noexcept;
+    Vector end_position() const noexcept;
 
     SubGridImpl<true, T> make_sub_grid
         (int width = k_rest_of_grid, int height = k_rest_of_grid) const;
 
     SubGridImpl<true, T> make_sub_grid
-        (VectorI offset, int width = k_rest_of_grid, int height = k_rest_of_grid) const;
+        (Vector offset, int width = k_rest_of_grid, int height = k_rest_of_grid) const;
 
     template <bool k_is_const_ = k_is_const_t>
     typename std::enable_if<!k_is_const_, SubGridImpl<false, T>>::type make_sub_grid
@@ -155,10 +169,10 @@ public:
 
     template <bool k_is_const_ = k_is_const_t>
     typename std::enable_if<!k_is_const_, SubGridImpl<false, T>>::type make_sub_grid
-        (VectorI offset, int width = k_rest_of_grid, int height = k_rest_of_grid);
+        (Vector offset, int width = k_rest_of_grid, int height = k_rest_of_grid);
 
     bool sub_grid_will_fit
-        (VectorI offset,
+        (Vector offset,
          int width = k_rest_of_grid, int height = k_rest_of_grid) const noexcept;
 
     void swap(SubGridImpl<k_is_const_t, T> &) noexcept;
@@ -188,16 +202,16 @@ private:
 
     void verify_position_ok(int x, int y) const;
 
-    void verify_sub_grid_will_fit(VectorI offset, int width_, int height_) const;
+    void verify_sub_grid_will_fit(Vector offset, int width_, int height_) const;
 
     void verify_invarients() const;
 
-    static VectorI verify_offset(ParentReference, VectorI);
+    static Vector verify_offset(ParentReference, Vector);
 
     static int verify_size(int max, int size, const char * name);
 
-    VectorI m_offset;
-    int m_width = 0;
+    Vector m_offset;
+    int m_width  = 0;
     int m_height = 0;
     ParentPointer m_parent = nullptr;
 };
@@ -212,117 +226,247 @@ using ConstSubGrid = SubGridImpl<true, T>;
 
 template <typename T>
 SubGrid<T> make_sub_grid
-    (Grid<T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (Grid<T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return SubGrid<T>(parent, offset, width_, height_); }
 
 template <typename T>
 SubGrid<T> make_sub_grid
     (Grid<T> & parent, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
-{ return SubGrid<T>(parent, sf::Vector2i(), width_, height_); }
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
+{ return SubGrid<T>(parent, typename Grid<T>::Vector(), width_, height_); }
 
 template <typename T>
 ConstSubGrid<T> make_sub_grid
-    (const Grid<T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (const Grid<T> & parent, typename Grid<T>::Vector offset,
+     int width_  = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return ConstSubGrid<T>(parent, offset, width_, height_); }
 
 template <typename T>
 ConstSubGrid<T> make_sub_grid
-    (const Grid<T> & parent, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
-{ return ConstSubGrid<T>(parent, sf::Vector2i(), width_, height_); }
+    (const Grid<T> & parent,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
+{ return ConstSubGrid<T>(parent, typename Grid<T>::Vector(), width_, height_); }
+
+// new as of 5-25-21
+template <typename T>
+ConstSubGrid<T> make_sub_grid
+    (const Grid<T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{ return ConstSubGrid<T>(parent, offset, size.width, size.height); }
+
+// new as of 5-25-21
+template <typename T>
+ConstSubGrid<T> make_sub_grid
+    (const Grid<T> & parent, const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    using Vector = typename Grid<T>::Vector;
+    return ConstSubGrid<T>(parent, Vector(bounds.left, bounds.top),
+                           bounds.width, bounds.height            );
+}
+
+// new as of 5-25-21
+template <typename T>
+SubGrid<T> make_sub_grid
+    (Grid<T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{ return SubGrid<T>(parent, offset, size.width, size.height); }
+
+// new as of 5-25-21
+template <typename T>
+SubGrid<T> make_sub_grid
+    (Grid<T> & parent, const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    using Vector = typename Grid<T>::Vector;
+    return SubGrid<T>(parent, Vector(bounds.left, bounds.top),
+                      bounds.width, bounds.height            );
+}
+
+// -------------------- make_const_sub_grid for Grid type ---------------------
 
 template <typename T>
 ConstSubGrid<T> make_const_sub_grid
-    (Grid<T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (Grid<T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return ConstSubGrid<T>(parent, offset, width_, height_); }
 
 template <typename T>
 ConstSubGrid<T> make_const_sub_grid
-    (Grid<T> & parent, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
-{ return ConstSubGrid<T>(parent, sf::Vector2i(), width_, height_); }
+    (Grid<T> & parent,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
+{ return ConstSubGrid<T>(parent, typename Grid<T>::Vector(), width_, height_); }
 
 template <typename T>
 ConstSubGrid<T> make_const_sub_grid
-    (const Grid<T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (const Grid<T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return make_sub_grid(parent, offset, width_, height_); }
 
 template <typename T>
 ConstSubGrid<T> make_const_sub_grid
-    (const Grid<T> & parent, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (const Grid<T> & parent,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return make_sub_grid(parent, width_, height_); }
+
+// new as of 5-25-21
+template <typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (Grid<T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{ return ConstSubGrid<T>(parent, offset, size.width, size.height); }
+
+// new as of 5-25-21
+template <typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (Grid<T> & parent, const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    using Vector = typename Grid<T>::Vector;
+    return ConstSubGrid<T>(parent, Vector(bounds.left, bounds.top),
+                           bounds.width, bounds.height            );
+}
+
+// new as of 5-25-21
+template <typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (const Grid<T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{ return ConstSubGrid<T>(parent, offset, size.width, size.height); }
+
+// new as of 5-25-21
+template <typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (const Grid<T> & parent, const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    using Vector = typename Grid<T>::Vector;
+    return ConstSubGrid<T>(parent, Vector(bounds.left, bounds.top),
+                           bounds.width, bounds.height            );
+}
 
 // ----------------------- make_sub_grid for SubGrid type ----------------------
 
 template <bool k_is_const_t, typename T>
 SubGridImpl<k_is_const_t, T> make_sub_grid
-    (SubGridImpl<k_is_const_t, T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(offset, width_, height_); }
 
 template <bool k_is_const_t, typename T>
 SubGridImpl<k_is_const_t, T> make_sub_grid
     (SubGridImpl<k_is_const_t, T> & parent,
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(width_, height_); }
 
 template <bool k_is_const_t, typename T>
 ConstSubGrid<T> make_sub_grid
-    (const SubGridImpl<k_is_const_t, T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (const SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(offset, width_, height_); }
 
 template <bool k_is_const_t, typename T>
 ConstSubGrid<T> make_sub_grid
     (const SubGridImpl<k_is_const_t, T> & parent,
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(width_, height_); }
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+SubGridImpl<k_is_const_t, T> make_sub_grid
+    (SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{
+    return parent.make_sub_grid(offset, size.width, size.height);
+}
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+SubGridImpl<k_is_const_t, T> make_sub_grid
+    (SubGridImpl<k_is_const_t, T> & parent,
+     const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    using Vector = typename Grid<T>::Vector;
+    return parent.make_sub_grid(Vector(bounds.left, bounds.top),
+                                bounds.width, bounds.height);
+}
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+ConstSubGrid<T> make_sub_grid
+    (const SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{
+    return parent.make_sub_grid(offset, size.width, size.height);
+}
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+ConstSubGrid<T> make_sub_grid
+    (const SubGridImpl<k_is_const_t, T> & parent,
+     const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    return parent.make_sub_grid(Grid<T>::Vector(bounds.left, bounds.top),
+                                bounds.width, bounds.height);
+}
+
+// ------------------- make_const_sub_grid for SubGrid type -------------------
 
 template <bool k_is_const_t, typename T>
 ConstSubGrid<T> make_const_sub_grid
-    (SubGridImpl<k_is_const_t, T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(offset, width_, height_); }
 
 template <bool k_is_const_t, typename T>
 ConstSubGrid<T> make_const_sub_grid
     (SubGridImpl<k_is_const_t, T> & parent,
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(width_, height_); }
 
 template <bool k_is_const_t, typename T>
 ConstSubGrid<T> make_const_sub_grid
-    (const SubGridImpl<k_is_const_t, T> & parent, sf::Vector2i offset, 
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+    (const SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(offset, width_, height_); }
 
 template <bool k_is_const_t, typename T>
 ConstSubGrid<T> make_const_sub_grid
     (const SubGridImpl<k_is_const_t, T> & parent,
-     int width_  = SubGrid<T>::k_rest_of_grid, 
-     int height_ = SubGrid<T>::k_rest_of_grid)
+     int width_ = k_rest_of_grid, int height_ = k_rest_of_grid)
 { return parent.make_sub_grid(width_, height_); }
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{ return parent.make_sub_grid(offset, size.width, size.height); }
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (SubGridImpl<k_is_const_t, T> & parent,
+     const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    using Vector = typename Grid<T>::Vector;
+    return parent.make_sub_grid(Vector(bounds.left, bounds.top),
+                                bounds.width, bounds.height);
+}
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (const SubGridImpl<k_is_const_t, T> & parent, typename Grid<T>::Vector offset,
+     typename Grid<T>::Size size)
+{ return parent.make_sub_grid(offset, size.width, size.height); }
+
+// new as of 5-25-21
+template <bool k_is_const_t, typename T>
+ConstSubGrid<T> make_const_sub_grid
+    (const SubGridImpl<k_is_const_t, T> & parent,
+     const Rectangle<typename Grid<T>::IndexType> & bounds)
+{
+    return parent.make_sub_grid(Grid<T>::Vector(bounds.left, bounds.top),
+                                bounds.width, bounds.height);
+}
 
 // ----------------------------------------------------------------------------
 
@@ -423,7 +567,7 @@ private:
 
 template <bool k_is_const_t, typename T>
 SubGridImpl<k_is_const_t, T>::SubGridImpl
-    (typename std::conditional<k_is_const, const SubGridImpl<false, T> &, Dummy>::type rhs):
+    (typename std::conditional_t<k_is_const, const SubGridImpl<false, T> &, Dummy> rhs):
     m_offset(rhs.m_offset),
     m_width (rhs.m_width ),
     m_height(rhs.m_height),
@@ -433,12 +577,12 @@ SubGridImpl<k_is_const_t, T>::SubGridImpl
 template <bool k_is_const_t, typename T>
 SubGridImpl<k_is_const_t, T>::SubGridImpl
     (ParentReference parent, int width_, int height_):
-    SubGridImpl(parent, VectorI(), width_, height_)
+    SubGridImpl(parent, Vector(), width_, height_)
 { verify_invarients(); }
 
 template <bool k_is_const_t, typename T>
 SubGridImpl<k_is_const_t, T>::SubGridImpl
-    (ParentReference parent, VectorI offset, int width_, int height_):
+    (ParentReference parent, Vector offset, int width_, int height_):
     m_offset(verify_offset(parent, offset)),
     m_width (verify_size(parent.width () - offset.x, width_ , "width" )),
     m_height(verify_size(parent.height() - offset.y, height_, "height")),
@@ -450,8 +594,8 @@ bool SubGridImpl<k_is_const_t, T>::has_position(int x, int y) const noexcept
     { return (x >= 0 && y >= 0 && x < width() && y < height()); }
 
 template <bool k_is_const_t, typename T>
-sf::Vector2i SubGridImpl<k_is_const_t, T>::next
-    (const sf::Vector2i & r) const noexcept
+typename Grid<T>::Vector SubGridImpl<k_is_const_t, T>::next
+    (const Vector & r) const noexcept
 {
     auto rv = r;
     if (++rv.x == width()) {
@@ -462,17 +606,17 @@ sf::Vector2i SubGridImpl<k_is_const_t, T>::next
 }
 
 template <bool k_is_const_t, typename T>
-sf::Vector2i SubGridImpl<k_is_const_t, T>::end_position() const noexcept
-    { return VectorI(0, height()); }
+typename Grid<T>::Vector SubGridImpl<k_is_const_t, T>::end_position() const noexcept
+    { return Vector(0, height()); }
 
 template <bool k_is_const_t, typename T>
 SubGridImpl<true, T> SubGridImpl<k_is_const_t, T>::make_sub_grid
     (int width_, int height_) const
-    { return make_sub_grid(VectorI(), width_, height_); }
+    { return make_sub_grid(Vector(), width_, height_); }
 
 template <bool k_is_const_t, typename T>
 SubGridImpl<true, T> SubGridImpl<k_is_const_t, T>::
-    make_sub_grid(VectorI offset, int width_, int height_) const
+    make_sub_grid(typename Grid<T>::Vector offset, int width_, int height_) const
 {
     SubGridImpl<true, T> rv;
     verify_sub_grid_will_fit(offset, width_, height_);
@@ -489,13 +633,13 @@ template <bool k_is_const_>
 typename std::enable_if<!k_is_const_, SubGridImpl<false, T>>::type
     SubGridImpl<k_is_const_t, T>::make_sub_grid
     (int width_, int height_)
-    { return make_sub_grid(VectorI(), width_, height_); }
+    { return make_sub_grid(Vector(), width_, height_); }
 
 template <bool k_is_const_t, typename T>
 template <bool k_is_const_>
 typename std::enable_if<!k_is_const_, SubGridImpl<false, T>>::type
     SubGridImpl<k_is_const_t, T>::make_sub_grid
-    (VectorI offset, int width_, int height_)
+    (Vector offset, int width_, int height_)
 {
     SubGridImpl<k_is_const_, T> rv;
     verify_sub_grid_will_fit(offset, width_, height_);
@@ -509,7 +653,7 @@ typename std::enable_if<!k_is_const_, SubGridImpl<false, T>>::type
 
 template <bool k_is_const_t, typename T>
 bool SubGridImpl<k_is_const_t, T>::sub_grid_will_fit
-    (VectorI offset, int width_, int height_) const noexcept
+    (Vector offset, int width_, int height_) const noexcept
 {
     return
         (offset.x >= 0 && offset.x < width ()) &&
@@ -587,15 +731,15 @@ template <bool k_is_const_t, typename T>
 
 template <bool k_is_const_t, typename T>
 /* private */ void SubGridImpl<k_is_const_t, T>::verify_sub_grid_will_fit
-    (VectorI offset, int width_, int height_) const
+    (Vector offset, int width_, int height_) const
 {
     if (sub_grid_will_fit(offset, width_, height_)) return;
     throw std::invalid_argument("Sub grid will not fit.");
 }
 
 template <bool k_is_const_t, typename T>
-/* private static */ sf::Vector2i SubGridImpl<k_is_const_t, T>::
-    verify_offset(ParentReference parent, VectorI offset)
+/* private static */ typename Grid<T>::Vector SubGridImpl<k_is_const_t, T>::
+    verify_offset(ParentReference parent, Vector offset)
 {
     if (parent.has_position(offset) || offset == parent.end_position()) return offset;
     throw std::out_of_range("Offset not contained in parent.");
@@ -621,7 +765,7 @@ template <bool k_is_const_t, typename T>
             m_width  >= 0 && m_offset.x + m_width  <= m_parent->width () &&
             m_height >= 0 && m_offset.y + m_height <= m_parent->height();
     } else {
-        invarients_ok = m_width == 0 && m_height == 0 && m_offset == VectorI();
+        invarients_ok = m_width == 0 && m_height == 0 && m_offset == Vector();
     }
     if (!invarients_ok) {
         throw std::runtime_error("SubGridImpl::verify_invarients: invarients failed.");
@@ -689,8 +833,8 @@ template <bool k_is_const_t, typename T>
     verify_non_negative_integer(const char * caller, int amt)
 {
     if (amt >= 0) return;
-    throw std::invalid_argument(std::string(caller)
-                                + ": amount must be a non-negative integer.");
+    using InvArg = std::invalid_argument;
+    throw InvArg(std::string(caller) + ": amount must be a non-negative integer.");
 }
 
 template <bool k_is_const_t, typename T>
@@ -698,9 +842,9 @@ template <bool k_is_const_t, typename T>
     verify_can_move_position(const char * caller) const
 {
     if (m_row_size != k_no_size && m_row_jump != k_no_size) return;
-    throw std::runtime_error(std::string(caller)
-                             + ": cannot move iterator's position without "
-                               "a subgrid row size, and parent grid width.");
+    using Error = std::runtime_error;
+    throw Error(std::string(caller) + ": cannot move iterator's position "
+                "without a subgrid row size, and parent grid width.");
 }
 
 } // end of cul namespace

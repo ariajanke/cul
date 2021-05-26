@@ -63,6 +63,9 @@ struct Size2 {
     T width = 0, height = 0;
 };
 
+/** Representation of a rectangle in four scalars or two vectors (with one
+ *  being a "size" vector.
+ */
 template <typename T>
 struct Rectangle {
     Rectangle() {}
@@ -84,6 +87,21 @@ struct Rectangle {
 
     T left = 0, top = 0, width = 0, height = 0;
 };
+
+/** @returns true if the vector r is contained in the rectangle rect.
+ *
+ *  This is an "STL" like boundry check. The right and bottom end of the
+ *  rectangle (equal to position + size) is considered out of bounds. The left
+ *  and top are inside.
+ *
+ *  @param r position to be tested
+ *  @param rect rectangle to check if r is contained in
+ */
+template <typename T>
+bool is_contained_in(const Vector2<T> & r, const Rectangle<T> & rect) noexcept {
+    return    r.x >=  rect.left               && r.y >=  rect.top
+           && r.x <  (rect.left + rect.width) && r.y <  (rect.top + rect.height);
+}
 
 // ------- trait definitions for Vector2 and Size2, which maybe ignored -------
 
@@ -128,3 +146,16 @@ struct Vector2Traits<T, Size2<T>> {
 };
 
 } // end of cul namespace
+
+template <typename T>
+/* global */ bool operator ==
+    (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
+{
+    return    lhs.left  == rhs.left  && rhs.top    == lhs.top
+           && lhs.width == rhs.width && rhs.height == lhs.height;
+}
+
+template <typename T>
+/* global */ bool operator !=
+    (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
+{ return !(lhs == rhs); }

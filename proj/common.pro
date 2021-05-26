@@ -71,13 +71,13 @@ HEADERS += \
 # purposes, NOT for general/automated testing)
 SOURCES += \
     \#../unit-tests/all-tests-driver.cpp \
-    \#../unit-tests/TestGrid.cpp \
+    ../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestFixedLengthArray.cpp \
     \#../unit-tests/TestMultiType.cpp \
     \#../unit-tests/test-string-utils.cpp
     \#../unit-tests/test-math-utils.cpp
-    ../unit-tests/vector-tests.cpp
+    #../unit-tests/vector-tests.cpp
 
 
 INCLUDEPATH += \

@@ -404,7 +404,7 @@ EnableVec2Util<Vec, Vec> rotate_vector
     // [r.x] * [ cos(rot) sin(rot)]
     // [r.y]   [-sin(rot) cos(rot)]
     get_x(rv) = get_x(r)*std::cos(rot) - get_y(r)*std::sin(rot);
-    get_x(rv) = get_x(r)*std::sin(rot) + get_y(r)*std::cos(rot);
+    get_y(rv) = get_x(r)*std::sin(rot) + get_y(r)*std::cos(rot);
     return rv;
 }
 

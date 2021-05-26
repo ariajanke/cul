@@ -208,5 +208,9 @@ int main() {
                   << cul::is_real(sf::Vector2i(1, 1)) << " "
                   << cul::is_real(cul::get_no_solution_sentinel<VecD>()) << std::endl;
     }
+    assert(cul::are_within(
+        cul::rotate_vector(VecF(1, 0), cul::k_pi_for_type<double>*0.5),
+        VecF(0, 1),
+        0.0005f));
     return 0;
 }

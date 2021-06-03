@@ -1,3 +1,39 @@
+#include <common/Vector2Util.hpp>
+
+#include <unordered_map>
+
+namespace tn {
+
+using VectorI = cul::Vector2<int>;
+
+struct Cust {
+
+};
+
+Cust operator + (const Cust & lhs, const Cust & rhs) {
+    return Cust();
+}
+
+void do_vector_stuff() {
+    [[maybe_unused]] Cust c;
+    VectorI a, b;
+    a + b;
+}
+
+struct VectorHasher {
+    std::size_t operator () (const VectorI & r) const
+        { return r.x + r.y*1000; }
+};
+
+}
+
+
+void do_other_vector_stuff() {
+    using VectorI = cul::Vector2<int>;
+    std::unordered_map<VectorI, tn::Cust, tn::VectorHasher> map;
+    map[VectorI(1, 0)] = tn::Cust();
+}
+
 #include <SFML/System/Vector2.hpp>
 
 #include <glm/vec2.hpp>
@@ -37,7 +73,10 @@ struct Vector2Traits<glm::vec2::value_type, glm::vec2> {
 
 struct A {};
 
+
 int main() {
+    cul::ConstString abc = "hello there";
+    assert(abc != "hello nobody");
     {
     cul::Vector2<float> a, b;
     (void)(a != b);

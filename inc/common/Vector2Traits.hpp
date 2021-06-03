@@ -109,14 +109,12 @@ using EnableVector2BoolOp = std::enable_if_t<
     k_should_define_vector2_operators<ScalarType, VectorType>,
 bool>;
 
-} // end of namespace cul
-
 // ---------------------------- Unary Vector Operator --------------------------
 
 template <typename VectorType, 
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType> 
-    /* global */ operator - (const VectorType & r)
+    operator - (const VectorType & r)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -133,7 +131,7 @@ cul::EnableVector2Op<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType> & 
-    /* global */ operator += (VectorType & r, const VectorType & v)
+    operator += (VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -146,7 +144,7 @@ cul::EnableVector2Op<ScalarType, VectorType> &
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType> & 
-    /* global */ operator -= (VectorType & r, const VectorType & v)
+    operator -= (VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -159,7 +157,7 @@ cul::EnableVector2Op<ScalarType, VectorType> &
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType> 
-    /* global */ operator + (const VectorType & r, const VectorType & v)
+    operator + (const VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -173,7 +171,7 @@ cul::EnableVector2Op<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType>
-    /* global */ operator - (const VectorType & r, const VectorType & v)
+    operator - (const VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -189,7 +187,7 @@ cul::EnableVector2Op<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType> &
-    /* global */ operator *= (VectorType & r, const ScalarType & a)
+    operator *= (VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -202,7 +200,7 @@ cul::EnableVector2Op<ScalarType, VectorType> &
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType> &
-    /* global */ operator /= (VectorType & r, const ScalarType & a)
+    operator /= (VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -215,7 +213,7 @@ cul::EnableVector2Op<ScalarType, VectorType> &
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType>
-    /* global */ operator * (const VectorType & r, const ScalarType & a)
+    operator * (const VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -229,7 +227,7 @@ cul::EnableVector2Op<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType>
-    /* global */ operator / (const VectorType & r, const ScalarType & a)
+    operator / (const VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -243,7 +241,7 @@ cul::EnableVector2Op<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2Op<ScalarType, VectorType>
-    /* global */ operator * (const ScalarType & a, const VectorType & r)
+    operator * (const ScalarType & a, const VectorType & r)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
     typename Tr::GetX get_x;
@@ -259,7 +257,7 @@ cul::EnableVector2Op<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2BoolOp<ScalarType, VectorType> 
-    /* global */ operator ==
+    operator ==
     (const VectorType & r, const VectorType & u)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
@@ -271,13 +269,11 @@ cul::EnableVector2BoolOp<ScalarType, VectorType>
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
 cul::EnableVector2BoolOp<ScalarType, VectorType>
-    /* global */ operator != 
+    operator !=
     (const VectorType & r, const VectorType & u)
 { return !(r == u); }
 
 // ---------------------------------- conversion -------------------------------
-
-namespace cul {
 
 template <typename DestType, typename SourceType>
 constexpr const bool k_both_types_conversion_suitible =

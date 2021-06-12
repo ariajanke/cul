@@ -1,5 +1,7 @@
 /****************************************************************************
 
+    MIT License
+
     Copyright 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,7 +24,7 @@
 
 *****************************************************************************/
 
-#include <common/DrawTriangle.hpp>
+#include <common/sf/DrawTriangle.hpp>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 
@@ -83,6 +85,6 @@ void DrawTriangle::set_color(sf::Color color_) {
 
 /* private */ void DrawTriangle::draw
     (sf::RenderTarget & target, sf::RenderStates states) const
-    { target.draw(&*m_verticies.begin(), m_verticies.size(), sf::Triangles, states); }
+    { target.draw(m_verticies.data(), m_verticies.size(), sf::Triangles, states); }
 
 } // end of cul namespace

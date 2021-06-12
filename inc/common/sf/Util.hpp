@@ -1,5 +1,7 @@
 /****************************************************************************
 
+    MIT License
+
     Copyright 2021 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,56 +26,19 @@
 
 #pragma once
 
-#include <SFML/Graphics/Drawable.hpp>
-#include <SFML/Graphics/Vertex.hpp>
+#include <common/Grid.hpp>
+#include <common/SfmlVectorTraits.hpp>
 
-#include <array>
+#include <SFML/Graphics/Image.hpp>
 
 namespace cul {
 
-class DrawTriangle final : public sf::Drawable {
-public:
-    static constexpr const auto k_vertex_count = 3u;
+sf::Image to_image(const Grid<sf::Color> &);
 
-    using VectorF = sf::Vector2f;
+Grid<sf::Color> to_color_grid(const sf::Image &);
 
-    void set_point_a(float x, float y);
-
-    void set_point_a(VectorF pos)
-        { set_point_a(pos.x, pos.y); }
-
-    void set_point_b(float x, float y);
-
-    void set_point_b(VectorF pos)
-        { set_point_b(pos.x, pos.y); }
-
-    void set_point_c(float x, float y);
-
-    void set_point_c(VectorF pos)
-        { set_point_c(pos.x, pos.y); }
-
-    void move(VectorF);
-
-    void set_center(VectorF);
-
-    void set_center(float, float);
-
-    VectorF point_a() const;
-
-    VectorF point_b() const;
-
-    VectorF point_c() const;
-
-    VectorF center() const;
-
-    sf::Color color() const;
-
-    void set_color(sf::Color);
-
-private:
-    void draw(sf::RenderTarget &, sf::RenderStates) const override;
-
-    std::array<sf::Vertex, k_vertex_count> m_verticies;
-};
+template <typename T>
+sf::Vector2f to_sf_vec2f(const cul::Vector2<T> & r)
+    { return cul::convert_to<sf::Vector2f>(r); }
 
 } // end of cul namespace

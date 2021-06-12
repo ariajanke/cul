@@ -87,11 +87,10 @@ public:
     int compare_result(const ConstString & rhs) const noexcept;
 
     unsigned length() const noexcept;
+
 private:
     const char * m_str;
 };
-
-} // end of cul namespace
 
 inline bool operator == (const char * rhs, const cul::ConstString & lhs)
     { return lhs == rhs; }
@@ -110,3 +109,5 @@ inline bool operator < (const char * rhs, const cul::ConstString & lhs)
 
 inline bool operator > (const char * rhs, const cul::ConstString & lhs)
     { return lhs <= rhs; }
+
+} // end of cul namespace

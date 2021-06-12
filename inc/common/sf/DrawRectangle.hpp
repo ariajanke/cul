@@ -41,10 +41,15 @@ namespace cul {
  */
 class DrawRectangle final : public sf::Drawable {
 public:
+    static constexpr const int k_vertex_count = 4;
 
-    static constexpr const unsigned k_vertex_count = 4;
+    /** proven useful for these "triangle strips" */
+    static constexpr const int k_top_left     = 0;
+    static constexpr const int k_bottom_left  = 1;
+    static constexpr const int k_top_right    = 2;
+    static constexpr const int k_bottom_right = 3;
 
-    DrawRectangle();
+    DrawRectangle() {}
 
     DrawRectangle
         (float x_, float y_, float width_ = 0.f, float height_ = 0.f,
@@ -85,16 +90,9 @@ public:
     sf::Color color() const noexcept;
 
 protected:
-
     void draw(sf::RenderTarget &, sf::RenderStates) const override;
 
 private:
-
-    static constexpr const unsigned k_top_left     = 0;
-    static constexpr const unsigned k_top_right    = 1;
-    static constexpr const unsigned k_bottom_right = 2;
-    static constexpr const unsigned k_bottom_left  = 3;
-
     std::array<sf::Vertex, k_vertex_count> m_vertices;
 };
 

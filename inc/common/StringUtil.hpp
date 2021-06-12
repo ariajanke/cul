@@ -203,6 +203,21 @@ void wrap_string_as_monowidth
     (IterType beg, IterType end, int max_chars,
      HandleSequenceFunc && handle_seq);
 
+/** @brief Finds the end of a constant expression string.
+ *  @note  A constexpr utility meant to replace uses of "strlen".
+ */
+template <typename T>
+constexpr const T * find_str_end(const T * s)
+    { return *s ? find_str_end(s + 1) : s; }
+
+/** @brief Does exactly what strlen does, but for any string of any character
+ *         type.
+ *  @note  A constexpr utility meant to replace uses of "strlen".
+ */
+template <typename T>
+constexpr std::ptrdiff_t find_str_len(const T * s)
+    { return find_str_end(s) - s; }
+
 // <---------------------------- implementations ----------------------------->
 
 template <auto is_seperator, typename IterType, typename Func>

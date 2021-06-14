@@ -24,6 +24,10 @@ linux {
 debug {
     CONFIG -= release
 }
+release {
+    QMAKE_CXXFLAGS += -O3
+    TARGET          = common-test-app
+}
 
 debug {
     TARGET          = common-test-app-d

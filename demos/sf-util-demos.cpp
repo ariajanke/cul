@@ -30,7 +30,7 @@ using cul::round_to;
 using cul::SfBitmapFont;
 
 constexpr const int k_window_width     = 800;
-constexpr const int k_window_height    = 600;
+constexpr const int k_window_height    = 1000;
 constexpr const int k_fps              =  60;
 constexpr const int k_text_scale       =   2;
 constexpr const int k_text_view_width  = k_window_width  / k_text_scale;
@@ -484,7 +484,7 @@ public:
     using VecF = cul::Vector2<float>;
 
     struct PointParameters {
-        VecF anchor = VecF(0.5*k_window_width, k_window_height);
+        VecF anchor = VecF(0.5*k_window_width, k_window_height*0.75f);
         // default location of the tip without any mouse movement
         VecF default_tip_location = VecF(0.5*k_window_width, 0.2f*k_window_height);
         // distance from anchor to an anchor end point
@@ -499,26 +499,13 @@ public:
         const PointParameters p;
         m_tip = p.default_tip_location;
         m_verticies = make_verticies(m_tip);
-
-        mark_point(p.anchor + to_anchor_end(p, k_left));
-        mark_point(p.anchor + to_anchor_end(p, k_right));
-        mark_point(p.anchor);
-        mark_point(get_anchor_control(p, 0.f, k_left));
-        mark_point(get_anchor_control(p, 0.f, k_right));
-        mark_point(get_tip_control(p, m_tip, 0.f, k_left));
-        mark_point(get_tip_control(p, m_tip, 0.f, k_right));
-
-        // make end
-        mark_point(m_tip);
     }
 
     void update(double) final {}
 
     void draw_to(sf::RenderTarget & target) final {
         target.draw(m_verticies.data(), m_verticies.size(), sf::PrimitiveType::Triangles);
-        for (const auto & rect : m_rectangles) {
-            target.draw(rect);
-        }
+
         auto tuples = get_bezier_tuples(m_tip);
         cul::for_bezier_lines(tuples.left_points, 10, [&target](VecF a, VecF b) {
             using cul::convert_to;
@@ -549,21 +536,7 @@ public:
         {
             m_tip = PointParameters().default_tip_location;
             m_verticies = make_verticies(m_tip, std::move(m_verticies));
-
         }
-        m_rectangles.clear();
-        const PointParameters p;
-        float squish_amount = std::max(0.f, 1.f - magnitude(m_tip - p.anchor) / magnitude(p.default_tip_location - p.anchor));
-        mark_point(p.anchor + to_anchor_end(p, k_left));
-        mark_point(p.anchor + to_anchor_end(p, k_right));
-        mark_point(p.anchor);
-        mark_point(get_anchor_control(p, squish_amount, k_left));
-        mark_point(get_anchor_control(p, squish_amount, k_right));
-        mark_point(get_tip_control(p, m_tip, squish_amount, k_left));
-        mark_point(get_tip_control(p, m_tip, squish_amount, k_right));
-
-        // make end
-        mark_point(m_tip);
     }
 
 private:
@@ -636,8 +609,8 @@ private:
     {
         auto tuples = get_bezier_tuples(tip);
         rv.clear();
-        make_verticies(tuples.left_points, tuples.right_points,
-                       75.f*75.f, 0.5f, [&rv](VecF a, VecF b, VecF c)
+        for_bezier_triangles(tuples.left_points, tuples.right_points,
+                       25.f*25.f, 0.5f, [&rv](VecF a, VecF b, VecF c)
         {
             using namespace cul;
             rv.emplace_back(convert_to<sf::Vector2f>(a));
@@ -648,129 +621,12 @@ private:
     }
 
     template <typename T>
-    static T area_of_triangle
-        (const cul::Vector2<T> & a, const cul::Vector2<T> & b,
-         const cul::Vector2<T> & c)
-    {
-        using namespace cul;
-        // awesomely terse uwu
-        return magnitude(cross(a - b, c - b));
-    }
-
-    template <typename T>
     static T max_length_from_area(T resolution_area) {
         return std::sqrt(resolution_area * T(4) / std::sqrt(T(3)) );
     }
 
-    template <typename Func, typename T, typename ... Types>
-    static void make_verticies
-        (const std::tuple<cul::Vector2<T>, Types...> & tuple_a,
-         const std::tuple<cul::Vector2<T>, Types...> & tuple_b,
-         T area, T error, Func && f)
-    {
-        using namespace cul;
-        using TupleType = std::tuple<cul::Vector2<T>, Types...>;
-        const TupleType * work_side  = &tuple_a;
-        const TupleType * other_side = &tuple_b;
-
-        T os_pos = 0;
-        T ws_pos = 0;
-        // edge case, pos 0 for both points are the same (or super close)
-        if (magnitude(  find_bezier_point(T(0), *work_side )
-                      - find_bezier_point(T(0), *other_side)) < error)
-        {
-            std::tie(os_pos, ws_pos) = []
-                (const TupleType & work_side, const TupleType & other_side, T area, T error)
-            {
-                const auto & any_side = work_side;
-                // I'm going to need a combination things for my
-                // resolution criteria
-                //const auto max_len = max_length_from_area(area);
-                auto tip_pt = find_bezier_point(T(0), any_side);
-                auto os_pt = find_bezier_point(T(1), other_side);
-                auto ws_pt = find_bezier_point(T(1), work_side );
-
-                if (/*   magnitude(tip_pt - os_pt)              < max_len
-                    || */area_of_triangle(tip_pt, os_pt, ws_pt) < area   )
-                {
-                    return std::make_tuple(T(1), T(1));
-                }
-                T low = 0, high = 1;
-                while (true) {
-                    auto mid = (low + high) / T(2);
-                    auto os_pt = find_bezier_point(mid, other_side);
-                    auto ws_pt = find_bezier_point(mid, work_side );
-                    auto tri_con_area = area_of_triangle(tip_pt, os_pt, ws_pt);
-                    if (magnitude(tri_con_area - area) < error) {
-                        return std::make_tuple(mid, mid);
-                    }
-                    *((tri_con_area > area) ? &high : &low) = mid;
-                }
-            } (*work_side, *other_side, area, error);
-            auto tip_pt = find_bezier_point(T(0), *work_side);
-            auto os_pt = find_bezier_point(os_pos, *other_side);
-            auto ws_pt = find_bezier_point(ws_pos, *work_side );
-            f(tip_pt, os_pt, ws_pt);
-        }
-
-        // so now on the work side, we find another point such that we're close
-        // to the given area (which is the "resolution" argument)
-
-        struct WbcStep { // walk bezier curve step
-            bool finishes = false;
-            T next_pos;
-        };
-
-        bool last_iter_finished = false;
-        while (true) {
-            auto pt_low_os = find_bezier_point(os_pos, *other_side);
-            auto pt_low_ws = find_bezier_point(ws_pos, *work_side );
-            auto gv = [] (const TupleType & work_side, const cul::Vector2<T> & pt_low_os,
-                const cul::Vector2<T> & pt_low_ws, T ws_pos, T area, T error)
-            {
-                WbcStep rv;
-                auto pt_con_ws = find_bezier_point(T(1), work_side);
-                if (area_of_triangle(pt_low_os, pt_low_ws, pt_con_ws) < area) {
-                    rv.finishes = true;
-                    rv.next_pos = T(1);
-                    return rv;
-                }
-                T low = ws_pos, high = 1;
-                while (true) {
-                    pt_con_ws = find_bezier_point((low + high) / T(2), work_side);
-                    auto con_tri_area = area_of_triangle(pt_low_os, pt_low_ws, pt_con_ws);
-                    if (magnitude(con_tri_area - area) < error) {
-                        rv.finishes = false;
-                        rv.next_pos = (low + high) / T(2);
-                        return rv;
-                    }
-                    if (con_tri_area > area) {
-                        high = (low + high) / T(2);
-                    } else {
-                        assert(con_tri_area < area);
-                        low = (low + high) / T(2);
-                    }
-                }
-            } (*work_side, pt_low_os, pt_low_ws, ws_pos, area, error);
-            f(pt_low_ws, pt_low_os, find_bezier_point(gv.next_pos, *work_side));
-
-            if (gv.finishes && last_iter_finished) return;
-            last_iter_finished = gv.finishes;
-            ws_pos = gv.next_pos;
-            std::swap(work_side, other_side);
-            std::swap(os_pos   , ws_pos    );
-        }
-    }
-
-    void mark_point(VecF r) {
-        static constexpr const float k_mark_size = 12.f;
-        m_rectangles.emplace_back(r.x - k_mark_size*0.5f, r.y - k_mark_size*0.5f,
-                                  k_mark_size, k_mark_size, sf::Color(0, 100, 155));
-    }
-
     VecF m_tip;
     std::vector<sf::Vertex> m_verticies;
-    std::vector<DrawRectangle> m_rectangles;
 };
 
 inline bool is_newline(char c) { return c == '\n'; }
@@ -790,21 +646,13 @@ public:
         using namespace cul;
         const auto & intro_font_inst = SfBitmapFont::load_builtin_font(k_intro_font);
         int view_width_in_chars = k_text_view_width / intro_font_inst.character_size().width;
-
-        std::string cap = k_intro_text;
-        //for (auto & c : cap) {
-            //if (c >= 'a' && c <= 'z') c = (c - 'a') + 'A';
-        //}
-        const auto * beg = cap.data();
-        auto end = beg + cap.size();
-
         int line_count = 0;
-        wrap_and_split_nl(beg, end, view_width_in_chars,
+        wrap_and_split_nl(k_intro_text, k_intro_text_end, view_width_in_chars,
                           [&line_count](const char *, const char *) { ++line_count; });
 
         auto y_start = (k_text_view_height - intro_font_inst.character_size().height*line_count ) / 2;
         m_texts.reserve(line_count);
-        wrap_and_split_nl(beg, end, view_width_in_chars,
+        wrap_and_split_nl(k_intro_text, k_intro_text_end, view_width_in_chars,
             [this, &y_start, &intro_font_inst](const char * beg, const char * end)
         {
             DrawText dtext;

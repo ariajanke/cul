@@ -34,31 +34,37 @@ namespace cul {
 
 template <typename T, typename Func, typename ... Types>
 void for_bezier_points
-    (const std::tuple<cul::Vector2<T>, Types...> &, T step, Func &&);
+    (const std::tuple<Vector2<T>, Types...> &, int step_count, Func &&);
 
 template <typename T, typename Func, typename ... Types>
 void for_bezier_lines
-    (const std::tuple<cul::Vector2<T>, Types...> &, T step, Func &&);
+    (const std::tuple<Vector2<T>, Types...> &, int line_count, Func &&);
 
 template <typename T, typename ... Types>
-cul::Vector2<T> compute_bezier_point
-    (T t, const std::tuple<cul::Vector2<T>, Types...> &);
+Vector2<T> find_bezier_point
+    (T t, const std::tuple<Vector2<T>, Types...> &);
+
+// computes n points on a bezier curve according to a given tuple
+template <std::size_t k_count, typename T, typename ... Types>
+std::array<cul::Vector2<T>, k_count> make_bezier_array
+    (const std::tuple<cul::Vector2<T>, Types...> & tuple);
 
 // ----------------------------------------------------------------------------
 
+namespace detail {
+
 template <typename T>
 class BezierCurveDetails {
+    template <typename U, typename Func, typename ... Types>
+    friend void cul::for_bezier_points
+        (const std::tuple<cul::Vector2<U>, Types...> &, int, Func &&);
 
     template <typename U, typename Func, typename ... Types>
-    friend void for_bezier_points
-        (const std::tuple<cul::Vector2<U>, Types...> &, U step, Func &&);
-
-    template <typename U, typename Func, typename ... Types>
-    friend void for_bezier_lines
-        (const std::tuple<cul::Vector2<U>, Types...> &, U step, Func &&);
+    friend void cul::for_bezier_lines
+        (const std::tuple<cul::Vector2<U>, Types...> &, int, Func &&);
 
     template <typename U, typename ... Types>
-    friend cul::Vector2<U> compute_bezier_point
+    friend cul::Vector2<U> cul::find_bezier_point
         (U t, const std::tuple<cul::Vector2<U>, Types...> &);
 
     using VecT = cul::Vector2<T>;
@@ -67,19 +73,21 @@ class BezierCurveDetails {
     using Tuple = std::tuple<Types...>;
 
     template <typename Func, typename ... Types>
-    static void for_points(const Tuple<Types...> & tuple, T step, Func && f) {
-        verify_step(step, "for_points");
-        for (T v = 0; v < 1; v += step) {
+    static void for_points(const Tuple<Types...> & tuple, int step_count, Func && f) {
+        verify_step_count(step_count, "for_points");
+        for (int i = 0; i != step_count; ++i) {
+            T v = T(i) / T(step_count);
             f(compute_point_tuple(v, tuple));
         }
         f(compute_point_tuple(1, tuple));
     }
 
     template <typename Func, typename ... Types>
-    static void for_lines(const Tuple<Types...> & tuple, T step, Func && f) {
-        verify_step(step, "for_lines");
-        for (T v = 0; v < 1; v += step) {
-            T next = std::min(T(1), v + step);
+    static void for_lines(const Tuple<Types...> & tuple, int line_count, Func && f) {
+        verify_step_count(line_count, "for_lines");
+        for (int i = 0; i != line_count; ++i) {
+            auto v = T(i) / T(line_count + 1);
+            T next = std::min(T(1), T(i + 1) / T(line_count + 1));
             f(compute_point_tuple(v, tuple), compute_point_tuple(next, tuple));
         }
     }
@@ -89,9 +97,8 @@ class BezierCurveDetails {
         return compute_point_tuple<sizeof...(Types)>(t, tuple, std::index_sequence_for<Types...>());
     }
 
-
-    static void verify_step(T t, const char * caller) {
-        if (t >= 0 && t <= 1) return;
+    static void verify_step_count(int t, const char * caller) {
+        if (t >= 0) return;
         throw std::invalid_argument(std::string(caller)
                 + ": step must be in [0 1].");
     }
@@ -102,8 +109,7 @@ class BezierCurveDetails {
     }
 
     template <std::size_t k_tuple_size, typename ... Types>
-    static VecT compute_point(T, Types ...)
-        { return VecT(); }
+    static VecT compute_point(T, Types ...) { return VecT(); }
 
     template <std::size_t k_tuple_size, typename ... Types>
     static VecT compute_point(T t, const VecT & r, Types ... args) {
@@ -138,27 +144,27 @@ class BezierCurveDetails {
     }
 
     template <std::size_t k_m1_degree, std::size_t k_0p_degree>
-    static T interpolate(T t) {
-        return interpolate_1m<k_m1_degree>(t)*interpolate_0p<k_0p_degree>(t);
-    }
+    static T interpolate(T t)
+        { return interpolate_1m<k_m1_degree>(t)*interpolate_0p<k_0p_degree>(t); }
 };
+
+} // end of detail namespace -> into cul
 
 template <typename T, typename Func, typename ... Types>
 void for_bezier_points
-    (const std::tuple<cul::Vector2<T>, Types...> & tuple, T step, Func && f)
-{ return BezierCurveDetails<T>::for_points(tuple, step, std::move(f)); }
+    (const std::tuple<Vector2<T>, Types...> & tuple, int step_count, Func && f)
+{ return detail::BezierCurveDetails<T>::for_points(tuple, step_count, std::move(f)); }
 
 template <typename T, typename Func, typename ... Types>
 void for_bezier_lines
-    (const std::tuple<cul::Vector2<T>, Types...> & tuple, T step, Func && f)
-{ return BezierCurveDetails<T>::for_lines(tuple, step, std::move(f)); }
+    (const std::tuple<Vector2<T>, Types...> & tuple, int line_count, Func && f)
+{ return detail::BezierCurveDetails<T>::for_lines(tuple, line_count, std::move(f)); }
 
 template <typename T, typename ... Types>
-cul::Vector2<T> compute_bezier_point
-    (T t, const std::tuple<cul::Vector2<T>, Types...> & tuple)
-{ return BezierCurveDetails<T>::compute_point_tuple(t, tuple); }
+cul::Vector2<T> find_bezier_point
+    (T t, const std::tuple<Vector2<T>, Types...> & tuple)
+{ return detail::BezierCurveDetails<T>::compute_point_tuple(t, tuple); }
 
-// computes n points on a bezier curve according to a given tuple
 template <std::size_t k_count, typename T, typename ... Types>
 std::array<cul::Vector2<T>, k_count> make_bezier_array
     (const std::tuple<cul::Vector2<T>, Types...> & tuple)
@@ -167,7 +173,7 @@ std::array<cul::Vector2<T>, k_count> make_bezier_array
     std::array<cul::Vector2<T>, k_count> arr;
     T t = T(0);
     for (auto & v : arr) {
-        v = compute_bezier_point(std::min(T(1), t), tuple);
+        v = find_bezier_point(std::min(T(1), t), tuple);
         t += k_step;
     }
     return arr;

@@ -434,12 +434,11 @@ public:
             auto sent_beg = jtr_last;
             auto sent_end = gv;
             // need to test for "bad" argument type (by reference)
+            // we can't have a move here, as it's being used multiple times
             if (adapt_to_flow_control_signal
-                    (std::move(handle_seq), sent_beg, sent_end) == fc_signal::k_break)
+                (handle_seq, sent_beg, sent_end) == fc_signal::k_break)
             { return; }
-#           if 0
-            handle_seq(sent_beg, sent_end);
-#           endif
+
             }
             jtr_last = gv;
             jtr      = constrain_offset(gv, end, max_chars);

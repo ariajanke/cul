@@ -29,6 +29,7 @@
 #include <common/StringUtil.hpp>
 
 #include "sf-8x8Font.hpp"
+#include "sf-8x16Font.hpp"
 
 #include <memory>
 
@@ -104,6 +105,7 @@ GridBitmapFontPtr make_builin_font(BuiltinFont bf) {
         break;
     case BFont::k_8x16_font:
         size = Size(8, 16);
+        source_f = cul::detail::get_8x16_char;
         break;
     case BFont::k_8x8_highlighted_font:
         has_highlight = true;
@@ -113,6 +115,7 @@ GridBitmapFontPtr make_builin_font(BuiltinFont bf) {
     case BFont::k_8x16_highlighted_font:
         has_highlight = true;
         size = Size(8 + 2, 16 + 2);
+        source_f = cul::detail::get_8x16_char;
         break;
     default: throw InvArg("<cul anonymous>::make_builin_font: specified "
                           "builtin font is not a valid value.");

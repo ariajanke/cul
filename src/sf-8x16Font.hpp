@@ -23,3 +23,13 @@
     DEALINGS IN THE SOFTWARE.
 
 *****************************************************************************/
+
+namespace cul {
+
+namespace detail {
+
+const char * get_8x16_char(char);
+
+} // end of detail namespace -> into cul
+
+} // end of cul namespace

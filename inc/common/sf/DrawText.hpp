@@ -68,7 +68,6 @@ public:
  *  ineptitude.
  *
  *  @note Should be useable by ASGL
- *  @note This text class will break lines by the newline character.
  *  @note It is always possible to design this for wider characters, for
  *        anything other than LtR scripts are considered out of scope of this
  *        simple utility

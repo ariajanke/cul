@@ -9,6 +9,8 @@
 #include <common/TypeList.hpp>
 #include <common/Util.hpp>
 #include <common/StringUtil.hpp>
+#include <common/Vector2Util.hpp>
+#include <common/BezierCurves.hpp>
 
 #include <SFML/Graphics/Texture.hpp>
 
@@ -27,9 +29,12 @@ using cul::DrawLine;
 using cul::round_to;
 using cul::SfBitmapFont;
 
-constexpr const int k_window_width  = 800;
-constexpr const int k_window_height = 600;
-constexpr const int k_fps           =  60;
+constexpr const int k_window_width     = 800;
+constexpr const int k_window_height    = 600;
+constexpr const int k_fps              =  60;
+constexpr const int k_text_scale       =   2;
+constexpr const int k_text_view_width  = k_window_width  / k_text_scale;
+constexpr const int k_text_view_height = k_window_height / k_text_scale;
 
 class AppState {
 public:
@@ -62,6 +67,8 @@ private:
 int main() {
     SfBitmapFont::load_builtin_font(BitmapFont::k_8x8_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextout.png");
     SfBitmapFont::load_builtin_font(BitmapFont::k_8x8_highlighted_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextouthighlight.png");
+    SfBitmapFont::load_builtin_font(BitmapFont::k_8x16_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextout16.png");
+    SfBitmapFont::load_builtin_font(BitmapFont::k_8x16_highlighted_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextouthighlight16.png");
 
     sf::RenderWindow win;
     win.setFramerateLimit(k_fps);
@@ -70,7 +77,7 @@ int main() {
     app_state->setup();
 
     DrawText title_text;
-    title_text.load_builtin_font(BitmapFont::k_8x8_highlighted_font);
+    title_text.load_builtin_font(BitmapFont::k_8x16_highlighted_font);
     title_text.set_text_top_left(sf::Vector2f(), app_state->name());
 
     while (win.isOpen()) {
@@ -96,7 +103,9 @@ int main() {
 
         win.clear(sf::Color(0, 80, 0));
         app_state->draw_to(win);
-        win.draw(title_text);
+        auto states = sf::RenderStates::Default;
+        states.transform.scale(k_text_scale, k_text_scale);
+        win.draw(title_text, states);
         win.display();
         sf::sleep(sf::microseconds(1'000'000 / k_fps));
     }
@@ -160,7 +169,7 @@ public:
 
     using StateTypeList = cul::TypeList<
         RandomRectangleState, RandomTriangleState, RandomTextState,
-        LineTestState, /*BezierLineState,*/ IntroductionState>;
+        LineTestState, BezierLineState, IntroductionState>;
 
     template <typename T>
     static constexpr const int k_state_list_position_of
@@ -320,6 +329,7 @@ public:
 
     void draw_to(sf::RenderTarget & target) final {
         auto states = sf::RenderStates::Default;
+        states.transform.scale(k_text_scale, k_text_scale);
         for (auto & text : m_texts) {
             states.texture = text.texture;
             target.draw(text.verticies.data(), text.verticies.size(),
@@ -331,7 +341,8 @@ public:
         RotatingState::process_event(event);
         if (event.type == sf::Event::MouseButtonReleased) {
             spawn_string<random_click_string>(
-                sf::Vector2f(event.mouseButton.x, event.mouseButton.y));
+                sf::Vector2f(event.mouseButton.x / k_text_scale,
+                             event.mouseButton.y / k_text_scale));
         }
     }
 
@@ -341,7 +352,7 @@ public:
     }
 
 private:
-    static constexpr float k_rise_speed = 125.f;
+    static constexpr float k_rise_speed = 75.f;
 
     double probability_of_spawn() const {
         // probability of spawn per second
@@ -354,15 +365,16 @@ private:
     }
 
     static sf::Vector2f random_screen_position(Rng & rng) {
-        return sf::Vector2f(FloatDistri(0.f, k_window_width )(rng),
-                            FloatDistri(0.f, k_window_height)(rng));
+        return sf::Vector2f(FloatDistri(0.f, k_text_view_width )(rng),
+                            FloatDistri(0.f, k_text_view_height)(rng));
     }
 
     template <const std::string & (*choose_string_f)(Rng &)>
     void spawn_string(sf::Vector2f position) {
         DrawText dtext;
         static const std::array k_font_choices {
-            BitmapFont::k_8x8_font, BitmapFont::k_8x8_highlighted_font
+            BitmapFont::k_8x8_font, BitmapFont::k_8x8_highlighted_font,
+            BitmapFont::k_8x16_font, BitmapFont::k_8x16_highlighted_font
         };
         dtext.load_builtin_font(k_font_choices[ IntDistri(0, k_font_choices.size() - 1)(m_rng) ]);
         dtext.set_text_center(position, choose_string_f(m_rng));
@@ -378,18 +390,20 @@ private:
         using Str = std::string;
         static std::array strings {
             Str("Hello There"),
-            Str("This is a test string")
+            Str("This is a test string"),
+            Str("Click somewhere!"),
+            Str("There was quick brown fox."),
+            Str("That jumps over the lazy dog.")
         };
-        return strings[IntDistri(0, strings.size())(rng)];
+        return strings[IntDistri(0, strings.size() - 1)(rng)];
     }
 
     static const std::string & random_click_string(Rng & rng) {
         using Str = std::string;
         static std::array strings {
-            Str("Hello There"),
             Str("Click!"),
         };
-        return strings[IntDistri(0, strings.size())(rng)];
+        return strings[IntDistri(0, strings.size() - 1)(rng)];
     }
 
     struct FloatText {
@@ -443,7 +457,7 @@ private:
               * 0.5f * (k_thickness_maximum - k_thickness_minimum);
         for (int i = 0; i != k_line_count / 2; ++i) {
             auto t = (double(i) / double(k_line_count))*2.*k_pi + t_offset;
-            auto pt = sf::Vector2f(std::cos(t), std::sin(t))*0.6f*float(std::min(k_window_width, k_window_height));
+            auto pt = sf::Vector2f(std::cos(t), std::sin(t))*0.8f*float(std::min(k_window_width / 2, k_window_height / 2));
             DrawLine dline(center, center + pt, thickness, sf::Color::White);
             m_lines.emplace_back(dline);
         }
@@ -465,29 +479,337 @@ private:
     double m_elapsed_time = 0.;
 };
 
-class BezierLineState;
+class BezierLineState final : public RotatingStateOf<BezierLineState> {
+public:
+    using VecF = cul::Vector2<float>;
+
+    struct PointParameters {
+        VecF anchor = VecF(0.5*k_window_width, k_window_height);
+        // default location of the tip without any mouse movement
+        VecF default_tip_location = VecF(0.5*k_window_width, 0.2f*k_window_height);
+        // distance from anchor to an anchor end point
+        float distance_to_anchor_end     = k_window_height / 10.f;
+        // distance from an anchor end point to control point
+        float distance_to_anchor_control = k_window_width  / 8.f;
+
+        float distance_to_tip_control = k_window_height / 5.f;
+    };
+
+    void setup() final {
+        const PointParameters p;
+        m_tip = p.default_tip_location;
+        m_verticies = make_verticies(m_tip);
+
+        mark_point(p.anchor + to_anchor_end(p, k_left));
+        mark_point(p.anchor + to_anchor_end(p, k_right));
+        mark_point(p.anchor);
+        mark_point(get_anchor_control(p, 0.f, k_left));
+        mark_point(get_anchor_control(p, 0.f, k_right));
+        mark_point(get_tip_control(p, m_tip, 0.f, k_left));
+        mark_point(get_tip_control(p, m_tip, 0.f, k_right));
+
+        // make end
+        mark_point(m_tip);
+    }
+
+    void update(double) final {}
+
+    void draw_to(sf::RenderTarget & target) final {
+        target.draw(m_verticies.data(), m_verticies.size(), sf::PrimitiveType::Triangles);
+        for (const auto & rect : m_rectangles) {
+            target.draw(rect);
+        }
+        auto tuples = get_bezier_tuples(m_tip);
+        cul::for_bezier_lines(tuples.left_points, 10, [&target](VecF a, VecF b) {
+            using cul::convert_to;
+            DrawLine dline(convert_to<sf::Vector2f>(a), convert_to<sf::Vector2f>(b), 3.f, sf::Color::Red);
+            target.draw(dline);
+        });
+        cul::for_bezier_lines(tuples.right_points, 10, [&target](VecF a, VecF b) {
+            using cul::convert_to;
+            DrawLine dline(convert_to<sf::Vector2f>(a), convert_to<sf::Vector2f>(b), 3.f, sf::Color::Blue);
+            target.draw(dline);
+        });
+    }
+
+    const std::string & name() const final {
+        static const std::string k_name = "Bezier Lines";
+        return k_name;
+    }
+
+    void process_event(const sf::Event & event) final {
+        RotatingState::process_event(event);
+        if (event.type == sf::Event::MouseMoved) {
+            m_tip.x = float(event.mouseMove.x);
+            m_tip.y = float(event.mouseMove.y);
+
+            m_verticies = make_verticies(m_tip, std::move(m_verticies));
+        } else if (   event.type == sf::Event::MouseLeft
+                   || event.type == sf::Event::LostFocus)
+        {
+            m_tip = PointParameters().default_tip_location;
+            m_verticies = make_verticies(m_tip, std::move(m_verticies));
+
+        }
+        m_rectangles.clear();
+        const PointParameters p;
+        float squish_amount = std::max(0.f, 1.f - magnitude(m_tip - p.anchor) / magnitude(p.default_tip_location - p.anchor));
+        mark_point(p.anchor + to_anchor_end(p, k_left));
+        mark_point(p.anchor + to_anchor_end(p, k_right));
+        mark_point(p.anchor);
+        mark_point(get_anchor_control(p, squish_amount, k_left));
+        mark_point(get_anchor_control(p, squish_amount, k_right));
+        mark_point(get_tip_control(p, m_tip, squish_amount, k_left));
+        mark_point(get_tip_control(p, m_tip, squish_amount, k_right));
+
+        // make end
+        mark_point(m_tip);
+    }
+
+private:
+    static constexpr const float k_pi_f  = cul::k_pi_for_type<float>;
+    // lets think long and hard what exactly direction means here...
+    static constexpr const float k_left  = -1.f;
+    static constexpr const float k_right =  1.f;
+
+    struct TuplePtPair {
+        // tip, tip control, anchor control, anchor end
+        std::tuple<VecF, VecF, VecF, VecF> left_points ;
+        std::tuple<VecF, VecF, VecF, VecF> right_points;
+    };
+
+    static VecF to_anchor_end(const PointParameters & p, float dir_) {
+        assert(dir_ == k_left || dir_ == k_right);
+        return VecF(dir_, 0.f)*p.distance_to_anchor_end;
+    }
+
+    static VecF get_anchor_control
+        (const PointParameters & p, float amount, float dir_)
+    {
+        assert(dir_ == k_left || dir_ == k_right);
+        using namespace cul;
+        // to control without angle
+        const auto v_to_anchor_end = to_anchor_end(p, dir_);
+        const auto theta_0 = angle_between(
+            VecF(-dir_, 0.f), // toward the anchor
+            p.default_tip_location - (p.anchor + v_to_anchor_end));
+        return p.anchor + v_to_anchor_end + rotate_vector(
+            VecF(-dir_, 0.f)*p.distance_to_anchor_control,
+            dir_*(theta_0 + (k_pi_f - theta_0)*amount));
+    }
+
+    static VecF get_tip_control
+        (const PointParameters & p, VecF tip, float amount, float dir_)
+    {
+        assert(dir_ == k_left || dir_ == k_right);
+        using namespace cul;
+
+        const auto theta_0 = directed_angle_between(
+            p.anchor + to_anchor_end(p, dir_) - p.default_tip_location,
+            p.anchor                          - p.default_tip_location);
+        auto theta = normalize(theta_0)*(k_pi_f*0.5f - magnitude(theta_0))*amount;
+        // must be the same sign
+        assert(theta*theta_0 >= 0.f);
+        return tip + rotate_vector(normalize(p.anchor - tip)*p.distance_to_tip_control,
+                                   theta_0 + theta);
+    }
+
+    static TuplePtPair get_bezier_tuples(VecF tip) {
+        using namespace cul;
+        using std::make_tuple;
+        static const PointParameters p;
+        VecF anchor_left  = p.anchor + to_anchor_end(p, k_left );
+        VecF anchor_right = p.anchor + to_anchor_end(p, k_right);
+        float squish_amount = std::max(0.f, 1.f - magnitude(tip - p.anchor) / magnitude(p.default_tip_location - p.anchor));
+        TuplePtPair rv;
+        rv.left_points = make_tuple(tip,
+            get_tip_control(p, tip, squish_amount, k_left),
+            get_anchor_control(p, squish_amount, k_left), anchor_left);
+        rv.right_points = make_tuple(tip,
+            get_tip_control(p, tip, squish_amount, k_right),
+            get_anchor_control(p, squish_amount, k_right), anchor_right);
+        return rv;
+    }
+
+    static std::vector<sf::Vertex> make_verticies
+        (VecF tip, std::vector<sf::Vertex> && rv = std::vector<sf::Vertex>())
+    {
+        auto tuples = get_bezier_tuples(tip);
+        rv.clear();
+        make_verticies(tuples.left_points, tuples.right_points,
+                       75.f*75.f, 0.5f, [&rv](VecF a, VecF b, VecF c)
+        {
+            using namespace cul;
+            rv.emplace_back(convert_to<sf::Vector2f>(a));
+            rv.emplace_back(convert_to<sf::Vector2f>(b));
+            rv.emplace_back(convert_to<sf::Vector2f>(c));
+        });
+        return std::move(rv);
+    }
+
+    template <typename T>
+    static T area_of_triangle
+        (const cul::Vector2<T> & a, const cul::Vector2<T> & b,
+         const cul::Vector2<T> & c)
+    {
+        using namespace cul;
+        // awesomely terse uwu
+        return magnitude(cross(a - b, c - b));
+    }
+
+    template <typename T>
+    static T max_length_from_area(T resolution_area) {
+        return std::sqrt(resolution_area * T(4) / std::sqrt(T(3)) );
+    }
+
+    template <typename Func, typename T, typename ... Types>
+    static void make_verticies
+        (const std::tuple<cul::Vector2<T>, Types...> & tuple_a,
+         const std::tuple<cul::Vector2<T>, Types...> & tuple_b,
+         T area, T error, Func && f)
+    {
+        using namespace cul;
+        using TupleType = std::tuple<cul::Vector2<T>, Types...>;
+        const TupleType * work_side  = &tuple_a;
+        const TupleType * other_side = &tuple_b;
+
+        T os_pos = 0;
+        T ws_pos = 0;
+        // edge case, pos 0 for both points are the same (or super close)
+        if (magnitude(  find_bezier_point(T(0), *work_side )
+                      - find_bezier_point(T(0), *other_side)) < error)
+        {
+            std::tie(os_pos, ws_pos) = []
+                (const TupleType & work_side, const TupleType & other_side, T area, T error)
+            {
+                const auto & any_side = work_side;
+                // I'm going to need a combination things for my
+                // resolution criteria
+                //const auto max_len = max_length_from_area(area);
+                auto tip_pt = find_bezier_point(T(0), any_side);
+                auto os_pt = find_bezier_point(T(1), other_side);
+                auto ws_pt = find_bezier_point(T(1), work_side );
+
+                if (/*   magnitude(tip_pt - os_pt)              < max_len
+                    || */area_of_triangle(tip_pt, os_pt, ws_pt) < area   )
+                {
+                    return std::make_tuple(T(1), T(1));
+                }
+                T low = 0, high = 1;
+                while (true) {
+                    auto mid = (low + high) / T(2);
+                    auto os_pt = find_bezier_point(mid, other_side);
+                    auto ws_pt = find_bezier_point(mid, work_side );
+                    auto tri_con_area = area_of_triangle(tip_pt, os_pt, ws_pt);
+                    if (magnitude(tri_con_area - area) < error) {
+                        return std::make_tuple(mid, mid);
+                    }
+                    *((tri_con_area > area) ? &high : &low) = mid;
+                }
+            } (*work_side, *other_side, area, error);
+            auto tip_pt = find_bezier_point(T(0), *work_side);
+            auto os_pt = find_bezier_point(os_pos, *other_side);
+            auto ws_pt = find_bezier_point(ws_pos, *work_side );
+            f(tip_pt, os_pt, ws_pt);
+        }
+
+        // so now on the work side, we find another point such that we're close
+        // to the given area (which is the "resolution" argument)
+
+        struct WbcStep { // walk bezier curve step
+            bool finishes = false;
+            T next_pos;
+        };
+
+        bool last_iter_finished = false;
+        while (true) {
+            auto pt_low_os = find_bezier_point(os_pos, *other_side);
+            auto pt_low_ws = find_bezier_point(ws_pos, *work_side );
+            auto gv = [] (const TupleType & work_side, const cul::Vector2<T> & pt_low_os,
+                const cul::Vector2<T> & pt_low_ws, T ws_pos, T area, T error)
+            {
+                WbcStep rv;
+                auto pt_con_ws = find_bezier_point(T(1), work_side);
+                if (area_of_triangle(pt_low_os, pt_low_ws, pt_con_ws) < area) {
+                    rv.finishes = true;
+                    rv.next_pos = T(1);
+                    return rv;
+                }
+                T low = ws_pos, high = 1;
+                while (true) {
+                    pt_con_ws = find_bezier_point((low + high) / T(2), work_side);
+                    auto con_tri_area = area_of_triangle(pt_low_os, pt_low_ws, pt_con_ws);
+                    if (magnitude(con_tri_area - area) < error) {
+                        rv.finishes = false;
+                        rv.next_pos = (low + high) / T(2);
+                        return rv;
+                    }
+                    if (con_tri_area > area) {
+                        high = (low + high) / T(2);
+                    } else {
+                        assert(con_tri_area < area);
+                        low = (low + high) / T(2);
+                    }
+                }
+            } (*work_side, pt_low_os, pt_low_ws, ws_pos, area, error);
+            f(pt_low_ws, pt_low_os, find_bezier_point(gv.next_pos, *work_side));
+
+            if (gv.finishes && last_iter_finished) return;
+            last_iter_finished = gv.finishes;
+            ws_pos = gv.next_pos;
+            std::swap(work_side, other_side);
+            std::swap(os_pos   , ws_pos    );
+        }
+    }
+
+    void mark_point(VecF r) {
+        static constexpr const float k_mark_size = 12.f;
+        m_rectangles.emplace_back(r.x - k_mark_size*0.5f, r.y - k_mark_size*0.5f,
+                                  k_mark_size, k_mark_size, sf::Color(0, 100, 155));
+    }
+
+    VecF m_tip;
+    std::vector<sf::Vertex> m_verticies;
+    std::vector<DrawRectangle> m_rectangles;
+};
+
+inline bool is_newline(char c) { return c == '\n'; }
+
+template <typename IterType, typename HandleSequenceFunc>
+void wrap_and_split_nl(IterType beg, IterType end, int width_in_chars, HandleSequenceFunc && f) {
+    cul::wrap_string_as_monowidth(beg, end, width_in_chars,
+        [&f](const char * beg, const char * end)
+    { cul::for_split<is_newline>(beg, end, f); });
+}
 
 class IntroductionState final : public RotatingStateOf<IntroductionState> {
 public:
-
-    static constexpr const auto k_intro_font = BitmapFont::k_8x8_highlighted_font;
+    static constexpr const auto k_intro_font = BitmapFont::k_8x16_highlighted_font;
 
     void setup() final {
         using namespace cul;
-        int line_count = 0;
-        for_split<is_newline>(k_intro_text, k_intro_text_end,
-            [&line_count](const char *, const char *)
-        { ++line_count; });
-
         const auto & intro_font_inst = SfBitmapFont::load_builtin_font(k_intro_font);
-        auto y_start = (k_window_height - intro_font_inst.character_size().height*line_count ) / 2;
+        int view_width_in_chars = k_text_view_width / intro_font_inst.character_size().width;
+
+        std::string cap = k_intro_text;
+        //for (auto & c : cap) {
+            //if (c >= 'a' && c <= 'z') c = (c - 'a') + 'A';
+        //}
+        const auto * beg = cap.data();
+        auto end = beg + cap.size();
+
+        int line_count = 0;
+        wrap_and_split_nl(beg, end, view_width_in_chars,
+                          [&line_count](const char *, const char *) { ++line_count; });
+
+        auto y_start = (k_text_view_height - intro_font_inst.character_size().height*line_count ) / 2;
         m_texts.reserve(line_count);
-        for_split<is_newline>(k_intro_text, k_intro_text_end,
+        wrap_and_split_nl(beg, end, view_width_in_chars,
             [this, &y_start, &intro_font_inst](const char * beg, const char * end)
         {
             DrawText dtext;
             dtext.assign_font(intro_font_inst);
-            dtext.set_text_center(sf::Vector2f(k_window_width / 2, y_start),
+            dtext.set_text_center(sf::Vector2f(k_text_view_width / 2, y_start),
                                   beg, end);
             m_texts.emplace_back(std::move(dtext));
             y_start += intro_font_inst.character_size().height;
@@ -498,7 +820,9 @@ public:
 
     void draw_to(sf::RenderTarget & target) final {
         for (const auto & text : m_texts) {
-            target.draw(text);
+            auto states = sf::RenderStates::Default;
+            states.transform.scale(k_text_scale, k_text_scale);
+            target.draw(text, states);
         }
     }
 
@@ -508,13 +832,11 @@ public:
     }
 
 private:
-    static bool is_newline(char c) { return c == '\n'; }
-
     static constexpr const char * k_intro_text =
-        "Hello, this is my Common Utilities for SFML Demo App\n"
-        "You will notice the current state's name in the top left corner.\n"
-        "Use the left and right arrow keys to switch app states.\n"
-        "Press Escape to quit the application.";
+        "Hello, this is my Utilities for SFML Demo App.\n"
+        "The current state's name is in the top left corner. "
+        "Left and right arrow keys will switch app states.\n"
+        "Lastly: press Escape to quit.";
 
     static constexpr const char * k_intro_text_end =
         cul::find_str_end(k_intro_text);
@@ -567,24 +889,5 @@ template <typename Head, typename ... Types>
     }
     switch_to_state_by_type_id(idx, cul::TypeList<Types...>());
 }
-#if 0
-/* private */ void RotatingState::switch_to_state_by_type_id(int idx) {
-    assert(idx >= 0 && idx < int(StateTypeList::k_count));
-    switch (idx) {
-    case k_state_list_position_of  <RandomRectangleState>:
-        return (void)set_next_state<RandomRectangleState>();
-    case k_state_list_position_of  <RandomTriangleState>:
-        return (void)set_next_state<RandomTriangleState>();
-    case k_state_list_position_of  <RandomTextState>:
-        return (void)set_next_state<RandomTextState>();
-    case k_state_list_position_of  <LineTestState>:
-        return (void)set_next_state<LineTestState>();
-    /*k_state_list_position_of<BezierLineState>*/
-    case k_state_list_position_of  <IntroductionState>:
-        return (void)set_next_state<IntroductionState>();
-    }
-    throw std::runtime_error("bad branch");
-}
-#endif
 
 } // end of <anonymous> namespace

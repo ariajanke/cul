@@ -30,6 +30,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <tuple>
+#include <array>
 
 #include <cmath> // include cmath you coward
 
@@ -142,6 +143,37 @@ template <typename T, typename Func>
 inline std::enable_if_t<std::is_floating_point_v<T>, T>
     find_lowest_true(Func && f, T hint = T(0.5), T error = T(0.0005))
 { return std::get<1>(find_smallest_diff(std::move(f), hint, error)); }
+
+/** Makes an array for a single value. Template arguments are flipped since
+ *  size is least likely to be deducible.
+ *  @tparam kt_size number of elements in the array
+ *  @tparam T type of element in the array
+ *  @tparam U type of the copied object, must be convertible to T
+ *  @param obj The initial value for every member in the array
+ */
+template <std::size_t kt_size, typename T, typename U>
+constexpr std::enable_if_t<!std::is_same_v<T, U> && std::is_convertible_v<U, T>,
+    std::array<T, kt_size>>
+    make_filled_array(const U & obj)
+{
+    std::array<T, kt_size> rv;
+    std::fill(rv.begin(), rv.end(), obj);
+    return rv;
+}
+
+/** Makes an array for a single value. Template arguments are flipped since
+ *  size is least likely to be deducible.
+ *  @tparam kt_size number of elements in the array
+ *  @tparam T type of element in the array
+ *  @param obj The initial value for every member in the array
+ */
+template <std::size_t kt_size, typename T>
+constexpr std::array<T, kt_size> make_filled_array(const T & obj) {
+    std::array<T, kt_size> rv;
+    std::fill(rv.begin(), rv.end(), obj);
+    return rv;
+}
+
 
 // ----------------------- Implementation Details -----------------------------
 

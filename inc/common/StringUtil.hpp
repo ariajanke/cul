@@ -203,6 +203,21 @@ void wrap_string_as_monowidth
     (IterType beg, IterType end, int max_chars,
      HandleSequenceFunc && handle_seq);
 
+/** @brief Finds the end of a constant expression string.
+ *  @note  A constexpr utility meant to replace uses of "strlen".
+ */
+template <typename T>
+constexpr const T * find_str_end(const T * s)
+    { return *s ? find_str_end(s + 1) : s; }
+
+/** @brief Does exactly what strlen does, but for any string of any character
+ *         type.
+ *  @note  A constexpr utility meant to replace uses of "strlen".
+ */
+template <typename T>
+constexpr std::ptrdiff_t find_str_len(const T * s)
+    { return find_str_end(s) - s; }
+
 // <---------------------------- implementations ----------------------------->
 
 template <auto is_seperator, typename IterType, typename Func>
@@ -419,12 +434,11 @@ public:
             auto sent_beg = jtr_last;
             auto sent_end = gv;
             // need to test for "bad" argument type (by reference)
+            // we can't have a move here, as it's being used multiple times
             if (adapt_to_flow_control_signal
-                    (std::move(handle_seq), sent_beg, sent_end) == fc_signal::k_break)
+                (handle_seq, sent_beg, sent_end) == fc_signal::k_break)
             { return; }
-#           if 0
-            handle_seq(sent_beg, sent_end);
-#           endif
+
             }
             jtr_last = gv;
             jtr      = constrain_offset(gv, end, max_chars);

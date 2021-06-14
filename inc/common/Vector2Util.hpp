@@ -263,6 +263,16 @@ EnableVec2Util<Vec, bool> is_real(const Vec & r);
 template <typename Vec>
 EnableVec2Util<Vec, Vec> get_no_solution_sentinel();
 
+/** @returns the area of a triangle as defined by three points.
+ *
+ *  @tparam Vec must be either the builtin Vector2 type or a type convertible
+ *          to and from one
+ */
+template <typename Vec>
+EnableVec2UtilRetScalar<Vec>
+    area_of_triangle(const Vec & a, const Vec & b, const Vec & c)
+{ return magnitude(cross(a - b, c - b)); }
+
 /** @}*/
 
 // ------------------ everything pretaining to rectangles ---------------------

@@ -23,7 +23,7 @@
     SOFTWARE.
 
 *****************************************************************************/
-
+#if 0
 #include <common/Util.hpp>
 #include <common/CurrentWorkingDirectory.hpp>
 #include <common/StringUtil.hpp>
@@ -101,3 +101,4 @@ std::string load_file_contents_to_string(const char * filename) {
     fin.close();
     return sstrm.str();
 }
+#endif

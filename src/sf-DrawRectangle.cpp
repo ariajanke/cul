@@ -24,13 +24,11 @@
 
 *****************************************************************************/
 
-#include <common/DrawRectangle.hpp>
+#include <common/sf/DrawRectangle.hpp>
 
 #include <SFML/Graphics.hpp>
 
 namespace cul {
-
-DrawRectangle::DrawRectangle() {}
 
 DrawRectangle::DrawRectangle
     (float x_, float y_, float w_, float h_, sf::Color clr_)
@@ -109,6 +107,15 @@ sf::Color DrawRectangle::color() const noexcept
 
 /* virtual protected */ void DrawRectangle::draw
     (sf::RenderTarget & target, sf::RenderStates states) const
-    { target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads, states); }
+{
+#   if 0
+    // deprecated from SFML
+    target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads, states);
+#   else
+    target.draw(m_vertices.data(), m_vertices.size(), sf::TriangleStrip, states);
+    //target.draw(m_vertices.data(), m_vertices.size() - 1, sf::Triangles, states);
+    //target.draw(m_vertices.data() + 1, m_vertices.size() - 1, sf::Triangles, states);
+#   endif
+}
 
 } // end of cul namespace

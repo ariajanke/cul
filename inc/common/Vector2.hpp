@@ -145,10 +145,8 @@ struct Vector2Traits<T, Size2<T>> {
     };
 };
 
-} // end of cul namespace
-
 template <typename T>
-/* global */ bool operator ==
+bool operator ==
     (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
 {
     return    lhs.left  == rhs.left  && rhs.top    == lhs.top
@@ -156,6 +154,8 @@ template <typename T>
 }
 
 template <typename T>
-/* global */ bool operator !=
+bool operator !=
     (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
 { return !(lhs == rhs); }
+
+} // end of cul namespace

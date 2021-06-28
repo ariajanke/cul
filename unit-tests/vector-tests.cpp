@@ -10,7 +10,7 @@ struct Cust {
 
 };
 
-Cust operator + (const Cust & lhs, const Cust & rhs) {
+Cust operator + (const Cust &, const Cust &) {
     return Cust();
 }
 
@@ -251,5 +251,10 @@ int main() {
         cul::rotate_vector(VecF(1, 0), cul::k_pi_for_type<double>*0.5),
         VecF(0, 1),
         0.0005f));
+    {
+    using RectI = cul::Rectangle<int>;
+    assert( cul::overlaps(RectI(0, 0, 10, 10), RectI(5, 5, 12, 2)));
+    assert(!cul::overlaps(RectI(0, 0, 2 , 10), RectI(5, 5, 12, 2)));
+    }
     return 0;
 }

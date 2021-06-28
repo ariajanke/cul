@@ -320,6 +320,10 @@ EnableRectangle<T> find_rectangle_intersection
     (const Rectangle<T> &, const Rectangle<T> &);
 
 template <typename T>
+std::enable_if_t<std::is_arithmetic_v<T>, bool>
+    overlaps(const Rectangle<T> &, const Rectangle<T> &);
+
+template <typename T>
 EnableArithmetic<T> area_of(const Rectangle<T> & a)
     { return a.width*a.height; }
 
@@ -647,6 +651,14 @@ EnableRectangle<T> find_rectangle_intersection
         return Rectangle<T>(low_rv.x, low_rv.y,
                             high_rv.x - low_rv.x, high_rv.y - low_rv.y);
     }
+}
+
+template <typename T>
+std::enable_if_t<std::is_arithmetic_v<T>, bool>
+    overlaps(const Rectangle<T> & a, const Rectangle<T> & b)
+{
+    return    right_of (a) > b.left && right_of (b) > a.left
+           && bottom_of(a) > b.top  && bottom_of(b) > a.top ;
 }
 
 template <typename T>

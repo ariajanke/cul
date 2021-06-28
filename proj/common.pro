@@ -98,7 +98,7 @@ SOURCES += \
     \#../unit-tests/test-string-utils.cpp
     \#../unit-tests/test-math-utils.cpp
     \#../unit-tests/vector-tests.cpp
-    \# ../unit-tests/sfutils-tests.cpp
+    \#../unit-tests/sfutils-tests.cpp
     ../demos/sf-util-demos.cpp
 
 INCLUDEPATH += \

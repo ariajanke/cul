@@ -95,7 +95,7 @@ void TestSuite::do_test_back(Func && f) {
     ++m_test_count;
 }
 
-void TestSuite::finish_up() {
+void TestSuite::finish_up() noexcept {
     if (m_test_count == 0) return;
     *m_out << "[ Passed " << m_test_successes << " / " << m_test_count
            << " test cases (" << std::to_string(int(double(m_test_successes)/double(m_test_count)*100.))

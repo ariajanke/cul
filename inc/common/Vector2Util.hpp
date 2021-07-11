@@ -273,6 +273,16 @@ EnableVec2UtilRetScalar<Vec>
     area_of_triangle(const Vec & a, const Vec & b, const Vec & c)
 { return magnitude(cross(a - b, c - b)); }
 
+/** @returns true if a test point is inside a triangle defined by three points.
+ *  @tparam Vec must a 2d vector for which vector traits are defined.
+ *  @param a A single end point defining the perimeter of the triangle.
+ *  @param b A single end point defining the perimeter of the triangle.
+ *  @param c A single end point defining the perimeter of the triangle.
+ *  @param test_point a point to test whether it is inside the triangle or not.
+ */
+template <typename Vec>
+EnableVec2Util<Vec, bool> is_inside_triangle
+    (const Vec & a, const Vec & b, const Vec & c, const Vec & test_point);
 /** @}*/
 
 // ------------------ everything pretaining to rectangles ---------------------
@@ -355,6 +365,11 @@ template <typename T>
 Vector2<T> find_closest_point_to_line
     (const Vector2<T> & a, const Vector2<T> & b,
      const Vector2<T> & external_point);
+
+template <typename T>
+bool is_inside_triangle
+    (const Vector2<T> & a, const Vector2<T> & b, const Vector2<T> & c,
+     const Vector2<T> & test_point);
 
 } // end of detail namespace -> into ::cul
 
@@ -592,6 +607,21 @@ EnableVec2Util<Vec, Vec> get_no_solution_sentinel() {
     return k_rv;
 }
 
+template <typename Vec>
+EnableVec2Util<Vec, bool> is_inside_triangle
+    (const Vec & a, const Vec & b, const Vec & c, const Vec & test_point)
+{
+    using T = typename Vector2Scalar<Vec>::Type;
+    if constexpr (std::is_same_v<Vec, Vector2<T>>) {
+        using VecImp = Vector2<T>;
+        return detail::is_inside_triangle(
+            convert_to<VecImp>(a), convert_to<VecImp>(b), convert_to<VecImp>(c),
+            convert_to<VecImp>(test_point));
+    } else {
+        return detail::is_inside_triangle(a, b, c, test_point);
+    }
+}
+
 // ----------------------- Implementation Details -----------------------------
 // ------------------ everything pretaining to rectangles ---------------------
 
@@ -808,6 +838,32 @@ Vector2<T> find_closest_point_to_line
         return num / (denom*denom);
     } ();
     return Vec(a.x, a.y) + mag*Vec(b.x - a.x, b.y - a.y);
+}
+
+template <typename T>
+bool is_inside_triangle
+    (const Vector2<T> & a, const Vector2<T> & b, const Vector2<T> & c,
+     const Vector2<T> & test_point)
+{
+    // derived from mathematics presented here:
+    // https://blackpawn.com/texts/pointinpoly/default.html
+    const auto & p = test_point;
+    // convert to Barycentric cordinates
+    auto ca = c - a;
+    auto ba = b - a;
+    auto pa = p - a;
+
+    auto dot_caca = dot(ca, ca);
+    auto dot_caba = dot(ca, ba);
+    auto dot_capa = dot(ca, pa);
+    auto dot_baba = dot(ba, ba);
+    auto dot_bapa = dot(ba, pa);
+
+    auto denom = dot_caca*dot_baba - dot_caba*dot_caba;
+    auto u = dot_baba*dot_capa - dot_caba*dot_bapa;
+    auto v = dot_caca*dot_bapa - dot_caba*dot_capa;
+
+    return u >= 0 && v >= 0 && (u + v < denom);
 }
 
 } // end of detail namespace -> into ::cul

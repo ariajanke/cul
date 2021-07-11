@@ -399,7 +399,7 @@ class MultiTypePriv {
         using HeadType = typename TypeList<Types...>::HeadType;;
         if (type_is_head_type<TypeList<Types...>>(id)) {
             const HeadType * ht = reinterpret_cast<const HeadType *>(src);
-            if (CAST_T == k_do_static_cast)
+            if constexpr (CAST_T == k_do_static_cast)
                 return static_cast<const T *>(ht);
             else
                 return dynamic_cast<const T *>(ht);

@@ -47,7 +47,6 @@ SOURCES += \
     ../src/BitmapFont.cpp              \
     ../src/ConstString.cpp             \
     ../src/CurrentWorkingDirectory.cpp \
-    ../src/Util.cpp                    \
     ../src/TestSuite.cpp               \
     \ # SFML Utilities
     ../src/sf-DrawText.cpp             \

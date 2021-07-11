@@ -62,13 +62,13 @@ public:
     void start_series(const char *);
     void test(TestAssertion (*test_func)());
     void test(TestAssertion (*test_func)(TestFunc));
-    void finish_up();
+    void finish_up() noexcept;
     bool has_successes_only() const;
 private:
     template <typename Func>
     void do_test_back(Func &&);
-    int m_test_count;
-    int m_test_successes;
+    int m_test_count = 0;
+    int m_test_successes = 0;
     std::ostream * m_out;
 };
 

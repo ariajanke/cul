@@ -74,7 +74,8 @@ bool run_for_split_tests() {
     
     using ConstIter = std::string::const_iterator;
     ts::TestSuite suite("for_split");
-    suite.test([]() {
+    suite.hide_successes();
+    MACRO_CUL_TEST(suite, ([] {
         int count = 0;
         std::string samp = "a b c";
         
@@ -82,8 +83,8 @@ bool run_for_split_tests() {
             [&count](Iter, Iter)
         { ++count; });
         return ts::test(count == 3);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         int count = 0;
         std::string samp = "a b c";
         auto beg = &samp[0];
@@ -92,8 +93,8 @@ bool run_for_split_tests() {
             [&count](const char * beg, const char * end)
         { count += (end - beg); });
         return ts::test(count == 3);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         int count = 0;
         std::string samp = "a b c e f";
         
@@ -104,165 +105,168 @@ bool run_for_split_tests() {
             return (count == 3) ? fc_signal::k_break : fc_signal::k_continue;
         });
         return ts::test(count == 3);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         int count = 0;
         std::string samp = " a b c  e    f           ";
         for_split<is_whitespace>(samp, [&count](ConstIter, ConstIter)
             { ++count; });
         return ts::test(count == 5);
-    });
+    }));
     return suite.has_successes_only();
 }
 
 bool run_string_to_number_tests() {
     ts::TestSuite suite("string_to_number");
-    suite.test([]() {
+    suite.hide_successes();
+    MACRO_CUL_TEST(suite, ([] {
         const char * str = "856";
         int out = 0;
         bool res = string_to_number_assume_negative(str, str + strlen(str), out);
         return ts::test(res && out == -856);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         const char * str = "123.34";
         float out = 0.f;
         bool res = string_to_number_assume_negative(str, str + strlen(str), out);
         return ts::test(res && magnitude(out + 123.34) < 0.005f);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "5786";
         std::size_t out = 0;
         bool res = string_to_number_assume_negative(samp.begin(), samp.end(), out);
         return ts::test(res && out == 5786);
-    });
+    }));
     
-    suite.test([]() {
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "0";
         int out = -1;
         bool res = string_to_number(samp.begin(), samp.end(), out);
         return ts::test(res && out == 0);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "123";
         int out = 0;
         bool res = string_to_number(samp, out);
         return ts::test(res && out == 123);
-    });
-    // 5 tests now
-    suite.test([]() {
+    }));
+    // 5 tests now < comments like these are hopefully no longer neccessary
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "-2147483648";
         int32_t out = 0;
         bool res = string_to_number(samp, out);
         return ts::test(res && out == -2147483648);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "-101001";
         int out = 0;
         bool res = string_to_number(samp, out, 2);
         return ts::test(res && out == -0b101001);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::u32string wide = U"-9087";
         int out = 0;
         bool res = string_to_number(wide, out);
         return ts::test(res && out == -9087);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "0o675";
         int out = 0;
         bool res = string_to_number_multibase(samp.begin(), samp.end(), out);
         return ts::test(res && out == 0675);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "089";
         int out = 0;
         bool res = string_to_number_multibase(samp, out);
         return ts::test(res && out == 89);
-    });
+    }));
     // 10 tests now
-    suite.test([]() {
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "-0x567.8";
         int out = 0;
         bool res = string_to_number_multibase(samp, out);
         // should round up!
         return ts::test(res && out == -0x568);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "0b11011";
         int out = 0;
         bool res = string_to_number_multibase(samp, out);
         return ts::test(res && out == 0b11011);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "10.5";
         int out = 0;
         bool res = string_to_number(samp, out);
         return ts::test(res && out == 11);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "10.4";
         int out = 0;
         bool res = string_to_number(samp, out);
         return ts::test(res && out == 10);
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "7995";
         int out = 0;
         bool res = string_to_number_multibase(samp, out);
         return ts::test(res && out == 7995);
-    });
+    }));
     // 15 tests now
-    suite.test([]() {
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "a0";
         int out = 0;
         bool res = string_to_number_multibase(samp, out);
         return ts::test(!res); // no prefix... strictly decimal
-    });
+    }));
     return suite.has_successes_only();
 }
 
 bool run_trim_tests() {
     ts::TestSuite suite("trim");
-    suite.test([]() {
+    suite.hide_successes();
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = " a ";
         auto beg = samp.begin();
         auto end = samp.end  ();
         trim<is_whitespace>(beg, end);
         return ts::test(end - beg == 1 && *beg == 'a');
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         const char * str = " a ";
         auto beg = str;
         auto end = str + strlen(str);
         trim<is_whitespace>(beg, end);
         return ts::test(end - beg == 1 && *beg == 'a');
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::u32string str = U" true";
         auto beg = str.begin();
         auto end = str.end  ();
         trim<is_whitespace_u>(beg, end);
         return ts::test(end - beg == 4 && char(*beg) == 't');
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "a   ";
         auto beg = samp.begin();
         auto end = samp.end();
         trim<is_whitespace>(beg, end);
         return ts::test(end - beg == 1 && *beg == 'a');
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         std::string samp = "               ";
         auto beg = samp.begin();
         auto end = samp.end();
         trim<is_whitespace>(beg, end);
         return ts::test(end == beg);
-    });
+    }));
     return suite.has_successes_only();
 }
 
 bool run_wrap_tests() {
     ts::TestSuite suite("wrap_string_as_monowidth");
+    suite.hide_successes();
     static auto do_wrap_tests = [](const char * in, int max_width, std::initializer_list<const char *> list) {
         std::vector<std::string> correct { list.begin(), list.end() };
         for (const auto & str : correct) {
@@ -280,39 +284,39 @@ bool run_wrap_tests() {
         return std::equal(res.begin(), res.end(), correct.begin(), correct.end());
     };
     // tests "stolen" from MemR suite
-    suite.test([]() {
+    MACRO_CUL_TEST(suite, ([] {
         return ts::test(do_wrap_tests("Hello world.", 9, { "Hello", "world." }));
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         return ts::test(
         //             0123456789012345678901234
         do_wrap_tests("This is a short sentence.", 20, { "This is a short", "sentence." })
         );
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         return ts::test(
         //             0123456789012345678901234
         do_wrap_tests("This is a short sentence.", 10, { "This is a", "short", "sentence." })
         );
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         return ts::test(
         do_wrap_tests("-------------------------", 15, { "---------------", "----------" })
         );
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         return ts::test(
         do_wrap_tests("-------------------------", 10, { "----------", "----------", "-----" })
         );
-    });
-    suite.test([]() {
+    }));
+    MACRO_CUL_TEST(suite, ([] {
         return ts::test(
         //             0123456789012345678901234
         do_wrap_tests("0 1 2 3333 4 55 6 777 8", 8, { "0 1 2", "3333 4", "55 6 777", "8" })
         );
-    });
+    }));
     // test is ok with UString
-    suite.test([]() {
+    MACRO_CUL_TEST(suite, ([] {
         //                      0123456789ABCDEFG
         std::u32string samp = U"  -  --   ---  -";
         auto output =       { U"  -  --", U"   ---  ", U"-" };
@@ -329,7 +333,7 @@ bool run_wrap_tests() {
             return rv ? fc_signal::k_continue : fc_signal::k_break;
         }, [](u_char c) { return c == u_char('-'); });
         return ts::test(rv);
-    });
+    }));
     return suite.has_successes_only();
 }
 

@@ -25,6 +25,7 @@
 *****************************************************************************/
 
 #include <common/TestSuite.hpp>
+#include <common/Util.hpp>
 
 #include <iostream>
 
@@ -32,7 +33,11 @@
 
 namespace {
 
+using namespace cul::exceptions_abbr;
+
 std::string to_padded_string(int);
+
+std::string source_position_to_string(const char * filename, int line);
 
 } // end of <anonymous> namespace
 
@@ -46,9 +51,7 @@ TestAssertion test(bool v) {
    return ta;
 }
 
-TestSuite::TestSuite():
-    m_test_count(0), m_test_successes(0), m_out(&std::cout)
-{}
+TestSuite::TestSuite(): m_out(&std::cout) {}
 
 TestSuite::TestSuite(const char * series_name):
     TestSuite()
@@ -77,22 +80,21 @@ void TestSuite::test(TestAssertion (*test_func)(TestFunc)) {
     });
 }
 
-template <typename Func>
-void TestSuite::do_test_back(Func && f) {
-    auto test_num = to_padded_string(m_test_count);
-    try {
-        if (f()) {
-            *m_out << "[ Passed TEST " << test_num << " ]" << std::endl;
-            ++m_test_successes;
-        } else {
-            *m_out << "[ FAILED TEST " << test_num << " ]" << std::endl;
-        }
-    } catch (std::exception & exp) {
-        *m_out << "[ FAILED TEST " << test_num << " ]\n"
-               << "Test threw an exception with the following description:\n"
-               << exp.what() << std::endl;
+void TestSuite::assign_output_stream(std::ostream & out) { m_out = &out; }
+
+void TestSuite::mark_source_position(const char * filename, int line) {
+    if (!filename || line < 0) {
+        throw InvArg("TestSuite::mark_source_position: Source filename must "
+                     "be a non-null pointer and line must be a non-negative "
+                     "integer.");
     }
-    ++m_test_count;
+    m_source_position = line;
+    m_source_file     = filename;
+}
+
+void TestSuite::unmark_source_position() {
+    // is enough to revert behavior
+    m_source_file = nullptr;
 }
 
 void TestSuite::finish_up() noexcept {
@@ -106,6 +108,37 @@ void TestSuite::finish_up() noexcept {
 bool TestSuite::has_successes_only() const
     { return m_test_successes == m_test_count; }
 
+template <typename Func>
+/* private */ void TestSuite::do_test_back(Func && f) {
+    ++m_test_count;
+    try {
+        if (f()) {
+            if (!m_silence_success) {
+                *m_out << "[ Passed TEST " << to_padded_string(m_test_count)
+                       << " ]" << std::endl;
+            }
+            ++m_test_successes;
+        } else {
+            print_failure(nullptr);
+        }
+    } catch (std::exception & exp) {
+        print_failure(exp.what());
+    }
+    unmark_source_position();
+}
+
+/* private */ void TestSuite::print_failure(const char * exception_text) {
+    *m_out << "[ FAILED TEST " << to_padded_string(m_test_count) << " ]";
+    if (m_source_file) {
+        *m_out << "\nTest location: " << source_position_to_string(m_source_file, m_source_position);
+    }
+    if (exception_text) {
+        *m_out << "\nTest threw an exception with the following description:\n"
+               << exception_text;
+    }
+    *m_out << std::endl;
+}
+
 } // end of ts namespace -> into ::cul
 
 } // end of cul namespace
@@ -113,9 +146,14 @@ bool TestSuite::has_successes_only() const
 namespace {
 
 std::string to_padded_string(int x) {
-    if (x == 0) return "000";
+    // what if I have a 1000 test cases?
+    if (x == 0) return "   ";
     std::string rv = std::to_string(x);
-    return std::string(std::size_t(2 - std::floor(std::log10(double(x)))), '0') + rv;
+    return std::string(std::size_t(2 - std::floor(std::log10(double(x)))), ' ') + rv;
+}
+
+std::string source_position_to_string(const char * filename, int line) {
+    return std::string(filename) + " line " + std::to_string(line);
 }
 
 } // end of <anonymous> namespace

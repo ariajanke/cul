@@ -28,8 +28,10 @@
 #include <common/Util.hpp>
 
 #include <iostream>
+#include <algorithm>
 
 #include <cmath>
+#include <cstring>
 
 namespace {
 
@@ -44,6 +46,27 @@ std::string source_position_to_string(const char * filename, int line);
 namespace cul {
 
 namespace ts {
+
+void set_context(TestSuite & suite, void (*make_context)(TestSuite &, Unit &)) {
+    Unit unit = UnitAttn::make_unit();
+
+    // caller must call "start" on unit, or the loop exits
+    // does result in a "wasted" iteration
+    make_context(suite, unit);
+
+    while (UnitAttn::index_hit(unit)) {
+        UnitAttn::increment(unit);
+        make_context(suite, unit);
+    }
+}
+
+/* private static */ void UnitAttn::increment(Unit & unit) {
+    unit.m_hit = false;
+    ++unit.m_index;
+    unit.m_starts = 0;
+}
+
+// ----------------------------------------------------------------------------
 
 TestAssertion test(bool v) {
    TestAssertion ta;
@@ -67,7 +90,7 @@ void TestSuite::start_series(const char * desc) {
     *m_out << desc << std::endl;
     m_test_count = 0;
 }
-
+#if 0
 void TestSuite::test(TestAssertion (*test_func)()) {
     do_test_back([test_func]() {
         return test_func().value;
@@ -79,7 +102,7 @@ void TestSuite::test(TestAssertion (*test_func)(TestFunc)) {
         return test_func(ts::test).value;
     });
 }
-
+#endif
 void TestSuite::assign_output_stream(std::ostream & out) { m_out = &out; }
 
 void TestSuite::mark_source_position(const char * filename, int line) {
@@ -108,25 +131,6 @@ void TestSuite::finish_up() noexcept {
 bool TestSuite::has_successes_only() const
     { return m_test_successes == m_test_count; }
 
-template <typename Func>
-/* private */ void TestSuite::do_test_back(Func && f) {
-    ++m_test_count;
-    try {
-        if (f()) {
-            if (!m_silence_success) {
-                *m_out << "[ Passed TEST " << to_padded_string(m_test_count)
-                       << " ]" << std::endl;
-            }
-            ++m_test_successes;
-        } else {
-            print_failure(nullptr);
-        }
-    } catch (std::exception & exp) {
-        print_failure(exp.what());
-    }
-    unmark_source_position();
-}
-
 /* private */ void TestSuite::print_failure(const char * exception_text) {
     *m_out << "[ FAILED TEST " << to_padded_string(m_test_count) << " ]";
     if (m_source_file) {
@@ -137,6 +141,11 @@ template <typename Func>
                << exception_text;
     }
     *m_out << std::endl;
+}
+
+/* private */ void TestSuite::print_success() {
+    *m_out << "[ Passed TEST " << to_padded_string(m_test_count) << " ]"
+           << std::endl;
 }
 
 } // end of ts namespace -> into ::cul
@@ -153,6 +162,23 @@ std::string to_padded_string(int x) {
 }
 
 std::string source_position_to_string(const char * filename, int line) {
+    // should hopefully be good enough for my needs
+    using std::make_reverse_iterator;
+    auto fn_end = filename + ::strlen(filename);
+    const auto k_fn_rev_end = make_reverse_iterator(filename);
+    auto find_last = [k_fn_rev_end, fn_end](char c)
+        { return std::find(make_reverse_iterator(fn_end), k_fn_rev_end, c); };
+    static auto revert = [](decltype(k_fn_rev_end) ritr) { return (ritr.base()) - 1; };
+    auto fslash = find_last('/' );
+    auto bslash = find_last('\\');
+    if (fslash != k_fn_rev_end && bslash != k_fn_rev_end) {
+        filename = revert(std::max(fslash, bslash));
+    } else if (fslash != k_fn_rev_end) {
+        filename = revert(fslash);
+    } else if (bslash != k_fn_rev_end) {
+        filename = revert(bslash);
+    }
+
     return std::string(filename) + " line " + std::to_string(line);
 }
 

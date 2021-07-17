@@ -57,7 +57,7 @@ template <typename T> struct MultiTypeConstUpcastPair;
  *  @tparam Types "parameter type pack"
  */
 template <typename ... Types>
-class MultiType {
+class MultiType final {
 public:
     using MtTypeList = TypeList<Types...>;
     using Error = std::runtime_error;

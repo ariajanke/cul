@@ -39,6 +39,6 @@ Grid<sf::Color> to_color_grid(const sf::Image &);
 
 template <typename T>
 sf::Vector2f to_sf_vec2f(const cul::Vector2<T> & r)
-    { return cul::convert_to<sf::Vector2f>(r); }
+    { return cul::convert_to<sf::Vector2<T>>(r); }
 
 } // end of cul namespace

@@ -27,6 +27,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <stdexcept>
 
 namespace cul {
 
@@ -34,28 +35,25 @@ namespace ts {
 
 class TestAssertion;
 class TestSuite;
+class Unit;
 
-TestAssertion test(bool);
-
-/** Performs a unit test, marking the source's current position and filename.
+/** This semantic object represents an assertion being made by a test.
  *
- *  @note If it were possible to avoid macros here... I would happily do so.
- *        Maybe in 2023 I guess...
- *        It's also not even supported in Clang yet!
+ *  All tests will need to return this object, which can be done by calling
+ *  "test".
+ *
+ *  @see cul::ts::TestAssertion cul::ts::test(bool)
  */
-#define MACRO_CUL_TEST(ts,x) do{\
-    (ts).mark_source_position(__FILE__,__LINE__); /* < why I need a macro */ \
-    (ts).test((x));\
-}while(false)
-
-using TestFunc = TestAssertion(*)(bool);
-
-// semantic object
 class TestAssertion {
     friend TestAssertion test(bool);
     friend class TestSuite;
     bool value;
 };
+
+/** @returns a boolean converted into a TestAssertion, the expected return
+ *           type for a unit test
+ */
+TestAssertion test(bool);
 
 /** A "home grown" unit test class.
  *
@@ -92,12 +90,12 @@ public:
      *
      *  This maybe called using a lambda expression that is implicitly
      *  convertible to a function pointer.
-     *  @param test_func function to call for testing
-     *  @see MACRO_CUL_TEST
+     *  @param test_func function to call for testing, must return a
+     *                   TestAssertion object
+     *  @see MACRO_MARK_POSITION_OF_CUL_TEST_SUITE
      */
-    void test(TestAssertion (*test_func)());
-
-    [[deprecated]] void test(TestAssertion (*test_func)(TestFunc));
+    template <typename Func>
+    void test(Func && f) { do_test_back([&f] { return f().value; }); }
 
     /** Assigns a stream to write to.
      *  @warning like all "assign_*" functions, this sets an unmanaged
@@ -142,6 +140,8 @@ private:
 
     void print_failure(const char * exception_text = nullptr);
 
+    void print_success();
+
     int m_test_count = 0;
     int m_test_successes = 0;
     bool m_silence_success = false;
@@ -151,6 +151,94 @@ private:
 
     std::ostream * m_out;
 };
+
+/** Macro for marking to current position in source code for a test suite.
+ *
+ *  @note This macro maybe renamed to a more terse name in test source code.
+ *        It is defined with a long name as not to be intrusive on the global
+ *        namespace
+ */
+#define MACRO_MARK_POSITION_OF_CUL_TEST_SUITE(suite) \
+    ([](cul::ts::TestSuite & suite) -> cul::ts::TestSuite & \
+        { suite.mark_source_position(__FILE__,__LINE__); return suite; }) \
+        ((suite))
+
+/** It is sometimes desired that test share the same code that creates a
+ *  context or set of commonly initialized and setup variables.
+ *
+ *  @param make_context
+ *         this is called n + 1 number of times, where n is the number of times
+ *         "start" is called by the Unit object which is passed into the
+ *         function @n
+ *         Lambda variable captures are disallowed (by having a function
+ *         pointer passed) to encourage that contexts are isolated.
+ *  @see Unit
+ */
+void set_context(TestSuite &, void (*make_context)(TestSuite &, Unit &));
+
+/** Special object for "set_context", which allows unit tests to reuse code.
+ *
+ *  This object ensures that only one unit test is run per context.
+ *
+ *  @note This object may only be created for "set_context", which is the
+ *        reason why it's constructor is private.
+ */
+class Unit {
+public:
+    /** Called whenever starting a unit test.
+     *  @param f this function will only be called if it is the current index.
+     */
+    template <typename Func>
+    void start(TestSuite &, Func && f);
+
+private:
+    friend class UnitAttn;
+    Unit() {}
+    int m_starts = 0;
+    int m_index = 0;
+    bool m_hit  = false;
+};
+
+// ----------------------------------------------------------------------------
+
+class UnitAttn {
+    friend void set_context(TestSuite &, void (*)(TestSuite &, Unit &));
+    static Unit make_unit() { return Unit(); }
+    static bool index_hit(const Unit & unit) { return unit.m_hit; }
+    static void increment(Unit &);
+};
+
+// ----------------------------------------------------------------------------
+
+template <typename Func>
+void Unit::start(TestSuite & suite, Func && f) {
+    if (m_index == m_starts) {
+        m_hit = true;
+        suite.test(std::move(f));
+    }
+    ++m_starts;
+}
+
+// ----------------------------------------------------------------------------
+
+template <typename Func>
+/* private */ void TestSuite::do_test_back(Func && f) {
+    ++m_test_count;
+    try {
+        if (f()) {
+            if (!m_silence_success) print_success();
+            ++m_test_successes;
+        } else {
+            print_failure();
+        }
+    } catch (std::exception & exp) {
+        print_failure(exp.what());
+    } catch (...) {
+        print_failure("<Unknown Error: unhandled exception type>");
+    }
+
+    unmark_source_position();
+}
 
 } // end of ts namespace -> into ::cul
 

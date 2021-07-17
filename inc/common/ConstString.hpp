@@ -40,11 +40,11 @@ namespace cul {
  */
 class ConstString {
 public:
-    ConstString(): m_str("") {}
-    ConstString(const char * const str_): m_str(str_) {}
+    [[deprecated]] ConstString(): m_str("") {}
+    [[deprecated]] ConstString(const char * const str_): m_str(str_) {}
 
 #   define MACRO_OP_DEFINE(tok) \
-    bool operator tok (const ConstString & lhs) const \
+    [[deprecated]] bool operator tok (const ConstString & lhs) const \
         { return operator tok (lhs.m_str); }
 
     MACRO_OP_DEFINE(==) MACRO_OP_DEFINE(!=)
@@ -54,7 +54,7 @@ public:
 #   undef MACRO_OP_DEFINE
 
 #   define MACRO_OP_DEFINE(tok) \
-    bool operator tok (const std::string & lhs) const \
+    [[deprecated]] bool operator tok (const std::string & lhs) const \
         { return operator tok (lhs.c_str()); }
 
     MACRO_OP_DEFINE(==) MACRO_OP_DEFINE(!=)
@@ -63,51 +63,51 @@ public:
 
 #   undef MACRO_OP_DEFINE
 
-    bool operator == (const char * lhs) const
+    [[deprecated]] bool operator == (const char * lhs) const
         { return compare_result(ConstString(lhs)) == 0; }
 
-    bool operator != (const char * lhs) const
+    [[deprecated]] bool operator != (const char * lhs) const
         { return compare_result(ConstString(lhs)) != 0; }
 
-    bool operator <= (const char * lhs) const
+    [[deprecated]] bool operator <= (const char * lhs) const
         { return compare_result(ConstString(lhs)) <= 0; }
 
-    bool operator >= (const char * lhs) const
+    [[deprecated]] bool operator >= (const char * lhs) const
         { return compare_result(ConstString(lhs)) >= 0; }
 
-    bool operator <  (const char * lhs) const
+    [[deprecated]] bool operator <  (const char * lhs) const
         { return compare_result(ConstString(lhs)) < 0; }
 
-    bool operator >  (const char * lhs) const
+    [[deprecated]] bool operator >  (const char * lhs) const
         { return compare_result(ConstString(lhs)) > 0; }
 
-    const char * as_cstring() const noexcept { return m_str; }
+    [[deprecated]] const char * as_cstring() const noexcept { return m_str; }
 
     // "this - rhs"
-    int compare_result(const ConstString & rhs) const noexcept;
+    [[deprecated]] int compare_result(const ConstString & rhs) const noexcept;
 
-    unsigned length() const noexcept;
+    [[deprecated]] unsigned length() const noexcept;
 
 private:
     const char * m_str;
 };
 
-inline bool operator == (const char * rhs, const cul::ConstString & lhs)
+[[deprecated]] inline bool operator == (const char * rhs, const cul::ConstString & lhs)
     { return lhs == rhs; }
 
-inline bool operator != (const char * rhs, const cul::ConstString & lhs)
+[[deprecated]] inline bool operator != (const char * rhs, const cul::ConstString & lhs)
     { return lhs != rhs; }
 
-inline bool operator <= (const char * rhs, const cul::ConstString & lhs)
+[[deprecated]] inline bool operator <= (const char * rhs, const cul::ConstString & lhs)
     { return lhs > rhs; }
 
-inline bool operator >= (const char * rhs, const cul::ConstString & lhs)
+[[deprecated]] inline bool operator >= (const char * rhs, const cul::ConstString & lhs)
     { return lhs < rhs; }
 
-inline bool operator < (const char * rhs, const cul::ConstString & lhs)
+[[deprecated]] inline bool operator < (const char * rhs, const cul::ConstString & lhs)
     { return lhs >= rhs; }
 
-inline bool operator > (const char * rhs, const cul::ConstString & lhs)
+[[deprecated]] inline bool operator > (const char * rhs, const cul::ConstString & lhs)
     { return lhs <= rhs; }
 
 } // end of cul namespace

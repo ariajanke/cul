@@ -31,7 +31,6 @@
 #include <functional>
 #include <limits>
 
-#include <common/ConstString.hpp>
 #include <common/Util.hpp>
 
 namespace cul {

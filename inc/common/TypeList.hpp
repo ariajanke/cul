@@ -120,13 +120,13 @@ struct TypeList<Head, Types...> : TypeList<Types...> {
 };
 
 template <std::size_t SIZE, typename ... ReadTypes, typename ... HostTypes>
-void find_bitset_intersection
+[[deprecated]] void find_bitset_intersection
     (std::bitset<SIZE> &, TypeList<ReadTypes...>, TypeList<HostTypes...>)
 {}
 
 template <std::size_t SIZE, typename Head, typename ... ReadTypes,
           typename ... HostTypes>
-void find_bitset_intersection
+[[deprecated]] void find_bitset_intersection
     (std::bitset<SIZE> & bs, TypeList<Head, ReadTypes...>, TypeList<HostTypes...>)
 {
     // this is now evaluated at compile time :D

@@ -41,7 +41,6 @@ void do_other_vector_stuff() {
 #include <common/Vector2.hpp>
 #include <common/Vector2Util.hpp>
 #include <common/SfmlVectorTraits.hpp>
-#include <common/ConstString.hpp>
 
 #include <iostream>
 
@@ -75,8 +74,10 @@ struct A {};
 
 
 int main() {
+#   if 0
     cul::ConstString abc = "hello there";
     assert(abc != "hello nobody");
+#   endif
     {
     cul::Vector2<float> a, b;
     (void)(a != b);

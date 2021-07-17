@@ -28,6 +28,9 @@
 #include <common/Util.hpp>
 #include <common/StringUtil.hpp>
 
+// note: with presently lacking access to MSVC or Windows for that matter
+//       it is not possible for me to maintain the windows implementation
+
 #if defined(MACRO_PLATFORM_LINUX)
 #   include <linux/limits.h>
 #   include <unistd.h>

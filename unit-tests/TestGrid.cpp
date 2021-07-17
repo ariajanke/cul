@@ -35,6 +35,8 @@
 
 #include <cassert>
 
+#define mark MACRO_MARK_POSITION_OF_CUL_TEST_SUITE
+
 namespace {
 
 using namespace cul;
@@ -62,20 +64,20 @@ void test_grid() {
     TestSuite tsuite;
     tsuite.hide_successes();
     tsuite.start_series("Grid tests...");
-    MACRO_CUL_TEST(tsuite, [] {
+    mark(tsuite).test([] {
         Grid<int> g;
         g.set_size(1, 1);
         g.set_size(2, 3, 10);
         return ts::test(g(1, 1) == 10);
     });
 
-    MACRO_CUL_TEST(tsuite, [] {
+    mark(tsuite).test([] {
         Grid<int> g;
         g.set_size(1, 1);
         g.set_size(2, 3, 10);
         return ts::test(g(1, 1) == 10);
     });
-    MACRO_CUL_TEST(tsuite, [] {
+    mark(tsuite).test([] {
         Grid<int> g;
         g.set_size(2, 3, 10);
         int count = 0;
@@ -85,7 +87,7 @@ void test_grid() {
         }
         return ts::test(int(g.size()) == count);
     });
-    MACRO_CUL_TEST(tsuite, [] {
+    mark(tsuite).test([] {
         Grid<int> g;
         g.set_size(8, 8);
         Grid<int>::ConstReferenceType e = g(3, 4);
@@ -94,7 +96,7 @@ void test_grid() {
         std::cout << gv.x << ", " << gv.y << std::endl;
         return ts::test(g.position_of(e) == VectorI(3, 4));
     });
-    MACRO_CUL_TEST(tsuite, [] {
+    mark(tsuite).test([] {
         Grid<int> g;
         g.set_size(4, 3);
         assert(!g.is_empty());
@@ -105,6 +107,7 @@ void test_grid() {
         std::cout << r.x << ", " << r.y << std::endl;
         return ts::test(g(r) == 20);
     });
+
     // nothing to test outside of, it should compile
     {
     Grid<int> g;
@@ -120,7 +123,7 @@ void test_grid() {
 
     }
 
-    MACRO_CUL_TEST(tsuite, [] {
+    mark(tsuite).test([] {
         Grid<int> p;
         auto subg = make_sub_grid(p);
         const auto & cp = p;
@@ -128,15 +131,15 @@ void test_grid() {
 
         return ts::test(&p == &subg.parent() && &p == &csg.parent());
     });
-    MACRO_CUL_TEST(tsuite, ([] {
+    mark(tsuite).test([] {
         Grid<int> p {{ 1, 1, 1, }, { 1, 1, 1, }, { 1, 1, 1 }};
         int one_count = 0;
         for (int i : p) {
             if (i == 1) ++one_count;
         }
         return ts::test(p.width() == 3 && p.height() == 3 && one_count == 9);
-    }));
-    MACRO_CUL_TEST(tsuite, ([] {
+    });
+    mark(tsuite).test([] {
         try {
             Grid<int> { { 1, 1, 1 }, { 1, 1, 1, 1 } };
         } catch (std::invalid_argument &) {
@@ -145,7 +148,7 @@ void test_grid() {
             return ts::test(false);
         }
         return ts::test(false);
-    }));
+    });
 }
 
 void test_make_sub_grid() {
@@ -346,28 +349,28 @@ void test_sub_grid_iterator() {
     ts::TestSuite suite;
     suite.start_series("sub grid iterator");
     suite.hide_successes();
-    MACRO_CUL_TEST(suite, ([] {
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(3, 3, 1);
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
         return ts::test(!subg.is_empty() && SubGrid<int>().is_empty());
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
         return ts::test(subg.begin() != subg.end());
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         return ts::test(SubGrid<int>().begin() == SubGrid<int>().end());
-    }));
+    });
     // test 03
-    MACRO_CUL_TEST(suite, ([] {
+    mark(suite).test([] {
         Grid<int> p { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
         (*subg.begin()) = 2;
         return ts::test(p(1, 1) == 2);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(3, 3, 1);
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
@@ -375,8 +378,8 @@ void test_sub_grid_iterator() {
         ++itr;
         *itr = 2;
         return ts::test(p(2, 1) == 2);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(3, 3, 1);
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
@@ -387,9 +390,9 @@ void test_sub_grid_iterator() {
         itr--;
         *itr = 2;
         return ts::test(p(1, 1) == 2);
-    }));
+    });
     // test 06
-    MACRO_CUL_TEST(suite, ([] {
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(3, 3, 1);
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
@@ -398,8 +401,8 @@ void test_sub_grid_iterator() {
         itr++;
         *itr = 2;
         return ts::test(p(1, 2) == 2);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(4, 4, 3);
         auto subg = make_sub_grid(p, VectorI(1, 1), 2, 2);
@@ -408,9 +411,9 @@ void test_sub_grid_iterator() {
             ++itr;
         }
         return ts::test(itr == subg.end());
-    }));
+    });
     // let's try bigger advancements
-    MACRO_CUL_TEST(suite, ([] {
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(6, 6, 2);
         // + + * *
@@ -423,8 +426,8 @@ void test_sub_grid_iterator() {
         itr.move_position(8);
         *itr = 5;
         return ts::test(p(3, 3) == 5);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(6, 6, 2);
         // * * * *
@@ -435,8 +438,8 @@ void test_sub_grid_iterator() {
         itr.move_position(10);
         *itr = 5;
         return ts::test(p(3, 3) == 5);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(6, 6, 2);
         // * * * *
@@ -451,8 +454,8 @@ void test_sub_grid_iterator() {
         --itr;
         *itr = 5;
         return ts::test(p(4, 2) == 5);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(6, 6, 2);
         // * * o *
@@ -466,16 +469,16 @@ void test_sub_grid_iterator() {
         itr.move_position(-8);
         *itr = 5;
         return ts::test(p(3, 1) == 5);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p;
         p.set_size(3, 3, 2);
         auto subg = make_sub_grid(p, VectorI(1, 1));
         auto itr = subg.begin();
         auto b   = itr++;
         return ts::test(b == subg.begin() && itr != b);
-    }));
-    MACRO_CUL_TEST(suite, ([] {
+    });
+    mark(suite).test([] {
         Grid<int> p {
             { 0, 2, 2, 2 },
             { 0, 1, 2, 3 },
@@ -486,7 +489,7 @@ void test_sub_grid_iterator() {
         auto subg = make_sub_grid(p, VectorI(1, 1), 3, 3);
         auto count = std::count(subg.begin(), subg.end(), 2);
         return ts::test(count == 4);
-    }));
+    });
 }
 
 } // end of <anonymous> namespace

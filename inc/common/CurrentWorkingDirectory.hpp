@@ -66,11 +66,18 @@ bool is_absolute_file_path(const char * path);
 /** Automatic directory changing class. This RAII object will change the
  *  process' working directory until this object is destoryed.
  */
-class DirectoryChangerRaii {
+class DirectoryChangerRaii final {
 public:
-    DirectoryChangerRaii(const std::string & path);
-    DirectoryChangerRaii(const char * path);
+    explicit DirectoryChangerRaii(const std::string & path);
+    explicit DirectoryChangerRaii(const char * path);
+
+    DirectoryChangerRaii(const DirectoryChangerRaii &) = delete;
+    DirectoryChangerRaii(DirectoryChangerRaii &&) = delete;
+
     ~DirectoryChangerRaii() noexcept(false);
+
+    DirectoryChangerRaii & operator = (const DirectoryChangerRaii &) = delete;
+    DirectoryChangerRaii & operator = (DirectoryChangerRaii &&) = delete;
 
 private:
     std::string m_old_directory;

@@ -42,12 +42,14 @@ struct Vector2Traits<T, sf::Vector2<T>> {
     static constexpr const bool k_should_define_operators = false;
 
     struct GetX {
-        T   operator () (const sf::Vector2<T> & r) const { return r.x; }
-        T & operator () (      sf::Vector2<T> & r) const { return r.x; }
+        T operator () (const sf::Vector2<T> & r) const { return r.x; }
     };
     struct GetY {
-        T   operator () (const sf::Vector2<T> & r) const { return r.y; }
-        T & operator () (      sf::Vector2<T> & r) const { return r.y; }
+        T operator () (const sf::Vector2<T> & r) const { return r.y; }
+    };
+    struct Make {
+        sf::Vector2<T> operator () (const T & x_, const T & y_) const
+            { return sf::Vector2<T>{x_, y_}; }
     };
 };
 

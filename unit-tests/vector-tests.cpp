@@ -59,19 +59,20 @@ struct Vector2Traits<glm::vec2::value_type, glm::vec2> {
     static constexpr const bool k_should_define_operators = false;
 
     struct GetX {
-        Scal   operator () (const glm::vec2 & r) const { return r.x; }
-        Scal & operator () (      glm::vec2 & r) const { return r.x; }
+        Scal operator () (const glm::vec2 & r) const { return r.x; }
     };
     struct GetY {
-        Scal   operator () (const glm::vec2 & r) const { return r.y; }
-        Scal & operator () (      glm::vec2 & r) const { return r.y; }
+        Scal operator () (const glm::vec2 & r) const { return r.y; }
+    };
+    struct Make {
+        glm::vec2 operator () (const Scal & x_, const Scal & y_) const
+            { return glm::vec2{x_, y_}; }
     };
 };
 
 } // end of cul namespace
 
 struct A {};
-
 
 int main() {
 #   if 0
@@ -231,6 +232,7 @@ int main() {
         auto to = convert_to<glm::vec2>(t);
         auto go = convert_to<glm::vec2>(g);
         auto [s0o, s1o] = cul::find_velocities_to_target(so, to, go, float(speed));
+        VecD{0., 9.} - VecD{8.9, 4.3};
         assert(cul::magnitude(s0 - convert_to<VecD>(s0o)) < 0.0005);
         assert(cul::magnitude(s1 - convert_to<VecD>(s1o)) < 0.0005);
     }
@@ -257,5 +259,29 @@ int main() {
     assert( cul::overlaps(RectI(0, 0, 10, 10), RectI(5, 5, 12, 2)));
     assert(!cul::overlaps(RectI(0, 0, 2 , 10), RectI(5, 5, 12, 2)));
     }
+
+    // test out as best as possible constexpr
+    {
+    using SizeI = cul::Size2<int>;
+    [[maybe_unused]] std::array<int, VecI{0, 5}.y> a;
+    static_assert(VecI{-1, 4} == VecI{0, 4} + VecI{-1, 0}, "");
+    static_assert(VecI{-1, 4} != VecI{0, 4} - VecI{-1, 0}, "");
+    static_assert(VecI{-2, 2} == VecI{-1, 1}*2, "");
+    static_assert(VecI{-2, 2} == 2*VecI{-1, 1}, "");
+    static_assert(VecI{6, 3}/3 == VecI{2, 1}, "");
+    static_assert(-VecI{2, 4} == VecI{-2, -4}, "");
+
+    static_assert(VecI{}.x == 0, "");
+    static constexpr const VecD k_grav{0, -9.81};
+    static_assert(k_grav.y < 0., "");
+    static_assert(VecI{k_grav}.y < 0, "");
+    static_assert(SizeI{}.width == 0, "");
+    static_assert(SizeI{2, 2}.width == 2, "");
+
+    [[maybe_unused]] static constexpr const auto k_no_sol =
+        cul::k_no_solution_for_v2<double>;
+    static_assert(std::is_same_v<decltype(k_no_sol.x), double>, "");
+    }
+
     return 0;
 }

@@ -44,12 +44,17 @@ struct Vector2Scalar<MySize<T>> {
 template <typename T>
 struct Vector2Traits<T, MySize<T>> {
     struct GetX {
-        T   operator () (const MySize<T> & r) const { return r.width; }
-        T & operator () (      MySize<T> & r) const { return r.width; }
+        constexpr T operator () (const MySize<T> & r) const { return r.width; }
     };
     struct GetY {
-        T   operator () (const MySize<T> & r) const { return r.height; }
-        T & operator () (      MySize<T> & r) const { return r.height; }
+        constexpr T operator () (const MySize<T> & r) const { return r.height; }
+    };
+    struct Make {
+        constexpr MySize<T> operator () (T w, T h) const {
+            // note: allow for any needed rearrangement for construction of the
+            //       object
+            return MySize<T>(h, w);
+        }
     };
     static constexpr const bool k_is_vector_type          = true;
     static constexpr const bool k_should_define_operators = true;
@@ -89,6 +94,7 @@ T & operator () (      MyVector<T> & r) const { return r.x; }
      */
     struct GetX {};
     struct GetY {};
+    struct Make {};
 };
 
 template <typename ScalarType, typename VectorType>
@@ -113,16 +119,13 @@ bool>;
 
 template <typename VectorType, 
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType> 
+constexpr cul::EnableVector2Op<ScalarType, VectorType>
     operator - (const VectorType & r)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    VectorType rv = r;
-    get_x(rv) = -get_x(rv);
-    get_y(rv) = -get_y(rv);
-    return rv;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return typename Tr::Make{}(-get_x(r), -get_y(r));
 }
 
 // -------------------------- Vector on Vector operators -----------------------
@@ -130,56 +133,46 @@ cul::EnableVector2Op<ScalarType, VectorType>
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType> & 
+cul::EnableVector2Op<ScalarType, VectorType> &
     operator += (VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    get_x(r) += get_x(v);
-    get_y(r) += get_y(v);
-    return r;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return (r = typename Tr::Make{}(get_x(r) + get_x(v), get_y(r) + get_y(v)));
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType> & 
+cul::EnableVector2Op<ScalarType, VectorType> &
     operator -= (VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    get_x(r) -= get_x(v);
-    get_y(r) -= get_y(v);
-    return r;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return (r = typename Tr::Make{}(get_x(r) - get_x(v), get_y(r) - get_y(v)));
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType> 
+constexpr cul::EnableVector2Op<ScalarType, VectorType>
     operator + (const VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    auto rv = r;
-    get_x(rv) += get_x(v);
-    get_y(rv) += get_y(v);
-    return rv;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return typename Tr::Make{}(get_x(r) + get_x(v), get_y(r) + get_y(v));
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType>
+constexpr cul::EnableVector2Op<ScalarType, VectorType>
     operator - (const VectorType & r, const VectorType & v)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    auto rv = r;
-    get_x(rv) -= get_x(v);
-    get_y(rv) -= get_y(v);
-    return rv;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return typename Tr::Make{}(get_x(r) - get_x(v), get_y(r) - get_y(v));
 }
 
 // -------------------------- Vector on Scalar operators -----------------------
@@ -190,11 +183,9 @@ cul::EnableVector2Op<ScalarType, VectorType> &
     operator *= (VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    get_x(r) *= a;
-    get_y(r) *= a;
-    return r;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return (r = typename Tr::Make{}(get_x(r)*a, get_y(r)*a));
 }
 
 template <typename VectorType,
@@ -203,72 +194,61 @@ cul::EnableVector2Op<ScalarType, VectorType> &
     operator /= (VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    get_x(r) /= a;
-    get_y(r) /= a;
-    return r;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return (r = typename Tr::Make{}(get_x(r) / a, get_y(r) / a));
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType>
+constexpr cul::EnableVector2Op<ScalarType, VectorType>
     operator * (const VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    auto rv = r;
-    get_x(rv) *= a;
-    get_y(rv) *= a;
-    return rv;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return typename Tr::Make{}(get_x(r)*a, get_y(r)*a);
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType>
+constexpr cul::EnableVector2Op<ScalarType, VectorType>
     operator / (const VectorType & r, const ScalarType & a)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    auto rv = r;
-    get_x(rv) /= a;
-    get_y(rv) /= a;
-    return rv;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return typename Tr::Make{}(get_x(r) / a, get_y(r) / a);
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2Op<ScalarType, VectorType>
+constexpr cul::EnableVector2Op<ScalarType, VectorType>
     operator * (const ScalarType & a, const VectorType & r)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
-    auto rv = r;
-    get_x(rv) *= a;
-    get_y(rv) *= a;
-    return rv;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
+    return typename Tr::Make{}(a*get_x(r), a*get_y(r));
 }
 
 // ------------------------------- Vector equality -----------------------------
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2BoolOp<ScalarType, VectorType> 
+constexpr cul::EnableVector2BoolOp<ScalarType, VectorType>
     operator ==
     (const VectorType & r, const VectorType & u)
 {
     using Tr = cul::Vector2Traits<ScalarType, VectorType>;
-    typename Tr::GetX get_x;
-    typename Tr::GetY get_y;
+    typename Tr::GetX get_x{};
+    typename Tr::GetY get_y{};
     return get_x(r) == get_x(u) && get_y(r) == get_y(u);
 }
 
 template <typename VectorType,
           typename ScalarType = typename cul::Vector2Scalar<VectorType>::Type>
-cul::EnableVector2BoolOp<ScalarType, VectorType>
+constexpr cul::EnableVector2BoolOp<ScalarType, VectorType>
     operator !=
     (const VectorType & r, const VectorType & u)
 { return !(r == u); }
@@ -281,7 +261,7 @@ constexpr const bool k_both_types_conversion_suitible =
      && k_is_vector2<typename cul::Vector2Scalar<DestType  >::Type, DestType  >;
 
 template <typename DestType, typename SourceType>
-std::enable_if_t<
+constexpr std::enable_if_t<
     k_both_types_conversion_suitible<DestType, SourceType>,
 DestType> convert_to(const SourceType & r)
 {
@@ -290,15 +270,10 @@ DestType> convert_to(const SourceType & r)
     using SourceTr     = cul::Vector2Traits<SourceScalar, SourceType>;
     using DestTr       = cul::Vector2Traits<DestScalar  , DestType  >;
 
-    typename SourceTr::GetX get_sx;
-    typename SourceTr::GetY get_sy;
-    typename DestTr  ::GetX get_dx;
-    typename DestTr  ::GetY get_dy;
-    
-    DestType rv;
-    get_dx(rv) = get_sx(r);
-    get_dy(rv) = get_sy(r);
-    return rv;
+    typename SourceTr::GetX get_sx{};
+    typename SourceTr::GetY get_sy{};
+
+    return typename DestTr::Make{}(get_sx(r), get_sy(r));
 }
 
 } // end of cul namespace

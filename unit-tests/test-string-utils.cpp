@@ -28,6 +28,7 @@
 #include <common/TestSuite.hpp>
 
 #include <cstring>
+#include <cassert>
 
 // test the following:
 // for_split
@@ -53,6 +54,16 @@ bool run_wrap_tests();
 } // end of <anonymous> namespace
 
 int main() {
+
+    {
+    std::string a = "hello";
+    cul::View b{ a.cbegin(), a.cend() };
+    std::string c;
+    for (char c_ : b) {
+        c += (c_ - 'a') + 'A';
+    }
+    assert(c == "HELLO");
+    }
     auto test_list = {
         run_for_split_tests,
         run_string_to_number_tests,
@@ -122,7 +133,7 @@ bool run_for_split_tests() {
             std::string samp = ",,,";
             for_split<is_comma>(samp.begin(), samp.end(), [&](ConstIter, ConstIter)
                 { ++count; });
-            return ts::test(count == 3);
+            return ts::test(count == 0);
         });
 #       endif
     });

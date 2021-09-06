@@ -53,6 +53,24 @@ void quad_range(Cont & container, Func && func);
 template <typename T, typename Func>
 void quad_range(std::initializer_list<T> && ilist, Func && f);
 
+/** Describes a sequence view, similar to how they're described in C++20.
+ *
+ *  @note I've included this, because I keep writting this as a helper
+ *        structure.
+ */
+template <typename IterType>
+class View {
+public:
+    View(IterType b_, IterType e_): m_b(b_), m_e(e_) {}
+
+    IterType begin() const { return m_b; }
+
+    IterType end  () const { return m_e; }
+
+private:
+    IterType m_b, m_e;
+};
+
 namespace fc_signal {
 
 enum FlowControlSignal_e { k_continue, k_break };

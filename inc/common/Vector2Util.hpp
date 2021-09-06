@@ -254,7 +254,7 @@ EnableVec2Util<Vec, Vec> find_closest_point_to_line
 template <typename Vec>
 EnableVec2Util<Vec, bool> is_real(const Vec & r);
 
-/** @returns the "no solution" sentinel value returned by many functions which
+/** @returns the "no solution" sentinel vector returned by many functions which
  *           may not have a solution for any given set of parameters.
  *
  *  @tparam Vec must be either the builtin Vector2 type or a type convertible
@@ -262,6 +262,22 @@ EnableVec2Util<Vec, bool> is_real(const Vec & r);
  */
 template <typename Vec>
 EnableVec2Util<Vec, Vec> get_no_solution_sentinel();
+
+/** @returns the "no solution" sentinel scalar value use for each component
+ *           in the "no solution" vector.
+ *
+ *  @tparam T must be an arithmetic type. (non arithmetic must define their
+ *            own)
+ */
+template <typename T>
+constexpr std::enable_if_t<std::is_arithmetic_v<T>, T> get_no_solution_scalar();
+
+/** The "no solution" sentinel vector returned by many functions.
+ *  This constant's name is constrained for 2d vectors only.
+ */
+template <typename T>
+const constexpr Vector2<T> k_no_solution_for_v2 = Vector2<T>{
+    get_no_solution_scalar<T>(), get_no_solution_scalar<T>()};
 
 /** @returns the area of a triangle as defined by three points.
  *
@@ -429,12 +445,11 @@ EnableVec2Util<Vec, Vec> rotate_vector
     using Tr     = Vector2Traits<Scalar, Vec>;
     typename Tr::GetX get_x;
     typename Tr::GetY get_y;
-    Vec rv;
     // [r.x] * [ cos(rot) sin(rot)]
     // [r.y]   [-sin(rot) cos(rot)]
-    get_x(rv) = get_x(r)*std::cos(rot) - get_y(r)*std::sin(rot);
-    get_y(rv) = get_x(r)*std::sin(rot) + get_y(r)*std::cos(rot);
-    return rv;
+    return typename Tr::Make{}(
+        get_x(r)*std::cos(rot) - get_y(r)*std::sin(rot),
+        get_x(r)*std::sin(rot) + get_y(r)*std::cos(rot));
 }
 
 template <typename Vec>
@@ -587,24 +602,20 @@ template <typename Vec>
 EnableVec2Util<Vec, Vec> get_no_solution_sentinel() {
     static const Vec k_rv = []() {
         using Scalar  = typename Vector2Scalar<Vec>::Type;
-        using NumLims = std::numeric_limits<Scalar>;
         using Tr      = Vector2Traits<Scalar, Vec>;
-        Scalar comp;
-        if constexpr (NumLims::has_infinity) {
-            comp = NumLims::infinity();
-        } else if constexpr (std::is_signed_v<Scalar>) {
-            comp = NumLims::min();
-        } else {
-            comp = NumLims::max();
-        }
 
-        typename Tr::GetX get_x;
-        typename Tr::GetY get_y;
-        Vec rv;
-        get_y(rv) = get_x(rv) = comp;
-        return rv;
+        Scalar comp = get_no_solution_scalar<Scalar>();
+        return typename Tr::Make{}(comp, comp);
     } ();
     return k_rv;
+}
+
+template <typename T>
+constexpr std::enable_if_t<std::is_arithmetic_v<T>, T> get_no_solution_scalar() {
+    using NumLims = std::numeric_limits<T>;
+    /**/ if constexpr (NumLims::has_infinity) { return NumLims::infinity(); }
+    else if constexpr (std::is_signed_v<T>  ) { return NumLims::min     (); }
+    else                                      { return NumLims::max     (); }
 }
 
 template <typename Vec>

@@ -32,31 +32,31 @@ namespace cul {
 
 template <typename T>
 struct Vector2 {
-    Vector2() {}
-    Vector2(T x_, T y_): x(x_), y(y_) {}
+    constexpr Vector2() {}
+    constexpr Vector2(T x_, T y_): x(x_), y(y_) {}
 
     template <typename U>
-    explicit Vector2(U x_, U y_): x(T(x_)), y(T(y_)) {}
+    constexpr explicit Vector2(U x_, U y_): x(T(x_)), y(T(y_)) {}
 
     template <typename U>
-    explicit Vector2(const Vector2<U> & r): x(T(r.x)), y(T(r.y)) {}
+    constexpr explicit Vector2(const Vector2<U> & r): x(T(r.x)), y(T(r.y)) {}
 
     T x = 0, y = 0;
 };
 
 template <typename T>
 struct Size2 {
-    Size2() {}
+    constexpr Size2() {}
 
-    Size2(T width_, T height_):
+    constexpr Size2(T width_, T height_):
         width(width_), height(height_)
     {}
 
     template <typename U>
-    explicit Size2(U width_, U height_): width(T(width_)), height(T(height_)) {}
+    constexpr explicit Size2(U width_, U height_): width(T(width_)), height(T(height_)) {}
 
     template <typename U>
-    explicit Size2(const Size2<U> & r):
+    constexpr explicit Size2(const Size2<U> & r):
         width(T(r.width)), height(T(r.height))
     {}
 
@@ -68,19 +68,19 @@ struct Size2 {
  */
 template <typename T>
 struct Rectangle {
-    Rectangle() {}
+    constexpr Rectangle() {}
 
-    Rectangle(T left_, T top_, T width_, T height_):
+    constexpr Rectangle(T left_, T top_, T width_, T height_):
         left(left_), top(top_), width(width_), height(height_)
     {}
 
-    Rectangle(const Vector2<T> & r, const Size2<T> & sz):
+    constexpr Rectangle(const Vector2<T> & r, const Size2<T> & sz):
         left (     r.x), top   (      r.y),
         width(sz.width), height(sz.height)
     {}
 
     template <typename U>
-    explicit Rectangle(const Rectangle<U> & rect):
+    constexpr explicit Rectangle(const Rectangle<U> & rect):
         left (T(rect.left )), top   (T(rect.top   )),
         width(T(rect.width)), height(T(rect.height))
     {}
@@ -116,12 +116,14 @@ struct Vector2Traits<T, Vector2<T>> {
     static constexpr const bool k_should_define_operators = true;
 
     struct GetX {
-        T   operator () (const Vector2<T> & r) const { return r.x; }
-        T & operator () (      Vector2<T> & r) const { return r.x; }
+        constexpr T operator () (const Vector2<T> & r) const { return r.x; }
     };
     struct GetY {
-        T   operator () (const Vector2<T> & r) const { return r.y; }
-        T & operator () (      Vector2<T> & r) const { return r.y; }
+        constexpr T operator () (const Vector2<T> & r) const { return r.y; }
+    };
+    struct Make {
+        constexpr Vector2<T> operator () (const T & x_, const T & y_) const
+            { return Vector2<T>{x_, y_}; }
     };
 };
 
@@ -136,17 +138,19 @@ struct Vector2Traits<T, Size2<T>> {
     static constexpr const bool k_should_define_operators = true;
 
     struct GetX {
-        T   operator () (const Size2<T> & r) const { return r.width; }
-        T & operator () (      Size2<T> & r) const { return r.width; }
+        constexpr T operator () (const Size2<T> & r) const { return r.width; }
     };
     struct GetY {
-        T   operator () (const Size2<T> & r) const { return r.height; }
-        T & operator () (      Size2<T> & r) const { return r.height; }
+        constexpr T operator () (const Size2<T> & r) const { return r.height; }
+    };
+    struct Make {
+        constexpr Size2<T> operator () (const T & w_, const T & h_) const
+            { return Size2<T>{w_, h_}; }
     };
 };
 
 template <typename T>
-bool operator ==
+constexpr bool operator ==
     (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
 {
     return    lhs.left  == rhs.left  && rhs.top    == lhs.top
@@ -154,7 +158,7 @@ bool operator ==
 }
 
 template <typename T>
-bool operator !=
+constexpr bool operator !=
     (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
 { return !(lhs == rhs); }
 

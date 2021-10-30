@@ -321,9 +321,25 @@ template <typename T>
 void set_size_of(EnableRectangle<T> & rect, const Size2<T> & r)
     { set_size_of(rect, r.width, r.height); }
 
+/** @returns top left location of a rectangle as a vector. */
 template <typename T>
 Vector2<T> top_left_of(const Rectangle<T> & rect)
     { return Vector2<T>(rect.left, rect.top); }
+
+/** @returns top right location of a rectangle as a vector. */
+template <typename T>
+Vector2<T> top_right_of(const Rectangle<T> & rect)
+    { return Vector2<T>(rect.left + rect.width, rect.top); }
+
+/** @returns bottom left location of a rectangle as a vector. */
+template <typename T>
+Vector2<T> bottom_left_of(const Rectangle<T> & rect)
+    { return Vector2<T>(rect.left, rect.top + rect.height); }
+
+/** @returns bottom right location of a rectangle as a vector. */
+template <typename T>
+Vector2<T> bottom_right_of(const Rectangle<T> & rect)
+    { return Vector2<T>(rect.left + rect.width, rect.top + rect.height); }
 
 template <typename T>
 EnableArithmetic<T>

@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <common/Vector2.hpp>
+
 #include <SFML/Graphics/Drawable.hpp>
 #include <SFML/Graphics/Vertex.hpp>
 
@@ -50,6 +52,9 @@ public:
     static constexpr const int k_bottom_right = 3;
 
     DrawRectangle() {}
+
+    template <typename T>
+    DrawRectangle(const Rectangle<T> & rect, sf::Color clr_ = sf::Color::White);
 
     DrawRectangle
         (float x_, float y_, float width_ = 0.f, float height_ = 0.f,
@@ -95,5 +100,14 @@ protected:
 private:
     std::array<sf::Vertex, k_vertex_count> m_vertices;
 };
+
+// ----------------------------------------------------------------------------
+
+template <typename T>
+DrawRectangle::DrawRectangle
+    (const Rectangle<T> & rect, sf::Color clr_):
+    DrawRectangle(float(rect.left ), float(rect.top   ),
+                  float(rect.width), float(rect.height), clr_)
+{}
 
 } // end of cul namespace

@@ -65,10 +65,17 @@ private:
 } // end of <anonymous> namespace
 
 int main() {
+#   if 0 // probably should not be in a demo app...
     SfBitmapFont::load_builtin_font(BitmapFont::k_8x8_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextout.png");
     SfBitmapFont::load_builtin_font(BitmapFont::k_8x8_highlighted_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextouthighlight.png");
     SfBitmapFont::load_builtin_font(BitmapFont::k_8x16_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextout16.png");
     SfBitmapFont::load_builtin_font(BitmapFont::k_8x16_highlighted_font).texture().copyToImage().saveToFile("/media/ramdisk/cultextouthighlight16.png");
+#   endif
+
+    // test DrawRectangle's new constructor somewhere
+    {
+    [[maybe_unused]] DrawRectangle a(cul::Rectangle<int>{10, 30, 100, 80}, sf::Color(0x891932));
+    }
 
     sf::RenderWindow win;
     win.setFramerateLimit(k_fps);

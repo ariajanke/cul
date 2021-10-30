@@ -148,6 +148,9 @@ public:
      */
     Vector position_of(const Element &) const;
 
+    /** @returns the size of the grid in two dimensions: width and height */
+    Size size2() const noexcept;
+
     // -------------------------- STL like functions ---------------------------
 
     ReferenceType      operator () (const Vector &);
@@ -319,6 +322,10 @@ typename Grid<T>::Vector Grid<T>::position_of(const Element & obj) const {
         return to_position(std::ptrdiff_t(size()) - (end_ptr - &obj));
     }
 }
+
+template <typename T>
+typename Grid<T>::Size Grid<T>::size2() const noexcept
+    { return Size{width(), height()}; }
 
 template <typename T>
 void Grid<T>::swap(Grid<T> & other) noexcept {

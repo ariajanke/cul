@@ -91,13 +91,13 @@ HEADERS += \
 SOURCES += \
     \#../unit-tests/all-tests-driver.cpp \
     \#../unit-tests/TestGrid.cpp \
-    ../unit-tests/TestUtil.cpp \
+    \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
     \#../unit-tests/test-string-utils.cpp
     \#../unit-tests/test-math-utils.cpp
     \#../unit-tests/vector-tests.cpp
     \#../unit-tests/sfutils-tests.cpp
-    #../demos/sf-util-demos.cpp
+    ../demos/sf-util-demos.cpp
 
 INCLUDEPATH += \
     ../inc

@@ -107,6 +107,19 @@ void test_grid() {
         std::cout << r.x << ", " << r.y << std::endl;
         return ts::test(g(r) == 20);
     });
+    mark(tsuite).test([] {
+        // super simple interface test!
+        Grid<int> g;
+        g.set_size(3, 5);
+        return ts::test(g.size2() == Size2{3, 5});
+    });
+    // I'll include this sub grid operation here for now
+    mark(tsuite).test([] {
+        Grid<int> g;
+        g.set_size(10, 6);
+        return ts::test(   make_const_sub_grid(g, VectorI{1, 2}, 5, 3).size2()
+                        == Size2{5, 3});
+    });
 
     // nothing to test outside of, it should compile
     {

@@ -129,8 +129,8 @@ public:
     ConstReference operator () (int x, int y) const { return element(x, y); }
 
     /** @returns total number of elements on the sub grid.
-     *  @note not to be confused for the data structure describing width and
-     *        height
+     *  @note not to be confused as returning a data structure describing both
+     *        width and height
      */
     std::size_t size() const noexcept { return std::size_t(m_width*m_height); }
 
@@ -145,6 +145,9 @@ public:
 
     /** @return grid height in number of elements */
     int height() const noexcept { return m_height; }
+
+    /** @returns the size of the sub grid in two dimensions: width and height */
+    Size size2() const noexcept { return Size{m_width, m_height}; }
 
     /** @returns true if position is inside the grid */
     bool has_position(int x, int y) const noexcept;
@@ -501,13 +504,16 @@ public:
         m_row_jump(parent->width())
     {}
 
-    SubGridIteratorImpl(const SubGridIteratorImpl &) = default;
-    SubGridIteratorImpl(SubGridIteratorImpl &&) = default;
+    SubGridIteratorImpl(const SubGridIteratorImpl &);
+
+    SubGridIteratorImpl(SubGridIteratorImpl &&);
 
     ~SubGridIteratorImpl() {}
 
-    SubGridIteratorImpl & operator = (const SubGridIteratorImpl &) = default;
-    SubGridIteratorImpl & operator = (SubGridIteratorImpl &&) = default;
+    // must be deleted with constant members...
+    SubGridIteratorImpl & operator = (const SubGridIteratorImpl &) = delete;
+
+    SubGridIteratorImpl & operator = (SubGridIteratorImpl &&) = delete;
 
     SubGridIteratorImpl & operator ++ () { return move_position(1); }
 
@@ -773,6 +779,24 @@ template <bool k_is_const_t, typename T>
 }
 
 // ----------------------------------------------------------------------------
+
+template <bool k_is_const_t, typename T>
+SubGridIteratorImpl<k_is_const_t, T>::SubGridIteratorImpl
+    (const SubGridIteratorImpl & rhs):
+    m_ptr(rhs.m_ptr),
+    m_row_pos(rhs.m_row_pos),
+    m_row_size(rhs.m_row_size),
+    m_row_jump(rhs.m_row_jump)
+{}
+
+template <bool k_is_const_t, typename T>
+SubGridIteratorImpl<k_is_const_t, T>::SubGridIteratorImpl
+    (SubGridIteratorImpl && rhs):
+    m_ptr(rhs.m_ptr),
+    m_row_pos(rhs.m_row_pos),
+    m_row_size(rhs.m_row_size),
+    m_row_jump(rhs.m_row_jump)
+{}
 
 template <bool k_is_const_t, typename T>
 /* private */ bool SubGridIteratorImpl<k_is_const_t, T>::is_same

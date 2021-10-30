@@ -26,6 +26,8 @@
 
 #pragma once
 
+#include <common/TypeList.hpp>
+
 #include <iterator>
 #include <type_traits>
 #include <stdexcept>
@@ -192,6 +194,44 @@ constexpr std::array<T, kt_size> make_filled_array(const T & obj) {
     return rv;
 }
 
+/** For each element in a tuple who derives from "Base", function "f" will be
+ *  called.
+ *
+ *  @tparam Base The base class which
+ *
+ *  @param f function to call, must take the form: void(Base &)
+ *
+ *  @note
+ *  There are presently no plans to allow short-cutting out of this "loop" by
+ *  returning a "fc_signal" enum.
+ *
+ *  @note [for implementor] const, and writable must be tested
+ */
+template <typename Base, typename Func, typename ... Types>
+void for_all_of_base(Tuple<Types...> &, Func && f);
+
+/** For each element in a tuple who derives from "Base", function "f" will be
+ *  called.
+ *
+ *  @tparam Base The base class which
+ *
+ *  @param f function to call, must take the form: void(const Base &)
+ */
+template <typename Base, typename Func, typename ... Types>
+void for_all_of_base(const Tuple<Types...> &, Func && f);
+
+/** For each element in a tuple who derives from "Base", function "f" will be
+ *  called.
+ *
+ *  This overload checks if elements are references, and if so will call allow
+ *  f to take a writable reference as an argument.
+ *
+ *  @tparam Base The base class which
+ *
+ *  @param f function to call, must take the form: void(Base &)
+ */
+template <typename Base, typename Func, typename ... Types>
+void for_all_of_base(const Tuple<Types & ...> &, Func && f);
 
 // ----------------------- Implementation Details -----------------------------
 
@@ -252,6 +292,78 @@ std::enable_if_t<std::is_floating_point_v<T>,
         }
     }
     return std::make_tuple(low, high);
+}
+
+namespace detail {
+
+class ForAllOfBasePriv {
+    template <typename Base, typename Func, typename ... Types>
+    friend void ::cul::for_all_of_base(Tuple<Types...> &, Func &&);
+
+    template <typename Base, typename Func, typename ... Types>
+    friend void ::cul::for_all_of_base(const Tuple<Types...> &, Func &&);
+
+    template <typename Base, typename Func, typename TupleType, typename ... Types>
+    static void for_all_of_base_impl(TupleType &, TypeList<Types...>, Func &) {}
+
+    template <typename Base, typename Func, typename TupleType, typename ... Types>
+    static void for_all_of_base_impl(const TupleType &, TypeList<Types...>, Func &) {}
+
+    template <typename Type>
+    using Bare = std::remove_reference_t<Type>;
+
+    template <typename Base, typename Derived>
+    static constexpr const bool kt_bare_is_base_of =
+        std::is_base_of_v<Base, Bare<Derived>>;
+
+    template <typename Base, typename Func, typename TupleType,
+              typename Head, typename ... Types>
+    static void for_all_of_base_impl
+        (TupleType & tuple, TypeList<Head, Types...>, Func & f)
+    {
+        if constexpr (kt_bare_is_base_of<Base, Head>) {
+            Bare<Head> & head = std::get<Head>(tuple);
+            f(head);
+        }
+        for_all_of_base_impl<Base, Func, TupleType, Types...>
+                            (tuple, TypeList<Types...>{}, f);
+    }
+
+    template <typename Base, typename Func, typename TupleType,
+              typename Head, typename ... Types>
+    static void for_all_of_base_impl
+        (const TupleType & tuple, TypeList<Head, Types...>, Func & f)
+    {
+        // no obvious way to reduce
+        if constexpr (kt_bare_is_base_of<Base, Head>) {
+            const Bare<Head> & head = std::get<Head>(tuple);
+            f(head);
+        }
+        for_all_of_base_impl<Base, Func, TupleType, Types...>
+                            (tuple, TypeList<Types...>{}, f);
+    }
+};
+
+} // end of detail namespace -> into ::cul
+
+template <typename Base, typename Func, typename ... Types>
+void for_all_of_base(Tuple<Types...> & tuple, Func && f) {
+    detail::ForAllOfBasePriv::for_all_of_base_impl
+        <Base, Func, Tuple<Types...>, Types...>
+        (tuple, TypeList<Types...>{}, f);
+}
+
+template <typename Base, typename Func, typename ... Types>
+void for_all_of_base(const Tuple<Types...> & tuple, Func && f) {
+    detail::ForAllOfBasePriv::for_all_of_base_impl
+        <Base, Func, Tuple<Types...>, Types...>
+        (tuple, TypeList<Types...>{}, f);
+}
+
+template <typename Base, typename Func, typename ... Types>
+void for_all_of_base(const Tuple<Types & ...> & tuple, Func && f) {
+    auto copy = tuple;
+    for_all_of_base<Base>(copy, std::move(f));
 }
 
 } // end of cul namespace

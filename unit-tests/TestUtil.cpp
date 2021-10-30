@@ -69,8 +69,9 @@ void test_quad_range();
 void test_normalize();
 void test_and_rectangles();
 void test_rotate_vector();
+void test_for_all_of_base();
 
-}
+} // end of <anonymous> namespace
 
 int main() {
     try {
@@ -85,6 +86,7 @@ int main() {
         // project_unto
         // float_equals -> for semantics testing
         // is_nan
+        test_for_all_of_base();
     } catch (std::exception & exp) {
         std::cout << exp.what() << std::endl;
         return ~0;
@@ -119,6 +121,50 @@ private:
     char m_value;
     std::vector<Obj> m_marked;
 };
+
+// ------------------------- for test_for_all_of_base -------------------------
+
+class Base1 {
+protected:
+    virtual ~Base1() {}
+
+public:
+    virtual char report() const = 0;
+};
+
+class Base2 {
+public:
+    int number() const { return m; }
+
+    void count_off(int & i) { m = ++i; }
+
+private:
+    int m = 0;
+};
+
+class Base3 {};
+
+class A final : public Base1, public Base2 {
+    char report() const final { return 'A'; }
+};
+
+class B final : public Base2, public Base3 {
+
+};
+
+class C final : public Base1, public Base2, public Base3 {
+    char report() const final { return 'C'; }
+};
+
+class D final {};
+
+class E final : public Base1 {
+    char report() const final { return 'E'; }
+};
+
+class Intr : public Base3 {};
+
+class F final : public Intr {};
 
 void test_quad_range() {
     quad_range<int>({ 4 }, [](int, int) 
@@ -168,9 +214,71 @@ void test_normalize() {
 }
 
 void test_and_rectangles() {
+    // plans for testing?!
 }
 
 void test_rotate_vector() {
+    // plans for testing?!
+}
+
+void test_for_all_of_base() {
+    {
+    A a;
+    B b;
+    C c;
+    D d;
+    E e;
+    F f;
+    std::string str;
+    for_all_of_base<Base1>(std::tie(a, b, c, d, e, f), [&str](const Base1 & base) {
+        str += base.report();
+    });
+    assert(str == "ACE");
+    }
+    {
+    auto t1 = std::make_tuple(A{}, B{}, C{}, D{}, E{}, F{});
+    int count = 0;
+    std::vector<Base2 *> bases;
+    for_all_of_base<Base2>(t1, [&count, &bases](Base2 & base) {
+        base.count_off(count);
+        bases.push_back(&base);
+    });
+    std::sort(bases.begin(), bases.end(), [](Base2 * lhs, Base2 * rhs) {
+        return lhs->number() < rhs->number();
+    });
+    assert(std::unique(bases.begin(), bases.end(), [](Base2 * lhs, Base2 * rhs) { return lhs->number() == rhs->number(); }) == bases.end());
+    }
+    {
+    A a;
+    B b;
+    C c;
+    D d;
+    E e;
+    F f;
+    int count = 0;
+    std::vector<Base2 *> bases;
+    for_all_of_base<Base2>(std::tie(a, b, c, d, e, f), [&count, &bases](Base2 & base) {
+        base.count_off(count);
+        bases.push_back(&base);
+    });
+    std::sort(bases.begin(), bases.end(), [](Base2 * lhs, Base2 * rhs) {
+        return lhs->number() < rhs->number();
+    });
+    assert(std::unique(bases.begin(), bases.end(), [](Base2 * lhs, Base2 * rhs) { return lhs->number() == rhs->number(); }) == bases.end());
+    }
+    {
+    A a;
+    B b;
+    C c;
+    D d;
+    E e;
+    F f;
+    int count = 0;
+    for_all_of_base<Base3>(std::tie(a, b, c, d, e, f), [&count](const Base3 &) {
+        ++count;
+    });
+    assert(count == 3);
+    }
 }
 
 } // end of <anonymous> namespace

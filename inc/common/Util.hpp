@@ -199,11 +199,16 @@ constexpr std::array<T, kt_size> make_filled_array(const T & obj) {
  *
  *  @tparam Base The base class which
  *
- *  @param f function to call, must take the form: void(Base &)
+ *  @param f function to call, must take either form of:
+ *  - void(Base &)
+ *  - void(CommonBase &) where "CommonBase" is a type from which all tuple
+ *    elements are derived from
  *
  *  @note
  *  There are presently no plans to allow short-cutting out of this "loop" by
- *  returning a "fc_signal" enum.
+ *  returning a "fc_signal" enum. @n
+ *  The order in which the tuple iteratored maybe any order or "implementation
+ *  defined".
  *
  *  @note [for implementor] const, and writable must be tested
  */
@@ -303,44 +308,35 @@ class ForAllOfBasePriv {
     template <typename Base, typename Func, typename ... Types>
     friend void ::cul::for_all_of_base(const Tuple<Types...> &, Func &&);
 
-    template <typename Base, typename Func, typename TupleType, typename ... Types>
-    static void for_all_of_base_impl(TupleType &, TypeList<Types...>, Func &) {}
-
-    template <typename Base, typename Func, typename TupleType, typename ... Types>
-    static void for_all_of_base_impl(const TupleType &, TypeList<Types...>, Func &) {}
-
     template <typename Type>
-    using Bare = std::remove_reference_t<Type>;
+    using Bare = std::remove_const_t<std::remove_reference_t<Type>>;
 
     template <typename Base, typename Derived>
     static constexpr const bool kt_bare_is_base_of =
         std::is_base_of_v<Base, Bare<Derived>>;
 
-    template <typename Base, typename Func, typename TupleType,
-              typename Head, typename ... Types>
-    static void for_all_of_base_impl
-        (TupleType & tuple, TypeList<Head, Types...>, Func & f)
-    {
-        if constexpr (kt_bare_is_base_of<Base, Head>) {
-            Bare<Head> & head = std::get<Head>(tuple);
+    template <typename Base, typename Func, typename TupleType, std::size_t k_index>
+    static void for_all_of_base_impl(TupleType & tuple, Func & f) {
+        using GetRt = decltype(std::get<k_index>(tuple));
+        if constexpr (kt_bare_is_base_of<Base, GetRt>) {
+            Bare<GetRt> & head = std::get<k_index>(tuple);
             f(head);
         }
-        for_all_of_base_impl<Base, Func, TupleType, Types...>
-                            (tuple, TypeList<Types...>{}, f);
+        if constexpr (k_index != 0) {
+            for_all_of_base_impl<Base, Func, TupleType, k_index - 1>(tuple, f);
+        }
     }
 
-    template <typename Base, typename Func, typename TupleType,
-              typename Head, typename ... Types>
-    static void for_all_of_base_impl
-        (const TupleType & tuple, TypeList<Head, Types...>, Func & f)
-    {
-        // no obvious way to reduce
-        if constexpr (kt_bare_is_base_of<Base, Head>) {
-            const Bare<Head> & head = std::get<Head>(tuple);
+    template <typename Base, typename Func, typename TupleType, std::size_t k_index>
+    static void for_all_of_base_impl(const TupleType & tuple, Func & f) {
+        using GetRt = decltype(std::get<k_index>(tuple));
+        if constexpr (kt_bare_is_base_of<Base, GetRt>) {
+            const Bare<GetRt> & head = std::get<k_index>(tuple);
             f(head);
         }
-        for_all_of_base_impl<Base, Func, TupleType, Types...>
-                            (tuple, TypeList<Types...>{}, f);
+        if constexpr (k_index != 0) {
+            for_all_of_base_impl<Base, Func, TupleType, k_index - 1>(tuple, f);
+        }
     }
 };
 
@@ -348,16 +344,20 @@ class ForAllOfBasePriv {
 
 template <typename Base, typename Func, typename ... Types>
 void for_all_of_base(Tuple<Types...> & tuple, Func && f) {
-    detail::ForAllOfBasePriv::for_all_of_base_impl
-        <Base, Func, Tuple<Types...>, Types...>
-        (tuple, TypeList<Types...>{}, f);
+    if constexpr (sizeof...(Types) != 0) {
+        detail::ForAllOfBasePriv::for_all_of_base_impl
+            <Base, Func, Tuple<Types...>, sizeof...(Types) - 1>
+            (tuple, f);
+    }
 }
 
 template <typename Base, typename Func, typename ... Types>
 void for_all_of_base(const Tuple<Types...> & tuple, Func && f) {
-    detail::ForAllOfBasePriv::for_all_of_base_impl
-        <Base, Func, Tuple<Types...>, Types...>
-        (tuple, TypeList<Types...>{}, f);
+    if constexpr (sizeof...(Types) != 0) {
+        detail::ForAllOfBasePriv::for_all_of_base_impl
+            <Base, Func, Tuple<Types...>, sizeof...(Types) - 1>
+            (tuple, f);
+    }
 }
 
 template <typename Base, typename Func, typename ... Types>

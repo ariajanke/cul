@@ -233,7 +233,7 @@ void test_for_all_of_base() {
     for_all_of_base<Base1>(std::tie(a, b, c, d, e, f), [&str](const Base1 & base) {
         str += base.report();
     });
-    assert(str == "ACE");
+    assert(str == "ECA");
     }
     {
     auto t1 = std::make_tuple(A{}, B{}, C{}, D{}, E{}, F{});
@@ -278,6 +278,34 @@ void test_for_all_of_base() {
         ++count;
     });
     assert(count == 3);
+    }
+    // multiple of same type... couldn't do this on the old implementation!
+    {
+    auto t1 = std::make_tuple(A{}, B{}, A{}, E{}, E{}, B{});
+    int count = 0;
+    for_all_of_base<Base2>(t1, [&count](const Base2 &) {
+        ++count;
+    });
+    assert(count == 4);
+    }
+    // common base
+    {
+    // all share base 2
+    // A, C are base 1
+    // B, C, are base 3
+    //                       1     10   10   10   10    1
+    auto t1 = std::make_tuple(A{}, B{}, B{}, C{}, B{}, A{});
+    for_all_of_base<Base1>(t1, [](Base2 & b2) {
+        int i = 0;
+        b2.count_off(i);
+    });
+    for_all_of_base<Base3>(t1, [](Base2 & b2) {
+        int i = 9;
+        b2.count_off(i);
+    });
+    int count = 0;
+    for_all_of_base<Base2>(t1, [&count](Base2 & b2) { count += b2.number(); });
+    assert(count == 42);
     }
 }
 

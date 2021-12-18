@@ -26,8 +26,13 @@
 
 #pragma once
 
-#include <iosfwd>
-#include <stdexcept>
+// going header only :c
+
+#include <common/Util.hpp>
+#include <iostream>
+#include <algorithm>
+
+#include <cstring>
 
 namespace cul {
 
@@ -142,6 +147,10 @@ private:
 
     void print_success();
 
+    static std::string to_padded_string(int);
+
+    static std::string source_position_to_string(const char * filename, int line);
+
     int m_test_count = 0;
     int m_test_successes = 0;
     bool m_silence_success = false;
@@ -238,6 +247,128 @@ template <typename Func>
     }
 
     unmark_source_position();
+}
+
+// ----------------------------------------------------------------------------
+
+inline void set_context(TestSuite & suite, void (*make_context)(TestSuite &, Unit &)) {
+    Unit unit = UnitAttn::make_unit();
+
+    // caller must call "start" on unit, or the loop exits
+    // does result in a "wasted" iteration
+    make_context(suite, unit);
+
+    while (UnitAttn::index_hit(unit)) {
+        UnitAttn::increment(unit);
+        make_context(suite, unit);
+    }
+}
+
+inline /* private static */ void UnitAttn::increment(Unit & unit) {
+    unit.m_hit = false;
+    ++unit.m_index;
+    unit.m_starts = 0;
+}
+
+// ----------------------------------------------------------------------------
+
+inline TestAssertion test(bool v) {
+   TestAssertion ta;
+   ta.value = v;
+   return ta;
+}
+
+inline TestSuite::TestSuite(): m_out(&std::cout) {}
+
+inline TestSuite::TestSuite(const char * series_name):
+    TestSuite()
+{
+    start_series(series_name);
+}
+
+inline TestSuite::~TestSuite()
+    { finish_up(); }
+
+inline void TestSuite::start_series(const char * desc) {
+    finish_up();
+    *m_out << desc << std::endl;
+    m_test_count = 0;
+}
+
+inline void TestSuite::assign_output_stream(std::ostream & out) { m_out = &out; }
+
+inline void TestSuite::mark_source_position(const char * filename, int line) {
+    using namespace cul::exceptions_abbr;
+    if (!filename || line < 0) {
+        throw InvArg("TestSuite::mark_source_position: Source filename must "
+                     "be a non-null pointer and line must be a non-negative "
+                     "integer.");
+    }
+    m_source_position = line;
+    m_source_file     = filename;
+}
+
+inline void TestSuite::unmark_source_position() {
+    // is enough to revert behavior
+    m_source_file = nullptr;
+}
+
+inline void TestSuite::finish_up() noexcept {
+    if (m_test_count == 0) return;
+    *m_out << "[ Passed " << m_test_successes << " / " << m_test_count
+           << " test cases (" << std::to_string(int(double(m_test_successes)/double(m_test_count)*100.))
+           << "%) ]" << std::endl;
+    m_test_count = m_test_successes = 0;
+}
+
+inline bool TestSuite::has_successes_only() const
+    { return m_test_successes == m_test_count; }
+
+inline /* private */ void TestSuite::print_failure(const char * exception_text) {
+    *m_out << "[ FAILED TEST " << to_padded_string(m_test_count) << " ]";
+    if (m_source_file) {
+        *m_out << "\nTest location: " << source_position_to_string(m_source_file, m_source_position);
+    }
+    if (exception_text) {
+        *m_out << "\nTest threw an exception with the following description:\n"
+               << exception_text;
+    }
+    *m_out << std::endl;
+}
+
+inline /* private */ void TestSuite::print_success() {
+    *m_out << "[ Passed TEST " << to_padded_string(m_test_count) << " ]"
+           << std::endl;
+}
+
+inline /* private static */ std::string TestSuite::to_padded_string(int x) {
+    // what if I have a 1000 test cases?
+    if (x == 0) return "   ";
+    std::string rv = std::to_string(x);
+    return std::string(std::size_t(2 - std::floor(std::log10(double(x)))), ' ') + rv;
+}
+
+inline /* private static */ std::string TestSuite::source_position_to_string
+    (const char * filename, int line)
+{
+    // should hopefully be good enough for my needs
+    using std::make_reverse_iterator;
+    auto fn_end = filename + ::strlen(filename);
+    const auto k_fn_rev_end = make_reverse_iterator(filename);
+    auto find_last = [k_fn_rev_end, fn_end](char c)
+        { return std::find(make_reverse_iterator(fn_end), k_fn_rev_end, c); };
+    static auto revert = [](decltype(k_fn_rev_end) ritr) { return (ritr.base()) - 1; };
+    auto fslash = find_last('/' );
+    auto bslash = find_last('\\');
+    if (fslash != k_fn_rev_end && bslash != k_fn_rev_end) {
+        filename = revert(std::max(fslash, bslash));
+    } else if (fslash != k_fn_rev_end) {
+        filename = revert(fslash);
+    } else if (bslash != k_fn_rev_end) {
+        filename = revert(bslash);
+    }
+
+    return std::string(filename) + " line " + std::to_string(line);
 }
 
 } // end of ts namespace -> into ::cul

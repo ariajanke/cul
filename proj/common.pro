@@ -97,7 +97,8 @@ SOURCES += \
     \#../unit-tests/test-math-utils.cpp
     \#../unit-tests/vector-tests.cpp
     \#../unit-tests/sfutils-tests.cpp
-    ../demos/sf-util-demos.cpp
+    \#../demos/sf-util-demos.cpp
+    ../unit-tests/test-ColorString.cpp
 
 INCLUDEPATH += \
     ../inc

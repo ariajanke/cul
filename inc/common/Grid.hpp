@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <utility>
 #include <functional>
+#include <limits>
 
 #include <common/Vector2.hpp>
 

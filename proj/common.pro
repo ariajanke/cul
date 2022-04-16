@@ -47,7 +47,7 @@ SOURCES += \
     ../src/BitmapFont.cpp              \
     ../src/ConstString.cpp             \
     ../src/CurrentWorkingDirectory.cpp \
-    ../src/TestSuite.cpp               \
+    \#../src/TestSuite.cpp               \
     \ # SFML Utilities
     ../src/sf-DrawText.cpp             \
     ../src/sf-DrawRectangle.cpp        \
@@ -97,8 +97,8 @@ SOURCES += \
     \#../unit-tests/test-math-utils.cpp
     \#../unit-tests/vector-tests.cpp
     \#../unit-tests/sfutils-tests.cpp
-    \#../demos/sf-util-demos.cpp
-    ../unit-tests/test-ColorString.cpp
+    ../demos/sf-util-demos.cpp
+    #../unit-tests/test-ColorString.cpp
 
 INCLUDEPATH += \
     ../inc

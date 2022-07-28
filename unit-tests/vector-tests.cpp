@@ -1,5 +1,11 @@
-#include <common/Vector2Util.hpp>
-
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/Vector2.hpp>
+#   include <common/VectorUtils.hpp>
+#   include <common/sf/VectorTraits.hpp>
+#   include <common/RectangleUtils.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#endif
 #include <unordered_map>
 
 namespace tn {
@@ -37,13 +43,72 @@ void do_other_vector_stuff() {
 #include <SFML/System/Vector2.hpp>
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 #include <common/Vector2.hpp>
-#include <common/Vector2Util.hpp>
-#include <common/SfmlVectorTraits.hpp>
-
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/VectorUtils.hpp>
+#   include <common/sf/VectorTraits.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#   include <common/SfmlVectorTraits.hpp>
+#endif
 #include <iostream>
+#ifdef MACRO_NEW_20220728_VECTORS
 
+// maybe should be in its own header... (rather than copy+paste)
+namespace cul {
+
+template <int kt_dimensionality, typename T, glm::qualifier Q>
+struct VectorTraits<glm::vec<kt_dimensionality, T, Q>> {
+    static constexpr const bool k_is_vector_type          = true;
+    static constexpr const bool k_should_define_operators = false;
+
+    using GlmVec = glm::vec<kt_dimensionality, T, Q>;
+    using ScalarType = T;
+
+    template <int kt_idx, typename = int>
+    struct Get final {};
+
+    template <typename U>
+    struct Get<0, U> final {
+        GLM_CONSTEXPR ScalarType operator () (const GlmVec & r) const
+            { return r.x; }
+    };
+
+    template <typename U>
+    struct Get<1, U> final {
+        GLM_CONSTEXPR ScalarType operator () (const GlmVec & r) const
+            { return r.y; }
+    };
+
+    template <typename U>
+    struct Get<2, U> final {
+        GLM_CONSTEXPR ScalarType operator () (const GlmVec & r) const
+            { return r.z; }
+    };
+
+    template <typename U>
+    struct Get<3, U> final {
+        GLM_CONSTEXPR ScalarType operator () (const GlmVec & r) const
+            { return r.w; }
+    };
+
+    struct Make final {
+        template <typename ... Types>
+        GLM_CONSTEXPR GlmVec operator () (Types && ... comps) const
+            { return GlmVec{ std::forward<Types>(comps)... }; }
+    };
+
+    template <typename U>
+    using ChangeScalarType = glm::vec<kt_dimensionality, U, Q>;
+
+    static constexpr const int k_dimension_count = kt_dimensionality;
+};
+
+} // end of cul(n) namespace
+
+#else
 namespace cul {
 
 template <>
@@ -71,7 +136,7 @@ struct Vector2Traits<glm::vec2::value_type, glm::vec2> {
 };
 
 } // end of cul namespace
-
+#endif
 struct A {};
 
 int main() {
@@ -95,11 +160,13 @@ int main() {
     sf::Vector2i a { 50, 20 }, b;
     a + b;
     std::cout << std::boolalpha;
+#   ifndef MACRO_NEW_20220728_VECTORS
     std::cout << cul::k_is_convertible_vector2<A> << std::endl;
     std::cout << cul::k_is_convertible_vector2<sf::Vector2<int>> << std::endl;
     std::cout << cul::k_is_convertible_vector2<glm::vec2> << std::endl;
     std::cout << cul::k_is_convertible_vector2<glm::vec3> << std::endl;
     std::cout << cul::k_is_convertible_vector2<cul::Vector2<int>> << std::endl;
+#   endif
     std::cout << cul::magnitude(a) << std::endl;
 
     glm::vec2 c { 4.5, -1.2 };
@@ -248,7 +315,10 @@ int main() {
         std::cout << std::boolalpha
                   << cul::is_real(sf::Vector2f(900, 5.12e26f)) << " "
                   << cul::is_real(sf::Vector2i(1, 1)) << " "
-                  << cul::is_real(cul::get_no_solution_sentinel<VecD>()) << std::endl;
+#                 ifndef MACRO_NEW_20220728_VECTORS
+                  << cul::is_real(cul::get_no_solution_sentinel<VecD>())
+#                 endif
+                  << std::endl;
     }
     assert(cul::are_within(
         cul::rotate_vector(VecF(1, 0), cul::k_pi_for_type<double>*0.5),
@@ -278,9 +348,11 @@ int main() {
     static_assert(SizeI{}.width == 0, "");
     static_assert(SizeI{2, 2}.width == 2, "");
 
+#   ifndef MACRO_NEW_20220728_VECTORS
     [[maybe_unused]] static constexpr const auto k_no_sol =
         cul::k_no_solution_for_v2<double>;
     static_assert(std::is_same_v<decltype(k_no_sol.x), double>, "");
+#   endif
     }
 
     return 0;

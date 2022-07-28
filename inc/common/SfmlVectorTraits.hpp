@@ -29,6 +29,10 @@
 #include <SFML/System/Vector2.hpp>
 #include <common/Vector2Traits.hpp>
 
+#ifdef MACRO_NEW_20220728_VECTORS
+#   error "Header should not be included with the new vector interface."
+#endif
+
 namespace cul {
 
 template <typename T>

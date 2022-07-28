@@ -1,5 +1,11 @@
 #include <common/Util.hpp>
-#include <common/Vector2Util.hpp>
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/Vector2.hpp>
+#   include <common/VectorUtils.hpp>
+#   include <common/RectangleUtils.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#endif
 
 #include <vector>
 #include <set>
@@ -90,8 +96,9 @@ static void test_v2() {
     vd1 = project_onto(VectorD(12., -100.), VectorD(1., 1.1));
     vd1 = find_intersection(VectorD(0, 0), VectorD(1, 1), VectorD(100, 1), VectorD(101, 0));
     assert(!is_real(vd1));
+#   ifndef MACRO_NEW_20220728_VECTORS
     assert(!is_real(vd1 = get_no_solution_sentinel<VectorD>()));
-
+#   endif
     vd1 = find_closest_point_to_line(VectorD(0, 0), VectorD(1, 1), VectorD(0.2, 0.4));
 
     using SizeI = cul::Size2<int>;

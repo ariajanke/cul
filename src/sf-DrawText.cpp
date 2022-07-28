@@ -27,8 +27,14 @@
 #include <common/sf/DrawText.hpp>
 
 #include <common/Util.hpp>
-#include <common/SfmlVectorTraits.hpp>
-#include <common/Vector2Util.hpp>
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/VectorUtils.hpp>
+#   include <common/sf/VectorTraits.hpp>
+#   include <common/RectangleUtils.hpp>
+#else
+#   include <common/SfmlVectorTraits.hpp>
+#   include <common/Vector2Util.hpp>
+#endif
 #include <common/sf/Util.hpp>
 
 #include <SFML/Graphics/RenderTarget.hpp>

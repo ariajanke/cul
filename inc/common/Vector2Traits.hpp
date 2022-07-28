@@ -28,6 +28,10 @@
 
 #include <type_traits>
 
+#ifdef MACRO_NEW_20220728_VECTORS
+#   error "Header should not be included with new vector interface"
+#endif
+
 namespace cul {
 
 /** Your specialization should look something like this for template vector 

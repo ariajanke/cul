@@ -27,8 +27,12 @@
 #pragma once
 
 #include <common/Grid.hpp>
-#include <common/SfmlVectorTraits.hpp>
-
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/sf/VectorTraits.hpp>
+#   include <common/VectorUtils.hpp>
+#else
+#   include <common/SfmlVectorTraits.hpp>
+#endif
 #include <SFML/Graphics/Image.hpp>
 
 namespace cul {
@@ -39,6 +43,6 @@ Grid<sf::Color> to_color_grid(const sf::Image &);
 
 template <typename T>
 sf::Vector2f to_sf_vec2f(const cul::Vector2<T> & r)
-    { return cul::convert_to<sf::Vector2<T>>(r); }
+    { return convert_to<sf::Vector2<T>>(r); }
 
 } // end of cul namespace

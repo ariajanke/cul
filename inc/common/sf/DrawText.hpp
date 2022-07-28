@@ -26,7 +26,12 @@
 
 #include <common/Vector2.hpp>
 #include <common/BitmapFont.hpp>
-#include <common/SfmlVectorTraits.hpp>
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/sf/VectorTraits.hpp>
+#   include <common/VectorUtils.hpp>
+#else
+#   include <common/SfmlVectorTraits.hpp>
+#endif
 
 #include <SFML/Graphics/Drawable.hpp>
 #include <SFML/Graphics/Sprite.hpp>

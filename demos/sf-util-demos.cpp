@@ -9,7 +9,11 @@
 #include <common/TypeList.hpp>
 #include <common/Util.hpp>
 #include <common/StringUtil.hpp>
-#include <common/Vector2Util.hpp>
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/VectorUtils.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#endif
 #include <common/BezierCurves.hpp>
 
 #include <SFML/Graphics/Texture.hpp>
@@ -584,8 +588,13 @@ private:
         assert(dir_ == k_left || dir_ == k_right);
         using namespace cul;
 
+        // directed angle between must return an angle such that:
+        // auto t = directed_angle_between(from, to)
+        // rotate_vector(from, t) == to; "about equal"
+        // not exactly sure, but the geometry seems to work out fine on paper
+        // maybe... it was a cover up for the previous design flaw?
         const auto theta_0 = directed_angle_between(
-            p.anchor + to_anchor_end(p, dir_) - p.default_tip_location,
+            p.anchor - to_anchor_end(p, dir_) - p.default_tip_location,
             p.anchor                          - p.default_tip_location);
         auto theta = normalize(theta_0)*(k_pi_f*0.5f - magnitude(theta_0))*amount;
         // must be the same sign

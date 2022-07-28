@@ -27,8 +27,13 @@
 #include <common/sf/DrawLine.hpp>
 
 #include <common/Util.hpp>
-#include <common/Vector2Util.hpp>
-#include <common/SfmlVectorTraits.hpp>
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/VectorUtils.hpp>
+#   include <common/sf/VectorTraits.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#   include <common/SfmlVectorTraits.hpp>
+#endif
 #include <common/sf/DrawRectangle.hpp>
 
 #include <SFML/Graphics/RenderTarget.hpp>
@@ -150,6 +155,11 @@ sf::Vector2f verify_point(const char * caller, sf::Vector2f r) {
 sf::Vector2f make_unit_start() { return sf::Vector2f(1.f, 0.f); }
 
 sf::Vector2f to_polar(float angle, float distance)
-    { return cul::rotate_vector(make_unit_start(), angle)*distance; }
+    // I'd much prefer an explaination for this
+#   ifdef MACRO_NEW_20220728_VECTORS
+    { return cul::rotate_vector(make_unit_start(), -angle)*distance; }
+#   else
+    { return cul::rotate_vector(make_unit_start(), -angle)*distance; }
+#   endif
 
 } // end of <anonymous> namespace

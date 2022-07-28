@@ -25,9 +25,14 @@
 *****************************************************************************/
 
 #include <common/Util.hpp>
-#include <common/Vector2Util.hpp>
-#include <common/SfmlVectorTraits.hpp>
-
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/Vector2.hpp>
+#   include <common/sf/VectorTraits.hpp>
+#   include <common/VectorUtils.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#   include <common/SfmlVectorTraits.hpp>
+#endif
 #include <SFML/System/Vector2.hpp>
 
 #include <iostream>

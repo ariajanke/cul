@@ -73,6 +73,9 @@ private:
     IterType m_b, m_e;
 };
 
+template <bool kt_condition, typename T>
+using EnableIf = std::enable_if_t<kt_condition, T>;
+
 namespace fc_signal {
 
 enum FlowControlSignal_e { k_continue, k_break };
@@ -107,7 +110,7 @@ constexpr const typename std::enable_if_t<std::is_arithmetic_v<T>, T>
     k_pi_for_type = T(3.141592653589793238462643383279);
 
 template <typename T>
-    inline EnableArithmetic<T> magnitude(T t)
+    constexpr EnableArithmetic<T> magnitude(T t)
     { return (t < T(0)) ? -t : t; }
 
 template <typename T>

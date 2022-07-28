@@ -38,7 +38,7 @@ contains(CONFIG, release) {
     TARGET = common-test-app
 }
 
-QMAKE_CXXFLAGS += -std=c++17
+QMAKE_CXXFLAGS += -std=c++17 -DMACRO_NEW_20220728_VECTORS
 QMAKE_LFLAGS   += -std=c++17
 LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
                   -L/usr/lib/x86_64-linux-gnu
@@ -59,7 +59,7 @@ SOURCES += \
 
 HEADERS += \
     ../inc/common/BitmapFont.hpp              \
-    ../inc/common/ConstString.hpp             \
+    ../inc/common/ConstString.hpp             \ # out mode
     ../inc/common/Util.hpp                    \
     ../inc/common/CurrentWorkingDirectory.hpp \
     ../inc/common/BitMaskable.hpp             \
@@ -71,17 +71,23 @@ HEADERS += \
     ../inc/common/Grid.hpp                    \
     ../inc/common/ParseOptions.hpp            \
     ../inc/common/SubGrid.hpp                 \
-    ../inc/common/Vector2Util.hpp             \
-    ../inc/common/Vector2Traits.hpp           \
+    ../inc/common/Vector2Util.hpp             \ # out mode
+    ../inc/common/Vector2Traits.hpp           \ # out mode
     ../inc/common/Vector2.hpp                 \
-    ../inc/common/SfmlVectorTraits.hpp        \
+    ../inc/common/SfmlVectorTraits.hpp        \ # move to -> sf
     ../inc/common/BezierCurves.hpp            \
+    ../inc/common/ColorString.hpp             \
+    ../inc/common/VectorTraits.hpp            \
+    ../inc/common/Vector3.hpp                 \
+    ../inc/common/RectangleUtils.hpp          \
+    ../inc/common/VectorUtils.hpp             \
     \ # SFML Utilities
     ../inc/common/sf/DrawText.hpp             \
     ../inc/common/sf/DrawRectangle.hpp        \
     ../inc/common/sf/DrawTriangle.hpp         \
     ../inc/common/sf/DrawLine.hpp             \
     ../inc/common/sf/Util.hpp                 \
+    ../inc/common/sf/VectorTraits.hpp         \
     \ # Private SFML Utility Headers
     ../src/sf-8x8Font.hpp                     \
     ../src/sf-8x16Font.hpp
@@ -89,16 +95,17 @@ HEADERS += \
 # unit tests rounded into a single program (note, this is for dev/debug/IDE
 # purposes, NOT for general/automated testing)
 SOURCES += \
-    \#../unit-tests/all-tests-driver.cpp \
+    \#../unit-tests/all-tests-driver.cpp \ # empty?!
     \#../unit-tests/TestGrid.cpp \
-    \#../unit-tests/TestUtil.cpp \
+    ../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
-    \#../unit-tests/test-string-utils.cpp
-    \#../unit-tests/test-math-utils.cpp
-    \#../unit-tests/vector-tests.cpp
-    \#../unit-tests/sfutils-tests.cpp
-    ../demos/sf-util-demos.cpp
-    #../unit-tests/test-ColorString.cpp
+    \#../unit-tests/test-string-utils.cpp \
+    \#../unit-tests/test-math-utils.cpp \
+    \#../unit-tests/vector-tests.cpp \
+    \#../unit-tests/sfutils-tests.cpp \ # empty?!
+    \#../demos/sf-util-demos.cpp \ # problems here
+    \#../unit-tests/test-ColorString.cpp \
+    #../unit-tests/test-new-vectors.cpp
 
 INCLUDEPATH += \
     ../inc

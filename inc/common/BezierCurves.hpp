@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2021 Aria Janke
+    Copyright 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -27,7 +27,11 @@
 #pragma once
 
 #include <common/Vector2.hpp>
-#include <common/Vector2Util.hpp>
+#ifdef MACRO_NEW_20220728_VECTORS
+#   include <common/VectorTraits.hpp>
+#else
+#   include <common/Vector2Util.hpp>
+#endif
 
 #include <tuple>
 

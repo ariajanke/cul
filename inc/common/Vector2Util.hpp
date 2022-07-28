@@ -29,6 +29,10 @@
 #include <common/Util.hpp>
 #include <common/Vector2.hpp>
 
+#ifdef MACRO_NEW_20220728_VECTORS
+#   error "Header should not be included with new vector interface"
+#endif
+
 #include <tuple>
 
 /** @defgroup vec2utils Vector2 Utility Functions */

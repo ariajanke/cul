@@ -97,7 +97,7 @@ HEADERS += \
 SOURCES += \
     \#../unit-tests/all-tests-driver.cpp \ # empty?!
     \#../unit-tests/TestGrid.cpp \
-    ../unit-tests/TestUtil.cpp \
+    \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
     \#../unit-tests/test-string-utils.cpp \
     \#../unit-tests/test-math-utils.cpp \
@@ -105,7 +105,7 @@ SOURCES += \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
     \#../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
-    #../unit-tests/test-new-vectors.cpp
+    ../unit-tests/test-new-vectors.cpp
 
 INCLUDEPATH += \
     ../inc

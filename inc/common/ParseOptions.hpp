@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2021 Aria Janke
+    Copyright (c) 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 *****************************************************************************/
 
 #pragma once
+
 #include <initializer_list>
 
 namespace cul {
@@ -71,6 +72,8 @@ class ParseOptionsPriv {
     static ParseFunc<OptionsType> get_long_option
         (const char * opt, OptionsTable<OptionsType> options_table);
 };
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 template <typename OptionsType>
 OptionsType parse_options
@@ -162,5 +165,7 @@ template <typename OptionsType>
     }
     return nullptr;
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

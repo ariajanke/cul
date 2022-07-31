@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2021 Aria Janke
+    Copyright (c) 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -103,11 +103,15 @@ private:
 
 // ----------------------------------------------------------------------------
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 template <typename T>
 DrawRectangle::DrawRectangle
     (const Rectangle<T> & rect, sf::Color clr_):
     DrawRectangle(float(rect.left ), float(rect.top   ),
                   float(rect.width), float(rect.height), clr_)
 {}
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

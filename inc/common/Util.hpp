@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2021 Aria Janke
+    Copyright (c) 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -60,21 +60,25 @@ void quad_range(std::initializer_list<T> && ilist, Func && f);
  *  @note I've included this, because I keep writting this as a helper
  *        structure.
  */
-template <typename IterType>
+template <typename IterType, typename EndIterType = IterType>
 class View {
 public:
-    View(IterType b_, IterType e_): m_b(b_), m_e(e_) {}
+    constexpr View(IterType b_, EndIterType e_): m_b(b_), m_e(e_) {}
 
-    IterType begin() const { return m_b; }
+    constexpr IterType begin() const { return m_b; }
 
-    IterType end  () const { return m_e; }
+    constexpr EndIterType end  () const { return m_e; }
 
 private:
-    IterType m_b, m_e;
+    IterType m_b;
+    EndIterType m_e;
 };
 
 template <bool kt_condition, typename T>
 using EnableIf = std::enable_if_t<kt_condition, T>;
+
+template <typename ... Types>
+using Tuple = std::tuple<Types...>;
 
 namespace fc_signal {
 
@@ -243,6 +247,8 @@ void for_all_of_base(const Tuple<Types & ...> &, Func && f);
 
 // ----------------------- Implementation Details -----------------------------
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 template <typename Func, typename Iter>
 void quad_range(Iter beg, Iter end, Func && func) {
     using namespace fc_signal;
@@ -368,5 +374,7 @@ void for_all_of_base(const Tuple<Types & ...> & tuple, Func && f) {
     auto copy = tuple;
     for_all_of_base<Base>(copy, std::move(f));
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

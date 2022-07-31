@@ -571,6 +571,8 @@ private:
 
 // <------------------------ END OF PUBLIC INTERFACE ------------------------->
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 template <bool k_is_const_t, typename T>
 SubGridImpl<k_is_const_t, T>::SubGridImpl
     (typename std::conditional_t<k_is_const, const SubGridImpl<false, T> &, Dummy> rhs):
@@ -870,5 +872,7 @@ template <bool k_is_const_t, typename T>
     throw Error(std::string(caller) + ": cannot move iterator's position "
                 "without a subgrid row size, and parent grid width.");
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

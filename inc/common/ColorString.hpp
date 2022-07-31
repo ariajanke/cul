@@ -302,6 +302,8 @@ private:
 
 // ---------------------------- ColorStringHelpers ----------------------------
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 /** Defines utilities for ColorString. This interface is not designed for
  *  client use, and maybe subject to adurpt change.
  */
@@ -916,5 +918,7 @@ static_assert(ColorString{"#cbe"}.green().as_u8() == 0xBB, "");
 static_assert(ColorString{"#888"} > ColorString{"#777"}, "");
 static_assert(ColorString{"#EF9"} == "#EF9", "");
 #endif
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

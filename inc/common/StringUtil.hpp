@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2021 Aria Janke
+    Copyright (c) 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -218,6 +218,8 @@ constexpr std::ptrdiff_t find_str_len(const T * s)
     { return find_str_end(s) - s; }
 
 // <---------------------------- implementations ----------------------------->
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 template <auto is_seperator, typename IterType, typename Func>
 void for_split(IterType beg, IterType end, Func && f) {
@@ -481,5 +483,7 @@ void wrap_string_as_monowidth
         [](CharType c) { return c == CharType(' ' ) || c == CharType('\n') ||
                                 c == CharType('\t') || c == CharType('\r'); });
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

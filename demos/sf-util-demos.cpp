@@ -1,3 +1,29 @@
+/****************************************************************************
+
+    MIT License
+
+    Copyright 2022 Aria Janke
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+*****************************************************************************/
+
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/System/Sleep.hpp>
@@ -518,6 +544,48 @@ public:
         target.draw(m_verticies.data(), m_verticies.size(), sf::PrimitiveType::Triangles);
 
         auto tuples = get_bezier_tuples(m_tip);
+#       ifdef MACRO_NEW_20220728_VECTORS
+        using cul::convert_to;
+        static_assert(std::is_same_v<
+            cul::detail::ScalarsTuple<std::tuple<sf::Vector2f, sf::Vector2f, sf::Vector2f, sf::Vector2f>>::Type,
+            std::tuple<float, float, float, float>>);
+#       if 0
+        std::tuple<float, float, float, float> dists = { 0.f, 0.6f, 0.7f, 1.f };// cul::detail::make_distances_tuple(tuples.left_points);
+
+        auto t = std::get<2>(dists) /  cul::get_last(dists);
+        for (int i = 0; i != 10; ++i) {
+            auto newt = cul::find_bezier_point(i / 10.f, dists) / cul::get_last(dists);
+            int j = 0;
+            ++j;
+        }
+#       endif
+#       if 0
+        for (auto r : cul::make_bezier_point_view(tuples.left_points, 10)) {
+            DrawRectangle drect{
+                cul::Rectangle{r - cul::Vector2<float>{5.f, 5.f},
+                               cul::Size2{10.f, 10.f}},
+                sf::Color::Blue};
+            target.draw(drect);
+        }
+        for (auto r : cul::make_bezier_point_view(tuples.right_points, 10)) {
+            DrawRectangle drect{
+                cul::Rectangle{r - cul::Vector2<float>{5.f, 5.f},
+                               cul::Size2{10.f, 10.f}},
+                sf::Color::Red};
+            target.draw(drect);
+        }
+#       endif
+#       if 1
+        for (auto [a, b] : cul::make_bezier_line_view(tuples.left_points, 10)) {
+            DrawLine dline(convert_to<sf::Vector2f>(a), convert_to<sf::Vector2f>(b), 3.f, sf::Color::Red);
+            target.draw(dline);
+        }
+        for (auto [a, b] : cul::make_bezier_line_view(tuples.right_points, 10)) {
+            DrawLine dline(convert_to<sf::Vector2f>(a), convert_to<sf::Vector2f>(b), 3.f, sf::Color::Blue);
+            target.draw(dline);
+        }
+#       endif
+#       else
         cul::for_bezier_lines(tuples.left_points, 10, [&target](VecF a, VecF b) {
             using cul::convert_to;
             DrawLine dline(convert_to<sf::Vector2f>(a), convert_to<sf::Vector2f>(b), 3.f, sf::Color::Red);
@@ -528,6 +596,7 @@ public:
             DrawLine dline(convert_to<sf::Vector2f>(a), convert_to<sf::Vector2f>(b), 3.f, sf::Color::Blue);
             target.draw(dline);
         });
+#       endif
     }
 
     const std::string & name() const final {
@@ -625,14 +694,27 @@ private:
     {
         auto tuples = get_bezier_tuples(tip);
         rv.clear();
+#       ifdef MACRO_NEW_20220728_VECTORS
+        using cul::convert_to;
+#       if 1
+        for (auto [a, b, c] : cul::make_bezier_triangle_view(tuples.left_points, tuples.right_points, 10)) {
+            rv.emplace_back(convert_to<sf::Vector2f>(a));
+            rv.emplace_back(convert_to<sf::Vector2f>(b));
+            rv.emplace_back(convert_to<sf::Vector2f>(c));
+        }
+#       endif
+#       else
+        constexpr float k_area = 500.f;//25.f*25.f;
+        constexpr float k_error = 0.5f;
         for_bezier_triangles(tuples.left_points, tuples.right_points,
-                       25.f*25.f, 0.5f, [&rv](VecF a, VecF b, VecF c)
+                       k_area, k_error, [&rv](VecF a, VecF b, VecF c)
         {
             using namespace cul;
             rv.emplace_back(convert_to<sf::Vector2f>(a));
             rv.emplace_back(convert_to<sf::Vector2f>(b));
             rv.emplace_back(convert_to<sf::Vector2f>(c));
         });
+#       endif
         return std::move(rv);
     }
 
@@ -755,3 +837,16 @@ template <typename Head, typename ... Types>
 }
 
 } // end of <anonymous> namespace
+
+namespace cul {
+namespace detail {
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+//template <typename Vec, typename ... TupleTypes>
+void do_something(/*const BezierIterator<Vec, TupleTypes...> & lhs, const BezierIterator<Vec, TupleTypes...> & rhs*/) {
+    int j = 0;
+    volatile int * p = &j;
+    *p = 10;
+}
+#pragma GCC pop_options
+}}

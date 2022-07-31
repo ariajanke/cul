@@ -45,7 +45,6 @@ LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
 
 SOURCES += \
     ../src/BitmapFont.cpp              \
-    ../src/ConstString.cpp             \
     ../src/CurrentWorkingDirectory.cpp \
     \#../src/TestSuite.cpp               \
     \ # SFML Utilities
@@ -59,7 +58,6 @@ SOURCES += \
 
 HEADERS += \
     ../inc/common/BitmapFont.hpp              \
-    ../inc/common/ConstString.hpp             \ # out mode
     ../inc/common/Util.hpp                    \
     ../inc/common/CurrentWorkingDirectory.hpp \
     ../inc/common/BitMaskable.hpp             \
@@ -76,6 +74,7 @@ HEADERS += \
     ../inc/common/Vector2.hpp                 \
     ../inc/common/SfmlVectorTraits.hpp        \ # move to -> sf
     ../inc/common/BezierCurves.hpp            \
+    ../inc/common/BezierCurvesDetails.hpp     \
     ../inc/common/ColorString.hpp             \
     ../inc/common/VectorTraits.hpp            \
     ../inc/common/Vector3.hpp                 \
@@ -103,9 +102,9 @@ SOURCES += \
     \#../unit-tests/test-math-utils.cpp \
     \#../unit-tests/vector-tests.cpp \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
-    \#../demos/sf-util-demos.cpp \ # problems here
+    ../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
-    ../unit-tests/test-new-vectors.cpp
+    #../unit-tests/test-new-vectors.cpp
 
 INCLUDEPATH += \
     ../inc

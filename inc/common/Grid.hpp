@@ -194,6 +194,8 @@ private:
 
 // ----------------------------------------------------------------------------
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 template <typename T>
 Grid<T>::Grid(std::initializer_list<std::initializer_list<T>> init_list) {
     static constexpr const int k_uninit = -1;
@@ -379,5 +381,7 @@ template <typename T>
                                  "field size: width " + std::to_string(width()) +
                                  " height " + std::to_string(height()));
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

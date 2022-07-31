@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2021 Aria Janke
+    Copyright (c) 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -210,6 +210,8 @@ private:
 
 // ----------------------------------------------------------------------------
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 class UnitAttn {
     friend void set_context(TestSuite &, void (*)(TestSuite &, Unit &));
     static Unit make_unit() { return Unit(); }
@@ -370,6 +372,8 @@ inline /* private static */ std::string TestSuite::source_position_to_string
 
     return std::string(filename) + " line " + std::to_string(line);
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of ts namespace -> into ::cul
 

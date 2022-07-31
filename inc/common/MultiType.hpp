@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2021 Aria Janke
+    Copyright (c) 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,6 @@
 #pragma once
 
 #include <type_traits>
-
-#if 0 // WIP
-#   include <array>
-#endif
 
 #include <common/TypeList.hpp>
 #include <common/StorageUnion.hpp>
@@ -197,11 +193,6 @@ public:
     template <typename T>
     ConstUpcastPair<T> get_by_type_id_and_upcast(int type_id) const;
 
-#   if 0
-    template <typename ... FuncTypes>
-    void visit(const std::tuple<FuncTypes...> &);
-#   endif
-
     // -------------- static_cast and dynamic_cast replacements ---------------
 
     /** Allows you to perform a static_cast on the object without knowing the
@@ -232,6 +223,8 @@ private:
     StorageType m_store;
     int m_current_type;
 };
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 template <typename T>
 struct MultiTypeUpcastPair {
@@ -533,30 +526,7 @@ typename MultiType<Types...>::template UpcastPair<T> MultiType<Types...>::
     rv.object_pointer   = const_cast<void *>(gv.object_pointer  );
     return rv;
 }
-#if 0
-template <typename ... TupleTypes>
-class DefineSomething {
-public:
-    using Fp = void(*)(const std::tuple<TupleTypes...>, void *);
 
-    template <typename ... Types>
-    static Fp make_entry() {
-        return nullptr;
-    }
-
-    template <typename Head, typename ... Types>
-    static Fp make_entry() {
-        return nullptr;
-    }
-};
-
-template <typename ... Types>
-template <typename ... FuncTypes>
-void MultiType<Types...>::visit(const std::tuple<FuncTypes...> & tuple_) {
-    using Fp = void(*)(const std::tuple<FuncTypes...>, void *);
-    std::array<Fp, k_type_count> indirect_call_array;
-}
-#endif
 template <typename ... Types>
 template <typename T>
 typename MultiType<Types...>::template ConstUpcastPair<T> MultiType<Types...>::
@@ -616,5 +586,7 @@ template <typename ... Types>
 /* private static */ void MultiType<Types...>::copy
     (int id, void * dest, const void * src)
 { MultiTypePriv::copy(MtTypeList(), id, dest, src); }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

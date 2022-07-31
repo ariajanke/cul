@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2021 Aria Janke
+    Copyright 2022 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -190,6 +190,8 @@ private:
 
 // ----------------------------------------------------------------------------
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 template <typename T>
 void DrawText::set_text_center(sf::Vector2f r, const BasicString<T> & bstr)
     { set_text_center<T>(r, bstr.begin(), bstr.end()); }
@@ -254,5 +256,7 @@ void DrawText::set_text_top_right(sf::Vector2f r, const T * beg, const T * end) 
     r.x -= measure_text(end - beg).width;
     set_text_top_left<T>(r, beg, end);
 }
+
+#endif // ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

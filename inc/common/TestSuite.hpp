@@ -26,9 +26,8 @@
 
 #pragma once
 
-// going header only :c
-
 #include <common/Util.hpp>
+
 #include <iostream>
 #include <algorithm>
 

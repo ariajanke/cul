@@ -517,8 +517,8 @@ EnableIf<k_is_vector_type<Vec>, ScalarTypeOf<Vec>>
 
     auto mag_v = magnitude(v);
     auto mag_u = magnitude(u);
-    // this issue needs to be better understood
 
+    // this issue needs to be better understood
 #   if 0
     using T = typename Vector2Scalar<Vec>::Type;
     static const constexpr T k_error = 0.00005;
@@ -530,6 +530,7 @@ EnableIf<k_is_vector_type<Vec>, ScalarTypeOf<Vec>>
         throw InvArg("angle_between: both vectors must not be too far in magnitude.");
     }
 #   endif
+
     static constexpr const auto k_pi = cul::k_pi_for_type<ScalarTypeOf<Vec>>;
     auto frac = dot(v, u) / (mag_v*mag_u);
     if      (frac >  1) { return 0   ; }
@@ -668,20 +669,13 @@ constexpr EnableIf<VectorTraits<Vec>::k_dimension_count == 2, Vec>
 
     auto q_sub_p = sub(q, p);
     auto t_num = cross(q_sub_p, s);
-#   if 0
-    auto t = cross(q_sub_p, s) / r_cross_s;
 
-    if (t < 0 || t > 1) return k_no_intersection;
-#   endif
     using Scalar = ScalarTypeOf<Vec>;
     auto outside_0_1 = [](const Scalar & num, const Scalar & denom)
         { return num*denom < 0 || magnitude(num) > magnitude(denom); };
+
     // overflow concerns?
     if (outside_0_1(t_num, r_cross_s)) return k_no_intersection;
-#   if 0
-    auto u = cross(q_sub_p, r) / r_cross_s;
-    if (u < 0 || u > 1) return k_no_intersection;
-#   endif
 
     if (outside_0_1(cross(q_sub_p, r), r_cross_s)) return k_no_intersection;
     return Helpers::template plus<0>(
@@ -710,12 +704,7 @@ EnableIf<k_is_vector_type<Vec> &&
     }
 
     static constexpr const Scalar k_error = 0.00025;
-#   if 0
-    auto are_very_close_v = [](const Vec & a, const Vec & b) {
 
-        return sum_of_squares(Helpers::template sub<0>(a, b)) < k_error;
-    };
-#   endif
     using std::forward;
     auto sub = [](auto && ... args)
         { return Helpers::template sub<0>(forward<decltype(args)>(args)...); };

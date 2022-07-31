@@ -25,11 +25,8 @@
 *****************************************************************************/
 
 #pragma once
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/VectorTraits.hpp>
-#else
-#   include <common/Vector2Traits.hpp>
-#endif
+
+#include <common/VectorTraits.hpp>
 
 namespace cul {
 
@@ -139,8 +136,6 @@ bool is_contained_in(const Vector2<T> & r, const Rectangle<T> & rect) noexcept {
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-#ifdef MACRO_NEW_20220728_VECTORS
-
 template <typename T>
 struct VectorTraits<Vector2<T>> final {
     static constexpr const bool k_is_vector_type = true;
@@ -215,54 +210,6 @@ struct VectorTraits<Size2<T>> final {
 
     static constexpr const int k_dimension_count = 2;
 };
-
-#else
-
-template <typename T>
-struct Vector2Scalar<Vector2<T>> {
-    using Type = T;
-};
-
-template <typename T>
-struct Vector2Traits<T, Vector2<T>> {
-    static constexpr const bool k_is_vector_type          = true;
-    static constexpr const bool k_should_define_operators = true;
-
-    struct GetX {
-        constexpr T operator () (const Vector2<T> & r) const { return r.x; }
-    };
-    struct GetY {
-        constexpr T operator () (const Vector2<T> & r) const { return r.y; }
-    };
-    struct Make {
-        constexpr Vector2<T> operator () (const T & x_, const T & y_) const
-            { return Vector2<T>{x_, y_}; }
-    };
-};
-
-template <typename T>
-struct Vector2Scalar<Size2<T>> {
-    using Type = T;
-};
-
-template <typename T>
-struct Vector2Traits<T, Size2<T>> {
-    static constexpr const bool k_is_vector_type          = true;
-    static constexpr const bool k_should_define_operators = true;
-
-    struct GetX {
-        constexpr T operator () (const Size2<T> & r) const { return r.width; }
-    };
-    struct GetY {
-        constexpr T operator () (const Size2<T> & r) const { return r.height; }
-    };
-    struct Make {
-        constexpr Size2<T> operator () (const T & w_, const T & h_) const
-            { return Size2<T>{w_, h_}; }
-    };
-};
-
-#endif
 
 #endif
 

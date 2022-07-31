@@ -46,7 +46,6 @@ LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
 SOURCES += \
     ../src/BitmapFont.cpp              \
     ../src/CurrentWorkingDirectory.cpp \
-    \#../src/TestSuite.cpp               \
     \ # SFML Utilities
     ../src/sf-DrawText.cpp             \
     ../src/sf-DrawRectangle.cpp        \
@@ -69,10 +68,7 @@ HEADERS += \
     ../inc/common/Grid.hpp                    \
     ../inc/common/ParseOptions.hpp            \
     ../inc/common/SubGrid.hpp                 \
-    ../inc/common/Vector2Util.hpp             \ # out mode
-    ../inc/common/Vector2Traits.hpp           \ # out mode
     ../inc/common/Vector2.hpp                 \
-    ../inc/common/SfmlVectorTraits.hpp        \ # move to -> sf
     ../inc/common/BezierCurves.hpp            \
     ../inc/common/BezierCurvesDetails.hpp     \
     ../inc/common/ColorString.hpp             \

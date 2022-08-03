@@ -140,15 +140,14 @@ class BezierEndIterator final {};
 template <typename Vec, typename ... TupleTypes>
 class BezierIterator;
 
-class BezierEndLineIterator final {};
-
 template <typename Vec, typename ... TupleTypes>
 class BezierLineIterator;
 
-class BezierTriangleEndIterator final {};
+template <typename Vec, typename ... TupleTypes>
+class BezierStripTrianglesIterator;
 
 template <typename Vec, typename ... TupleTypes>
-class BezierTriangleIterator;
+class BezierStripDetailedIterator;
 
 } // end of details into -> ::cul
 

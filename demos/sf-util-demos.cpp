@@ -697,7 +697,12 @@ private:
 #       ifdef MACRO_NEW_20220728_VECTORS
         using cul::convert_to;
 #       if 1
-        for (auto [a, b, c] : cul::make_bezier_triangle_view(tuples.left_points, tuples.right_points, 10)) {
+        // details view should also work
+        auto itr = cul::make_bezier_strip(tuples.left_points, tuples.right_points, 10).details_view().begin();
+        std::get<0>(*itr).point();
+        auto points_view = cul::make_bezier_strip
+            (tuples.left_points, tuples.right_points, 10).points_view();
+        for (auto [a, b, c] : points_view) {
             rv.emplace_back(convert_to<sf::Vector2f>(a));
             rv.emplace_back(convert_to<sf::Vector2f>(b));
             rv.emplace_back(convert_to<sf::Vector2f>(c));

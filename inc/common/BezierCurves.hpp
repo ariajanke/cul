@@ -110,7 +110,7 @@ template <std::size_t k_count, typename Vec, typename ... Types>
  */
 template <typename Vec, typename ... Types>
 constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
-    View<detail::BezierLineIterator<Vec, Types...>, detail::BezierEndLineIterator>>
+    View<detail::BezierLineIterator<Vec, Types...>, detail::BezierEndIterator>>
     make_bezier_line_view
     (const Tuple<Vec, Types...> & tuple, int number_of_points);
 
@@ -126,8 +126,90 @@ constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
     make_bezier_point_view
     (const Tuple<Vec, Types...> & tuple, int number_of_points);
 
-/** @returns a view, as a means to iterate a set of triangles that fill the
- *           area between two bezier curves
+/** Type returned be the "make_bezier_strip" free function. Allows the client
+ *  to select an appropriate level of detail for their needs.
+ *
+ *  Always providing a detailed view may make code more verbose and clunkier
+ *  to use. A so follows the rationale of this design.
+ */
+template <typename Vec, typename ... Types>
+class BezierStrip final {
+public:
+    /** @warning this type alias is more implementation detail than interface */
+    using PointsView = View<detail::BezierStripTrianglesIterator<Vec, Types...>, detail::BezierEndIterator>;
+
+    /** @warning this type alias is more implementation detail than interface */
+    using DetailedView = View<detail::BezierStripDetailedIterator<Vec, Types...>, detail::BezierEndIterator>;
+
+    /** @warning this type alias is more implementation detail than interface */
+    using PtIterator = detail::BezierIterator<Vec, Types...>;
+
+    /** @warning iterator type passed here is implementation detail, use
+     *           "make_bezier_strip" instead.
+     */
+    constexpr BezierStrip(PtIterator &&, PtIterator &&);
+
+    /** @returns a view type, whose iterators dereference to a tuple of three
+     *           points
+     */
+    constexpr PointsView points_view() const;
+
+    /** @returns a view type, whote iterators dereference to a
+     *           "BezierStripDetails" type
+     *  @see BezierStripDetails
+     */
+    constexpr DetailedView details_view() const;
+
+private:
+#   ifndef DOXYGEN_SHOULD_SKIP_THIS
+    PtIterator m_lhs, m_rhs;
+#   endif
+};
+
+/** A utility class which offers greater detailed information on points along a
+ *  Bezier strip.
+ */
+template <typename Vec>
+class BezierStripDetails final {
+public:
+    /** While the client may simply instantiate this class, it's not
+     *  recommended. This constructor exists as the easiest implementation.
+     */
+    constexpr BezierStripDetails(bool on_left_, const Vec & pt_, const ScalarTypeOf<Vec> & pos_):
+        m_on_left(on_left_),
+        m_pos(pos_),
+        m_pt(pt_)
+    {}
+
+    /** @returns an interploated vector along the Bezier curve on one side of
+     *           the strip
+     */
+    constexpr Vec point() const { return m_pt; }
+
+    /** @returns the position on the Bezier curve used to compute the vector */
+    constexpr ScalarTypeOf<Vec> position() const { return m_pos; }
+
+    /** @returns true if this point is on the curve defined by the left tuple */
+    constexpr bool on_left() const { return m_on_left; }
+
+    /** @returns true if this point is on the curve defined by the right tuple
+     */
+    constexpr bool on_right() const { return !m_on_left; }
+
+private:
+#   ifndef DOXYGEN_SHOULD_SKIP_THIS
+    bool m_on_left;
+    ScalarTypeOf<Vec> m_pos;
+    Vec m_pt;
+#   endif
+};
+
+/** A Bezier strip in this case, is created from two tuples. Which allows the
+ *  creation of more interesting shapes.
+ *  @returns a special "strip" type, which then maybe used to get a "points
+ *           only" view, or a detailed view, see the class definition for more
+ *           details
+ *  @see BezierStripDetails
  *  @tparam Vec any vector type
  *  @tparam Types every subsequent type must also be (the same) vector type
  *  @param lhs defines controls points for one bezier curve
@@ -136,8 +218,7 @@ constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
  */
 template <typename Vec, typename ... Types>
 constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
-    View<detail::BezierTriangleIterator<Vec, Types...>, detail::BezierTriangleEndIterator>>
-    make_bezier_triangle_view
+    BezierStrip<Vec, Types...>> make_bezier_strip
     (const Tuple<Vec, Types...> & lhs, const Tuple<Vec, Types...> & rhs,
      int number_of_points_per_side);
 
@@ -147,6 +228,7 @@ constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
+// must not be "detail"
 template <typename T>
 constexpr EnableIf<!k_is_vector_type<T> &&
     std::is_arithmetic_v<T>, T>
@@ -377,13 +459,7 @@ public:
         m_pos = next_position();
         return *this;
     }
-#   if 0
-    constexpr bool operator == (const BezierIterator & rhs) const
-        { return is_equal(rhs); }
 
-    constexpr bool operator != (const BezierIterator & rhs) const
-        { return !is_equal(rhs); }
-#   endif
     constexpr bool operator != (const BezierEndIterator &) const
         { return !is_end(); }
 
@@ -392,9 +468,16 @@ public:
 
     constexpr Vec operator * () const {
         auto last = get_last(m_scalar_tuple);
-        auto spt = find_bezier_point(m_pos, m_scalar_tuple);
-        return find_bezier_point(spt / last, m_tuple);
+        return find_bezier_point(curve_position() / last, m_tuple);
     }
+
+    constexpr ScalarTypeOf<Vec> curve_position() const
+        { return find_bezier_point(m_pos, m_scalar_tuple); }
+
+    constexpr bool next_is_end() const
+        { return next_position() > 1; }
+
+private:
 
     constexpr ScalarTypeOf<Vec> next_position() const {
         if (m_pos < 1 && magnitude(m_pos + m_step - 1) <= m_step / 2) {
@@ -430,10 +513,10 @@ public:
         return std::make_tuple(*m_itr, *(++t));
     }
 
-    constexpr bool operator == (const BezierEndLineIterator &) const
+    constexpr bool operator == (const BezierEndIterator &) const
         { return is_end(); }
 
-    constexpr bool operator != (const BezierEndLineIterator &) const
+    constexpr bool operator != (const BezierEndIterator &) const
         { return !is_end(); }
 
     constexpr BezierLineIterator & operator ++ () {
@@ -441,58 +524,111 @@ public:
         return *this;
     }
 private:
-    constexpr bool is_equal(const BezierLineIterator & rhs) const
-        { return m_itr.next_position() > 1 && rhs.m_itr.next_position() > 1; }
-
     constexpr bool is_end() const
-        { return m_itr.next_position() > 1; }
+        { return m_itr.next_is_end(); }
 
     BezierIterator<Vec, TupleTypes...> m_itr;
 };
 
 template <typename Vec, typename ... TupleTypes>
-class BezierTriangleIterator final {
-public:
+class BezierStripBaseIterator {
+protected:
     using PtIterator = BezierIterator<Vec, TupleTypes...>;
 
-    constexpr BezierTriangleIterator
-        (PtIterator && ws_, PtIterator && os_):
+    constexpr BezierStripBaseIterator(PtIterator && ws_, PtIterator && os_):
         m_ws(std::move(ws_)),
         m_os(std::move(os_))
     {
         // tip skip
-        if (magnitude(VecOpHelpers<Vec>::template sub<0>( *m_ws, *m_os )) < 0.005) {
-            ++m_os;
-        }
+        if (magnitude(VecOpHelpers<Vec>::template sub<0>( *m_ws, *m_os )) < 0.005)
+            { ++m_os; }
     }
 
-    constexpr BezierTriangleIterator & operator ++ () {
+    constexpr void advance() {
         std::swap(m_os, m_ws);
         ++m_os;
-        return *this;
     }
 
-    constexpr Tuple<Vec, Vec, Vec> operator * () const {
-        auto ws_cpy = m_ws;
-        ++ws_cpy;
-        auto rv = std::make_tuple( *m_ws, *m_os, *ws_cpy );
-        return rv;
-    }
-
-    constexpr bool operator != (const BezierTriangleEndIterator &) const
-        { return !is_end(); }
-
-    constexpr bool operator == (const BezierTriangleEndIterator &) const
-        { return is_end(); }
-
-private:
     constexpr bool is_end() const {
         auto ws_cpy = m_ws;
         ++ws_cpy;
         return ws_cpy == BezierEndIterator{};
     }
 
+    constexpr Tuple<Vec, Vec, Vec> points() const {
+        auto ws_cpy = m_ws;
+        ++ws_cpy;
+        auto rv = std::make_tuple( *m_ws, *m_os, *ws_cpy );
+        return rv;
+    }
+
+    constexpr auto points_and_sides() const {
+        using Impl = BezierStripDetails<Vec>;
+        auto nws = m_ws;
+        ++nws;
+        return std::make_tuple(
+            Impl{ m_on_left, *m_ws, m_ws.curve_position()},
+            Impl{!m_on_left, *m_os, m_os.curve_position()},
+            Impl{ m_on_left, *nws , nws .curve_position()});
+    }
+
+private:
     PtIterator m_ws, m_os;
+    bool m_on_left = true;
+};
+
+template <typename Vec, typename ... TupleTypes>
+class BezierStripTrianglesIterator final :
+    public BezierStripBaseIterator<Vec, TupleTypes...>
+{
+    using Base = BezierStripBaseIterator<Vec, TupleTypes...>;
+public:
+    using PtIterator = typename Base::PtIterator;
+
+    constexpr BezierStripTrianglesIterator
+        (PtIterator && ws_, PtIterator && os_):
+        Base(std::move(ws_), std::move(os_)) {}
+
+    constexpr BezierStripTrianglesIterator & operator ++ () {
+        Base::advance();
+        return *this;
+    }
+
+    constexpr Tuple<Vec, Vec, Vec> operator * () const
+        { return Base::points(); }
+
+    constexpr bool operator != (const BezierEndIterator &) const
+        { return !Base::is_end(); }
+
+    constexpr bool operator == (const BezierEndIterator &) const
+        { return Base::is_end(); }
+};
+
+template <typename Vec, typename ... TupleTypes>
+class BezierStripDetailedIterator final :
+    public BezierStripBaseIterator<Vec, TupleTypes...>
+{
+    using Base = BezierStripBaseIterator<Vec, TupleTypes...>;
+public:
+    using PtIterator = typename Base::PtIterator;
+
+    constexpr BezierStripDetailedIterator
+        (PtIterator && ws_, PtIterator && os_):
+        Base(std::move(ws_), std::move(os_)) {}
+
+    constexpr BezierStripDetailedIterator & operator ++ () {
+        Base::advance();
+        return *this;
+    }
+
+    constexpr auto operator * () const
+        { return Base::points_and_sides(); }
+
+    constexpr bool operator != (const BezierEndIterator &) const
+        { return !Base::is_end(); }
+
+    constexpr bool operator == (const BezierEndIterator &) const
+        { return Base::is_end(); }
 };
 
 template <typename VecU, typename ... Types>
@@ -564,7 +700,7 @@ template <int k_count, typename Vec, typename ... Types>
 
 template <typename Vec, typename ... Types>
 constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
-    View<detail::BezierLineIterator<Vec, Types...>, detail::BezierEndLineIterator>>
+    View<detail::BezierLineIterator<Vec, Types...>, detail::BezierEndIterator>>
     make_bezier_line_view
     (const Tuple<Vec, Types...> & tuple, int number_of_points)
 {
@@ -572,7 +708,7 @@ constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
     using namespace detail;
     using LineItr = BezierLineIterator<Vec, Types...>;
     auto pt_view = make_bezier_point_view(tuple, number_of_points);
-    return View<LineItr, BezierEndLineIterator>{LineItr{pt_view.begin()}, BezierEndLineIterator{}};
+    return View<LineItr, BezierEndIterator>{LineItr{pt_view.begin()}, BezierEndIterator{}};
 }
 
 template <typename Vec, typename ... Types>
@@ -590,20 +726,48 @@ constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
 }
 
 template <typename Vec, typename ... Types>
+constexpr BezierStrip<Vec, Types...>::BezierStrip
+    (PtIterator && lhs, PtIterator && rhs):
+    m_lhs(std::move(lhs)),
+    m_rhs(std::move(rhs))
+{}
+
+template <typename Vec, typename ... Types>
+constexpr typename BezierStrip<Vec, Types...>::PointsView
+    BezierStrip<Vec, Types...>::points_view() const
+{
+    using namespace detail;
+    // copy has to be used here... what if the view is used not solely as an
+    // rvalue?
+    using std::move;
+    auto l = m_lhs, r = m_rhs;
+    return PointsView{
+        BezierStripTrianglesIterator<Vec, Types...>{move(l), move(r)},
+        BezierEndIterator{}};
+}
+
+template <typename Vec, typename ... Types>
+constexpr typename BezierStrip<Vec, Types...>::DetailedView
+    BezierStrip<Vec, Types...>::details_view() const
+{
+    using namespace detail;
+    using std::move;
+    auto l = m_lhs, r = m_rhs;
+    return DetailedView{
+        BezierStripDetailedIterator<Vec, Types...>{move(l), move(r)},
+        BezierEndIterator{}};
+}
+
+template <typename Vec, typename ... Types>
 constexpr EnableIf<detail::k_are_vector_types<Vec, Types...>,
-    View<detail::BezierTriangleIterator<Vec, Types...>, detail::BezierTriangleEndIterator>>
-    make_bezier_triangle_view
+    BezierStrip<Vec, Types...>>
+    make_bezier_strip
     (const Tuple<Vec, Types...> & lhs, const Tuple<Vec, Types...> & rhs,
      int number_of_points_per_side)
 {
-    using namespace detail;
-    return View<BezierTriangleIterator<Vec, Types...>, BezierTriangleEndIterator>{
-        BezierTriangleIterator<Vec, Types...>{
-            make_bezier_point_view(lhs, number_of_points_per_side).begin(),
-            make_bezier_point_view(rhs, number_of_points_per_side).begin()
-        },
-        BezierTriangleEndIterator{}
-    };
+    return BezierStrip<Vec, Types...>{
+        make_bezier_point_view(lhs, number_of_points_per_side).begin(),
+        make_bezier_point_view(rhs, number_of_points_per_side).begin()};
 }
 
 #endif // ifndef DOXYGEN_SHOULD_SKIP_THIS

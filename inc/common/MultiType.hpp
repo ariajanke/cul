@@ -26,10 +26,13 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include <common/TypeList.hpp>
 #include <common/StorageUnion.hpp>
+
+#include <type_traits>
+#include <stdexcept>
+
+#include <cassert>
 
 namespace cul {
 
@@ -58,24 +61,14 @@ public:
     using MtTypeList = TypeList<Types...>;
     using Error = std::runtime_error;
 
-    static constexpr const int k_no_type = TypeList<Types...>::k_not_any_type;
+    static constexpr const int k_no_type = -1;
     static constexpr const int k_type_count = sizeof...(Types);
 
     template <typename Type>
-    struct GetTypeId {
-        static const int k_value = MtTypeList::template GetTypeId<Type>::k_value;
-    };
+    static constexpr const int k_type_id_of = MtTypeList::template kt_find_index_for_type<Type>;
 
     template <typename Type>
-    struct HasType {
-        static const bool k_value = MtTypeList::template HasType<Type>::k_value;
-    };
-
-    template <typename Type>
-    static constexpr const int k_type_id_of = GetTypeId<Type>::k_value;
-
-    template <typename Type>
-    static constexpr const bool k_has_type_of = HasType<Type>::k_value;
+    static constexpr const bool k_has_type_of = MtTypeList::template kt_occurance_count<Type> > 0;
 
     template <typename T>
     using UpcastPair = MultiTypeUpcastPair<T>;
@@ -87,9 +80,9 @@ public:
     MultiType(): m_current_type(k_no_type) {}
 
     template <typename T,
-              typename = typename std::enable_if<HasType<T>::k_value>::type>
+              typename = typename std::enable_if<k_has_type_of<T>>::type>
     explicit MultiType(const T & obj):
-        m_current_type(GetTypeId<T>::k_value)
+        m_current_type(k_type_id_of<T>)
     { new (&m_store) T(obj); }
 
     /** Like any copy constructor, this one will copy the object that lives in
@@ -255,7 +248,7 @@ class MultiTypePriv {
     using ConstUpcastPair = MultiTypeConstUpcastPair<T>;
 
     using Error = std::runtime_error;
-
+#   if 0
 #   define MACRO_MULTITYPEPRIV_COUNT_AND_TYPE_ID_ARE_EQUAL_EXPRESSION(count, id) \
         ((count - 1) == (id))
     template <typename TypeList_, int INDEX>
@@ -271,20 +264,28 @@ class MultiTypePriv {
                (TypeList_::k_count, id);
     }
 #   undef MACRO_MULTITYPEPRIV_COUNT_AND_TYPE_ID_ARE_EQUAL_EXPRESSION
+#   endif
+
+    enum SpecialAction { k_destruct };
 
     // ----------------------------- destruction ------------------------------
 
     [[noreturn]] static void destruct(TypeList<>, int, void *)
         { throw Error("Can't destruct, unknown type!"); }
 
-    template <typename ... Types>
-    static void destruct(TypeList<Types...>, int id, void * ptr) {
-        using HeadType = typename TypeList<Types...>::HeadType;
-        if (type_is_head_type<TypeList<Types...>>(id)) {
-            HeadType * t = reinterpret_cast<HeadType *>(ptr);
-            t->~HeadType();
+    template <typename Head, typename ... Types>
+    static void destruct(TypeList<Head, Types...>, int id, void * ptr) {
+        using Fork = typename TypeList<Head, Types...>::Fork;
+        if (id == Fork::k_middle_index) {
+            using MidType = typename Fork::MidType;
+            MidType * t = reinterpret_cast<MidType *>(ptr);
+            t->~MidType();
+            return;
+        } else if (id < Fork::k_middle_index) {
+            return destruct(typename Fork::Left{}, id /* no alterations */, ptr);
         } else {
-            destruct(typename TypeList<Types...>::InheritedType(), id, ptr);
+            assert(id > Fork::k_middle_index);
+            return destruct(typename Fork::Right{}, id - Fork::k_middle_index, ptr);
         }
     }
 
@@ -307,17 +308,20 @@ class MultiTypePriv {
     static ConstUpcastPair<T> get_by_id_then_upcast
         (TypeList<Types...>, int id, const void * src)
     {
-        using HeadType = typename TypeList<Types...>::HeadType;
-        if (type_is_head_type<TypeList<Types...>>(id)) {
-            auto object_ptr = reinterpret_cast<const HeadType *>(src);
+        using Fork = typename TypeList<Types...>::Fork;
+        if (id == Fork::k_middle_index) {
+            using MidType = typename Fork::MidType;
+            auto object_ptr = reinterpret_cast<const MidType *>(src);
             ConstUpcastPair<T> rv;
             rv.object_pointer = object_ptr;
             // C++ may change the address in the up-cast
             rv.upcasted_pointer = handle_upcast<T>(object_ptr);
             return rv;
+        } else if (id < Fork::k_middle_index) {
+            return get_by_id_then_upcast<T>(typename Fork::Left{}, id /* no alterations */, src);
         } else {
-            return get_by_id_then_upcast<T>
-                (typename TypeList<Types...>::InheritedType(), id, src);
+            assert(id > Fork::k_middle_index);
+            return get_by_id_then_upcast<T>(typename Fork::Right{}, id - Fork::k_middle_index, src);
         }
     }
 
@@ -330,13 +334,28 @@ class MultiTypePriv {
     template <typename ... Types>
     static void copy(TypeList<Types...>, int id, void * dest, const void * src)
     {
-        using HeadType = typename TypeList<Types...>::HeadType;
+        using Fork = typename TypeList<Types...>::Fork;
+        typename Fork::Left l;
+        TypeTag<typename Fork::MidType> mt;
+        if (id == Fork::k_middle_index) {
+            using MidType = typename Fork::MidType;
+            const MidType * t = reinterpret_cast<const MidType *>(src);
+            new (dest) MidType(*t);
+        } else if (id < Fork::k_middle_index) {
+            return copy(typename Fork::Left{}, id /* no alterations */, dest, src);
+        } else {
+            assert(id > Fork::k_middle_index);
+            return copy(typename Fork::Right{}, id - Fork::k_middle_index, dest, src);
+        }
+#       if 0
+        using HeadType = typename TypeList<Types...>::template TypeAtIndex<0>;
         if (type_is_head_type<TypeList<Types...>>(id)) {
             const HeadType * t = reinterpret_cast<const HeadType *>(src);
             new (dest) HeadType(*t);
         } else {
-            copy(typename TypeList<Types...>::InheritedType(), id, dest, src);
+            copy(typename TypeList<Types...>::TailList(), id, dest, src);
         }
+#       endif
     }
 
     // ----------------------------- construction -----------------------------
@@ -358,7 +377,26 @@ class MultiTypePriv {
     static UpcastPair<T> construct_by_id_then_upcast
         (TypeList<Types...>, int id, void * dest)
     {
-        using HeadType = typename TypeList<Types...>::HeadType;
+        using Fork = typename TypeList<Types...>::Fork;
+        if (id == Fork::k_middle_index) {
+            using MidType = typename Fork::MidType;
+
+            MidType * ht = new (dest) MidType{};
+            UpcastPair<T> rv;
+            rv.object_pointer = ht;
+            // C++ may change the address in the up-cast
+            rv.upcasted_pointer = handle_upcast<T>(ht);
+            return rv;
+        } else if (id < Fork::k_middle_index) {
+            return construct_by_id_then_upcast<T>
+                (typename Fork::Left{}, id /* no alterations */, dest);
+        } else {
+            assert(id > Fork::k_middle_index);
+            return construct_by_id_then_upcast<T>
+                (typename Fork::Right{}, id - Fork::k_middle_index, dest);
+        }
+#       if 0
+        using HeadType = typename TypeList<Types...>::template TypeAtIndex<0>;
         if (type_is_head_type<TypeList<Types...>>(id)) {
             HeadType * ht = new (dest) HeadType();
             UpcastPair<T> rv;
@@ -368,8 +406,9 @@ class MultiTypePriv {
             return rv;
         } else {
             return construct_by_id_then_upcast<T>
-                (typename TypeList<Types...>::InheritedType(), id, dest);
+                (typename TypeList<Types...>::TailList(), id, dest);
         }
+#       endif
     }
 
     // ------------------------------------------------------------------------
@@ -389,7 +428,24 @@ class MultiTypePriv {
         static_assert(CAST_T == k_do_static_cast || CAST_T == k_do_dynamic_cast,
                       "Can only cast using dynamic_cast or static_cast.\n"
                       "This maybe a result of a bad enum value.");
-        using HeadType = typename TypeList<Types...>::HeadType;;
+        using Fork = typename TypeList<Types...>::Fork;
+        if (id == Fork::k_middle_index) {
+            using MidType = typename Fork::MidType;
+            const MidType * ht = reinterpret_cast<const MidType *>(src);
+            if constexpr (CAST_T == k_do_static_cast)
+                return static_cast<const T *>(ht);
+            else
+                return dynamic_cast<const T *>(ht);
+        } else if (id < Fork::k_middle_index) {
+            return special_cast<CAST_T, T>
+                (typename Fork::Left{}, id /* no alterations */, src);
+        } else {
+            assert(id > Fork::k_middle_index);
+            return special_cast<CAST_T, T>
+                (typename Fork::Right{}, id - Fork::k_middle_index, src);
+        }
+#       if 0
+        using HeadType = typename TypeList<Types...>::template TypeAtIndex<0>;
         if (type_is_head_type<TypeList<Types...>>(id)) {
             const HeadType * ht = reinterpret_cast<const HeadType *>(src);
             if constexpr (CAST_T == k_do_static_cast)
@@ -398,10 +454,11 @@ class MultiTypePriv {
                 return dynamic_cast<const T *>(ht);
         } else {
             return special_cast<CAST_T, T>
-                (typename TypeList<Types...>::InheritedType(), id, src);
+                (typename TypeList<Types...>::TailList(), id, src);
         }
+#       endif
     }
-
+#   if 0
     struct TestA {};
     struct TestB {};
     struct TestC {};
@@ -420,6 +477,7 @@ class MultiTypePriv {
     static_assert(TypeIsHeadType<
         TestList::InheritedType::InheritedType::InheritedType,
         TestList::GetTypeId<int>::k_value>::k_value, "");
+#   endif
 }; // end of MultiTypePriv helper class
 
 // <-------------------------- MultiType IMPLEMENTATION ---------------------->
@@ -478,14 +536,14 @@ const T & MultiType<Types...>::as() const {
 template <typename ... Types>
 template <typename T, typename ... ArgTypes>
 T & MultiType<Types...>::reset(ArgTypes &&... args) {
-    static_assert(MtTypeList::template HasType<T>::k_value,
+    static_assert(MtTypeList::template kt_occurance_count<T> > 0,
                   "MultiType can only reset to a type that is present on its "
                   "TypeList.");
     static_assert(std::is_constructible<T, ArgTypes...>::value,
                   "Object cannot be constructed with these provided arguments "
                   "or needs arguments for construction.");
     unset();
-    m_current_type = MtTypeList::template GetTypeId<T>::k_value;
+    m_current_type = MtTypeList::template kt_find_index_for_type<T>;
     return *(new (&m_store) T(std::forward<ArgTypes>(args)...));
 }
 
@@ -500,7 +558,7 @@ void MultiType<Types...>::unset() {
 template <typename ... Types>
 template <typename T>
 bool MultiType<Types...>::is_type() const noexcept
-    { return m_current_type == MtTypeList::template GetTypeId<T>::k_value; }
+    { return m_current_type == MtTypeList::template kt_find_index_for_type<T>; }
 
 template <typename ... Types>
 template <typename T>
@@ -576,7 +634,7 @@ const T * MultiType<Types...>::dynamic_cast_() const {
 template <typename ... Types>
 template <typename T>
 /* private */ const T * MultiType<Types...>::as_back() const noexcept {
-    if (m_current_type == MtTypeList::template GetTypeId<T>::k_value)
+    if (m_current_type == MtTypeList::template kt_find_index_for_type<T>)
         return reinterpret_cast<const T *>(&m_store);
     else
         return nullptr;

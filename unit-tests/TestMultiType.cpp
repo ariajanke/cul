@@ -60,6 +60,17 @@ public:
 
 class B final : public Base {
 public:
+    B() { ++s_count; }
+    B(const B  &) { ++s_count; }
+    B(      B &&) { ++s_count; }
+    B & operator = (const A  &) { return *this; }
+    B & operator = (      A &&) { return *this; }
+    ~B() override { --s_count; }
+
+    static int get_count() { return s_count; }
+    static void reset_count() { s_count = 0; }
+private:
+    static int s_count;
 };
 
 class C final : public Base, public SideBase {
@@ -67,11 +78,12 @@ public:
 };
 
 /* static */ int A::s_count = 0;
+/* static */ int B::s_count = 0;
 
 Base::~Base() {}
 
 SideBase::~SideBase() {}
-
+#if 0
 static_assert(TypeList<A, B, C, int>::HasType<int>::k_value, "");
 static_assert(TypeList<A, B, C, int>::HasType<  A>::k_value, "");
 static_assert(TypeList<A, B, C, int>::HasType<  B>::k_value, "");
@@ -82,12 +94,12 @@ using ABCTypeList = TypeList<A, B, C>;
 class D {};
 class E {};
 using ABCDETypeList = ABCTypeList::CombineWith<D, E>;
-
+#endif
 #define mark MACRO_MARK_POSITION_OF_CUL_TEST_SUITE
 
 int main() {
     {
-    using MyVariant = TypeList<A, B, C>::DefineWithListTypes<std::variant>::Type;
+    using MyVariant = TypeList<A, B, C>::DefineWithTypes<std::variant>;
     MyVariant var { A() };
     assert(std::holds_alternative<A>(var));
     }
@@ -121,6 +133,21 @@ int main() {
 		return ts::test(A::get_count() == 3);
     });
 	A::reset_count();
+
+    mark(suite).test([] {
+        B a;
+        TestMt b(a);
+        TestMt c(b);
+        return ts::test(B::get_count() == 3);
+    });
+    B::reset_count();
+
+    mark(suite).test([] {
+        int a = 11;
+        TestMt b(a);
+        TestMt c(b);
+        return ts::test(c.as<int>() == 11);
+    });
 	
 	// destructor
     mark(suite).test([] {
@@ -207,7 +234,7 @@ int main() {
     mark(suite).test([] {
 		TestMt a;
 		auto gv = a.set_by_type_id_and_upcast<Base>
-			(TestMt::GetTypeId<A>::k_value);
+            (TestMt::k_type_id_of<A>);
 		return ts::test(   gv.object_pointer && gv.upcasted_pointer
 		                && A::get_count() == 1);
     });
@@ -220,7 +247,7 @@ int main() {
 		// have to inherit from a common base
 		TestMt a;
 		auto gv = a.set_by_type_id_and_upcast<Base>
-			(TestMt::GetTypeId<int>::k_value);
+            (TestMt::k_type_id_of<int>);
 		return ts::test(gv.object_pointer && !gv.upcasted_pointer);
     });
 	// get_by_type_id_and_upcast
@@ -228,7 +255,7 @@ int main() {
     mark(suite).test([] {
 		B a;
 		TestMt b(a);
-		auto gv = b.get_by_type_id_and_upcast<Base>(TestMt::GetTypeId<B>::k_value);
+        auto gv = b.get_by_type_id_and_upcast<Base>(TestMt::k_type_id_of<B>);
 		return ts::test(gv.object_pointer && gv.upcasted_pointer);
     });
 	// I'm not sure what the proper thing to do here is... so I'm leaving the
@@ -245,7 +272,7 @@ int main() {
     mark(suite).test([] {
 		B a;
 		TestMt b(a);
-		auto gv = b.get_by_type_id_and_upcast<int>(TestMt::GetTypeId<B>::k_value);
+        auto gv = b.get_by_type_id_and_upcast<int>(TestMt::k_type_id_of<B>);
 		return ts::test(gv.object_pointer && !gv.upcasted_pointer);
     });
 	// match ok, constant
@@ -254,7 +281,7 @@ int main() {
 		TestMt b(a);
 		const auto & c = b;
 		
-		auto gv = c.get_by_type_id_and_upcast<Base>(TestMt::GetTypeId<B>::k_value);
+        auto gv = c.get_by_type_id_and_upcast<Base>(TestMt::k_type_id_of<B>);
 		return ts::test(gv.object_pointer && gv.upcasted_pointer);
     });
 	// not sure how useful dynamic_cast_ and static_cast_ are for 

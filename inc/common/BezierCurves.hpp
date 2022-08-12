@@ -466,13 +466,13 @@ public:
     constexpr bool operator == (const BezierEndIterator &) const
         { return is_end(); }
 
-    constexpr Vec operator * () const {
-        auto last = get_last(m_scalar_tuple);
-        return find_bezier_point(curve_position() / last, m_tuple);
-    }
+    constexpr Vec operator * () const
+        { return find_bezier_point(curve_position(), m_tuple); }
 
-    constexpr ScalarTypeOf<Vec> curve_position() const
-        { return find_bezier_point(m_pos, m_scalar_tuple); }
+    constexpr ScalarTypeOf<Vec> curve_position() const {
+        return   find_bezier_point(m_pos, m_scalar_tuple)
+               / get_last(m_scalar_tuple);
+    }
 
     constexpr bool next_is_end() const
         { return next_position() > 1; }
@@ -546,6 +546,7 @@ protected:
 
     constexpr void advance() {
         std::swap(m_os, m_ws);
+        m_on_left = !m_on_left;
         ++m_os;
     }
 

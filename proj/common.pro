@@ -38,7 +38,7 @@ contains(CONFIG, release) {
     TARGET = common-test-app
 }
 
-QMAKE_CXXFLAGS += -std=c++17 -DMACRO_NEW_20220728_VECTORS
+QMAKE_CXXFLAGS += -std=c++17 -DMACRO_ARIAJANKE_CUL_ENABLE_TYPELIST_TESTS
 QMAKE_LFLAGS   += -std=c++17
 LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
                   -L/usr/lib/x86_64-linux-gnu
@@ -56,6 +56,7 @@ SOURCES += \
     ../src/sf-8x16Font.cpp
 
 HEADERS += \
+    ../../../../../media/aria/UBUNTU/home/aria/dev/mapproject/src/GlmVectorTraits.hpp \
     ../inc/common/BitmapFont.hpp              \
     ../inc/common/Util.hpp                    \
     ../inc/common/CurrentWorkingDirectory.hpp \
@@ -63,6 +64,7 @@ HEADERS += \
     ../inc/common/StorageUnion.hpp            \
     ../inc/common/MultiType.hpp               \
     ../inc/common/TypeList.hpp                \
+    ../inc/common/TypeSet.hpp                 \
     ../inc/common/StringUtil.hpp              \
     ../inc/common/TestSuite.hpp               \
     ../inc/common/Grid.hpp                    \
@@ -98,8 +100,8 @@ SOURCES += \
     \#../unit-tests/test-math-utils.cpp \
     \#../unit-tests/vector-tests.cpp \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
-    ../demos/sf-util-demos.cpp \ # problems here
-    \#../unit-tests/test-ColorString.cpp \
+    \#../demos/sf-util-demos.cpp \ # problems here
+    ../unit-tests/test-ColorString.cpp \
     #../unit-tests/test-new-vectors.cpp
 
 INCLUDEPATH += \

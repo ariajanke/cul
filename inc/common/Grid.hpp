@@ -31,6 +31,7 @@
 #include <utility>
 #include <functional>
 #include <limits>
+#include <string>
 
 #include <common/Vector2.hpp>
 

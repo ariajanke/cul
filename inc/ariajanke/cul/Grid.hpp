@@ -33,7 +33,7 @@
 #include <limits>
 #include <string>
 
-#include <common/Vector2.hpp>
+#include <ariajanke/cul/Vector2.hpp>
 
 namespace cul {
 

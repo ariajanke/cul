@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <common/Vector2.hpp>
+#include <ariajanke/cul/Vector2.hpp>
 
 #include <SFML/Graphics/Drawable.hpp>
 #include <SFML/Graphics/Vertex.hpp>

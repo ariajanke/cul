@@ -26,13 +26,10 @@
 
 #pragma once
 
-#include <common/Grid.hpp>
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/sf/VectorTraits.hpp>
-#   include <common/VectorUtils.hpp>
-#else
-#   include <common/SfmlVectorTraits.hpp>
-#endif
+#include <ariajanke/cul/Grid.hpp>
+#include <ariajanke/cul/sf/VectorTraits.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+
 #include <SFML/Graphics/Image.hpp>
 
 namespace cul {

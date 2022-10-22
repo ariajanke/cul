@@ -8,9 +8,9 @@
 #   define MACRO_ARIAJANKE_CUL_ENABLE_TYPESET_TESTS
 #endif
 
-#include <common/ColorString.hpp>
-#include <common/TypeList.hpp>
-#include <common/TypeSet.hpp>
+#include <ariajanke/cul/ColorString.hpp>
+#include <ariajanke/cul/TypeList.hpp>
+#include <ariajanke/cul/TypeSet.hpp>
 
 #include <iostream>
 

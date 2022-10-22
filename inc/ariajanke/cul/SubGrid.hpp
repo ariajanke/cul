@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <common/Grid.hpp>
+#include <ariajanke/cul/Grid.hpp>
 
 namespace cul {
 

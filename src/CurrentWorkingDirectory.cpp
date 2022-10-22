@@ -24,9 +24,9 @@
 
 *****************************************************************************/
 
-#include <common/CurrentWorkingDirectory.hpp>
-#include <common/Util.hpp>
-#include <common/StringUtil.hpp>
+#include <ariajanke/cul/CurrentWorkingDirectory.hpp>
+#include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/StringUtil.hpp>
 
 // note: with presently lacking access to MSVC or Windows for that matter
 //       it is not possible for me to maintain the windows implementation

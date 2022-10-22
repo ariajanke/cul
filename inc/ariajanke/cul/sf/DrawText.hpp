@@ -24,14 +24,10 @@
 
 *****************************************************************************/
 
-#include <common/Vector2.hpp>
-#include <common/BitmapFont.hpp>
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/sf/VectorTraits.hpp>
-#   include <common/VectorUtils.hpp>
-#else
-#   include <common/SfmlVectorTraits.hpp>
-#endif
+#include <ariajanke/cul/Vector2.hpp>
+#include <ariajanke/cul/BitmapFont.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+#include <ariajanke/cul/sf/VectorTraits.hpp>
 
 #include <SFML/Graphics/Drawable.hpp>
 #include <SFML/Graphics/Sprite.hpp>

@@ -24,17 +24,11 @@
 
 *****************************************************************************/
 
-#include <common/sf/DrawLine.hpp>
-
-#include <common/Util.hpp>
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/VectorUtils.hpp>
-#   include <common/sf/VectorTraits.hpp>
-#else
-#   include <common/Vector2Util.hpp>
-#   include <common/SfmlVectorTraits.hpp>
-#endif
-#include <common/sf/DrawRectangle.hpp>
+#include <ariajanke/cul/sf/DrawLine.hpp>
+#include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+#include <ariajanke/cul/sf/VectorTraits.hpp>
+#include <ariajanke/cul/sf/DrawRectangle.hpp>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 

@@ -24,9 +24,9 @@
 
 *****************************************************************************/
 
-#include <common/BitmapFont.hpp>
-#include <common/Util.hpp>
-#include <common/StringUtil.hpp>
+#include <ariajanke/cul/BitmapFont.hpp>
+#include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/StringUtil.hpp>
 
 #include "sf-8x8Font.hpp"
 #include "sf-8x16Font.hpp"

@@ -26,83 +26,89 @@
 
 #pragma once
 
-#include <common/VectorTraits.hpp>
+#include <ariajanke/cul/VectorTraits.hpp>
+
+namespace sf {
+
+template <typename T> class Vector2;
+
+template <typename T> class Vector3;
+
+} // end of sf namespace
 
 namespace cul {
 
-/** Defines a 3D vector for a given scalar type.
- *
- *  Types defined with this template are useable with many of the utility
- *  functions.
- *
- *  When defined, many vector operators are also (as per its Traits defined
- *  later). They are as follows:
- *  - unary negation
- *  - vector addition (and compound)
- *  - vector subtraction (and compound)
- *  - scalar multiplication (and compound)
- *  - scalar division (and compound)
- *  - equality
- *  - inequality
- */
 template <typename T>
-struct Vector3 final {
-    constexpr Vector3() {}
-
-    constexpr Vector3(T x_, T y_, T z_): x(x_), y(y_), z(z_) {}
-
-    template <typename U>
-    constexpr explicit Vector3(U x_, U y_, U z_): x(T(x_)), y(T(y_)), z(T(z_)) {}
-
-    template <typename U>
-    constexpr explicit Vector3(const Vector3<U> & r):
-        x(T(r.x)), y(T(r.y)), z(T(r.z)) {}
-
-    T x = 0, y = 0, z = 0;
-};
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-
-template <typename T>
-struct VectorTraits<Vector3<T>> final {
-    static constexpr const bool k_is_vector_type = true;
-
-    static constexpr const bool k_should_define_operators = true;
+struct VectorTraits<sf::Vector2<T>> {
+    static constexpr const bool k_is_vector_type          = true;
+    static constexpr const bool k_should_define_operators = false;
 
     using ScalarType = T;
 
-    template <int kt_idx, typename=int>
+    template <int kt_idx, typename = int>
     struct Get final {};
 
     template <typename U>
     struct Get<0, U> final {
-        constexpr ScalarType operator () (const Vector3<T> & r) const
+        ScalarType operator () (const sf::Vector2<T> & r) const
             { return r.x; }
     };
 
     template <typename U>
     struct Get<1, U> final {
-        constexpr ScalarType operator () (const Vector3<T> & r) const
+        ScalarType operator () (const sf::Vector2<T> & r) const
+            { return r.y; }
+    };
+
+    struct Make final {
+        sf::Vector2<T> operator () (const T & x, const T & y) const
+            { return sf::Vector2<T>{x, y}; }
+    };
+
+    template <typename U>
+    using ChangeScalarType = sf::Vector2<U>;
+
+    static constexpr const int k_dimension_count = 2;
+};
+
+template <typename T>
+struct VectorTraits<sf::Vector3<T>> {
+    static constexpr const bool k_is_vector_type          = true;
+    static constexpr const bool k_should_define_operators = false;
+
+    using ScalarType = T;
+
+    template <int kt_idx, typename = int>
+    struct Get final {};
+
+    template <typename U>
+    struct Get<0, U> final {
+        ScalarType operator () (const sf::Vector3<T> & r) const
+            { return r.x; }
+    };
+
+    template <typename U>
+    struct Get<1, U> final {
+        ScalarType operator () (const sf::Vector3<T> & r) const
             { return r.y; }
     };
 
     template <typename U>
     struct Get<2, U> final {
-        constexpr ScalarType operator () (const Vector3<T> & r) const
+        ScalarType operator () (const sf::Vector3<T> & r) const
             { return r.z; }
     };
 
+
     struct Make final {
-        constexpr Vector3<T> operator () (const T & x, const T & y, const T & z) const
-            { return Vector3<T>{x, y, z}; }
+        sf::Vector3<T> operator () (const T & x, const T & y) const
+            { return sf::Vector3<T>{x, y}; }
     };
 
     template <typename U>
-    using ChangeScalarType = Vector3<U>;
+    using ChangeScalarType = sf::Vector3<U>;
 
     static constexpr const int k_dimension_count = 3;
 };
-
-#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 } // end of cul namespace

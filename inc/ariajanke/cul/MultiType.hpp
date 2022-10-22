@@ -26,8 +26,8 @@
 
 #pragma once
 
-#include <common/TypeList.hpp>
-#include <common/StorageUnion.hpp>
+#include <ariajanke/cul/TypeList.hpp>
+#include <ariajanke/cul/StorageUnion.hpp>
 
 #include <type_traits>
 #include <stdexcept>
@@ -41,6 +41,9 @@ template <typename T> struct MultiTypeConstUpcastPair;
 
 /** @brief A MultiType is an extension of StorageUnion.
  *
+ *  @deprecated This is outmoded and out of scope for maintenance,
+ *              strongly favor C++17's variant, it's 2022 ffs
+ *
  *  It can store a single object at a time of any type indictated in the given
  *  parameter type pack. It includes functions that enables the client to
  *  perform C++ style casts (static_cast and dynamic_cast, though renamed since
@@ -50,8 +53,7 @@ template <typename T> struct MultiTypeConstUpcastPair;
  *  The id for a typename can be found at compile, going in reverse however is
  *  not possible. @n
  *  A validity test function is provided, since by default, no object is
- *  contructed. @n
- *  @note I realize that std::varient is available in C++17...
+ *  contructed.
  *
  *  @tparam Types "parameter type pack"
  */
@@ -77,11 +79,11 @@ public:
     using ConstUpcastPair = MultiTypeConstUpcastPair<T>;
 
     /** No object is constructed by default, and the MultiType is "invalid". */
-    MultiType(): m_current_type(k_no_type) {}
+    [[deprecated]] MultiType(): m_current_type(k_no_type) {}
 
     template <typename T,
               typename = typename std::enable_if<k_has_type_of<T>>::type>
-    explicit MultiType(const T & obj):
+    [[deprecated]] explicit MultiType(const T & obj):
         m_current_type(k_type_id_of<T>)
     { new (&m_store) T(obj); }
 
@@ -89,9 +91,9 @@ public:
      *  rhs.
      *  @param rhs multiType whose object to copy
      */
-    MultiType(const MultiType & rhs);
+    [[deprecated]] MultiType(const MultiType & rhs);
 
-    ~MultiType();
+    [[deprecated]] ~MultiType();
 
     /** Like any assignment operator, this will copy the object that lives in
      *  rhs, however it will first destruct any object that happens to be
@@ -99,7 +101,7 @@ public:
      *  @param rhs multiType whose object to copy
      *  @return Returns reference to this.
      */
-    MultiType & operator = (const MultiType & rhs);
+    [[deprecated]] MultiType & operator = (const MultiType & rhs);
 
     /** @note simular to dynamic_cast in a sense
      *  @return Returns a pointer to the stored object, it'll return nullptr in
@@ -107,11 +109,11 @@ public:
      *          type T.
      */
     template <typename T>
-    T * as_pointer() noexcept;
+    [[deprecated]] T * as_pointer() noexcept;
 
     /** @copydoc as_pointer() */
     template <typename T>
-    const T * as_pointer() const noexcept;
+    [[deprecated]] const T * as_pointer() const noexcept;
 
     /** @see as_pointer()
      *  @throw  If the as_pointer function would return nullptr for the given
@@ -120,11 +122,11 @@ public:
      *  @return Returns a reference to the stored object.
      */
     template <typename T>
-    T & as();
+    [[deprecated]] T & as();
 
     /** @copydoc as() */
     template <typename T>
-    const T & as() const;
+    [[deprecated]] const T & as() const;
 
     /** Destructs any current object and constructs a new one with the given
      *  arguements for type T.
@@ -133,29 +135,29 @@ public:
      *  @return Returns a reference to the newly created object.
      */
     template <typename T, typename ... ArgTypes>
-    T & reset(ArgTypes &&... args);
+    [[deprecated]] T & reset(ArgTypes &&... args);
 
     /** Deletes object the current object living in the multitype, which causes
      *  its type id to become 'invalid'.
      */
-    void unset();
+    [[deprecated]] void unset();
 
     /** @tparam T
      *  @return Returns true if the stored object is of type T.
      */
     template <typename T>
-    bool is_type() const noexcept;
+    [[deprecated]] bool is_type() const noexcept;
 
     /** @return Returns current type as a runtime friendly integer.
      *          The integer's value corresponds to the id in the
      *          TypeList's id (not any RTTI/other information).
      */
-    int type_id() const noexcept { return m_current_type; }
+    [[deprecated]] int type_id() const noexcept { return m_current_type; }
 
     /** @return Returns true if the MultiType is storing an object, false if
      *          otherwise.
      */
-    bool is_valid() const noexcept { return m_current_type != k_no_type; }
+    [[deprecated]] bool is_valid() const noexcept { return m_current_type != k_no_type; }
 
     // --------------------- Runtime type ID functions ------------------------
 
@@ -168,7 +170,7 @@ public:
      *          and the other to the leaf class (for given type T).
      */
     template <typename T>
-    UpcastPair<T> set_by_type_id_and_upcast(int type_id);
+    [[deprecated]] UpcastPair<T> set_by_type_id_and_upcast(int type_id);
 
     /** Retrieves the stored object regardless of current type and upcasts it
      *  to the given leaf class type.
@@ -180,11 +182,11 @@ public:
      *          provided type_id.
      */
     template <typename T>
-    UpcastPair<T> get_by_type_id_and_upcast(int type_id);
+    [[deprecated]] UpcastPair<T> get_by_type_id_and_upcast(int type_id);
 
     //! @copydoc get_by_type_id_and_upcast(int)
     template <typename T>
-    ConstUpcastPair<T> get_by_type_id_and_upcast(int type_id) const;
+    [[deprecated]] ConstUpcastPair<T> get_by_type_id_and_upcast(int type_id) const;
 
     // -------------- static_cast and dynamic_cast replacements ---------------
 
@@ -192,19 +194,19 @@ public:
      *  stored object's type ahead of time.
      */
     template <typename T>
-    T * static_cast_();
+    [[deprecated]] T * static_cast_();
 
     /** Allows you to perform a static_cast on the object without knowing the
      *  stored object's type ahead of time.
      */
     template <typename T>
-    const T * static_cast_() const;
+    [[deprecated]] const T * static_cast_() const;
 
     template <typename T>
-    T * dynamic_cast_();
+    [[deprecated]] T * dynamic_cast_();
 
     template <typename T>
-    const T * dynamic_cast_() const;
+    [[deprecated]] const T * dynamic_cast_() const;
 
 private:
     template <typename T>

@@ -26,8 +26,8 @@
 
 #pragma once
 
-#include <common/Vector2.hpp>
-#include <common/SubGrid.hpp>
+#include <ariajanke/cul/Vector2.hpp>
+#include <ariajanke/cul/SubGrid.hpp>
 
 #include <utility>
 

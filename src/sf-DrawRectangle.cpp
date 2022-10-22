@@ -24,7 +24,7 @@
 
 *****************************************************************************/
 
-#include <common/sf/DrawRectangle.hpp>
+#include <ariajanke/cul/sf/DrawRectangle.hpp>
 
 #include <SFML/Graphics.hpp>
 

@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <common/VectorTraits.hpp>
+#include <ariajanke/cul/VectorTraits.hpp>
 
 namespace cul {
 

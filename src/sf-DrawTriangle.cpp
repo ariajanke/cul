@@ -24,7 +24,7 @@
 
 *****************************************************************************/
 
-#include <common/sf/DrawTriangle.hpp>
+#include <ariajanke/cul/sf/DrawTriangle.hpp>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 

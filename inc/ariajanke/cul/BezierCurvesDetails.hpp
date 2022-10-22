@@ -26,15 +26,11 @@
 
 #pragma once
 
-#include <common/VectorTraits.hpp>
+#include <ariajanke/cul/VectorTraits.hpp>
 
 #include <tuple>
 
 namespace cul {
-
-#ifndef MACRO_NEW_20220728_VECTORS
-#   error "Header should not be included with old vector types"
-#endif
 
 namespace detail {
 

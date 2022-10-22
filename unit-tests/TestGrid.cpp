@@ -24,11 +24,11 @@
 
 *****************************************************************************/
 
-#include <common/Grid.hpp>
-#include <common/SubGrid.hpp>
-#include <common/TestSuite.hpp>
+#include <ariajanke/cul/Grid.hpp>
+#include <ariajanke/cul/SubGrid.hpp>
+#include <ariajanke/cul/TestSuite.hpp>
 
-#include <common/TypeList.hpp>
+#include <ariajanke/cul/TypeList.hpp>
 
 #include <iostream>
 #include <algorithm>

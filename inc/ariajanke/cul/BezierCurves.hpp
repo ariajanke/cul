@@ -26,10 +26,10 @@
 
 #pragma once
 
-#include <common/Util.hpp>
-#include <common/VectorTraits.hpp>
-#include <common/VectorUtils.hpp>
-#include <common/BezierCurvesDetails.hpp>
+#include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/VectorTraits.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+#include <ariajanke/cul/BezierCurvesDetails.hpp>
 
 #include <tuple>
 

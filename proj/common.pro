@@ -57,34 +57,34 @@ SOURCES += \
 
 HEADERS += \
     ../../../../../media/aria/UBUNTU/home/aria/dev/mapproject/src/GlmVectorTraits.hpp \
-    ../inc/common/BitmapFont.hpp              \
-    ../inc/common/Util.hpp                    \
-    ../inc/common/CurrentWorkingDirectory.hpp \
-    ../inc/common/BitMaskable.hpp             \
-    ../inc/common/StorageUnion.hpp            \
-    ../inc/common/MultiType.hpp               \
-    ../inc/common/TypeList.hpp                \
-    ../inc/common/TypeSet.hpp                 \
-    ../inc/common/StringUtil.hpp              \
-    ../inc/common/TestSuite.hpp               \
-    ../inc/common/Grid.hpp                    \
-    ../inc/common/ParseOptions.hpp            \
-    ../inc/common/SubGrid.hpp                 \
-    ../inc/common/Vector2.hpp                 \
-    ../inc/common/BezierCurves.hpp            \
-    ../inc/common/BezierCurvesDetails.hpp     \
-    ../inc/common/ColorString.hpp             \
-    ../inc/common/VectorTraits.hpp            \
-    ../inc/common/Vector3.hpp                 \
-    ../inc/common/RectangleUtils.hpp          \
-    ../inc/common/VectorUtils.hpp             \
+    ../inc/ariajanke/cul/BitmapFont.hpp              \
+    ../inc/ariajanke/cul/Util.hpp                    \
+    ../inc/ariajanke/cul/CurrentWorkingDirectory.hpp \
+    ../inc/ariajanke/cul/BitMaskable.hpp             \
+    ../inc/ariajanke/cul/StorageUnion.hpp            \
+    ../inc/ariajanke/cul/MultiType.hpp               \
+    ../inc/ariajanke/cul/TypeList.hpp                \
+    ../inc/ariajanke/cul/TypeSet.hpp                 \
+    ../inc/ariajanke/cul/StringUtil.hpp              \
+    ../inc/ariajanke/cul/TestSuite.hpp               \
+    ../inc/ariajanke/cul/Grid.hpp                    \
+    ../inc/ariajanke/cul/ParseOptions.hpp            \
+    ../inc/ariajanke/cul/SubGrid.hpp                 \
+    ../inc/ariajanke/cul/Vector2.hpp                 \
+    ../inc/ariajanke/cul/BezierCurves.hpp            \
+    ../inc/ariajanke/cul/BezierCurvesDetails.hpp     \
+    ../inc/ariajanke/cul/ColorString.hpp             \
+    ../inc/ariajanke/cul/VectorTraits.hpp            \
+    ../inc/ariajanke/cul/Vector3.hpp                 \
+    ../inc/ariajanke/cul/RectangleUtils.hpp          \
+    ../inc/ariajanke/cul/VectorUtils.hpp             \
     \ # SFML Utilities
-    ../inc/common/sf/DrawText.hpp             \
-    ../inc/common/sf/DrawRectangle.hpp        \
-    ../inc/common/sf/DrawTriangle.hpp         \
-    ../inc/common/sf/DrawLine.hpp             \
-    ../inc/common/sf/Util.hpp                 \
-    ../inc/common/sf/VectorTraits.hpp         \
+    ../inc/ariajanke/cul/sf/DrawText.hpp             \
+    ../inc/ariajanke/cul/sf/DrawRectangle.hpp        \
+    ../inc/ariajanke/cul/sf/DrawTriangle.hpp         \
+    ../inc/ariajanke/cul/sf/DrawLine.hpp             \
+    ../inc/ariajanke/cul/sf/Util.hpp                 \
+    ../inc/ariajanke/cul/sf/VectorTraits.hpp         \
     \ # Private SFML Utility Headers
     ../src/sf-8x8Font.hpp                     \
     ../src/sf-8x16Font.hpp
@@ -93,7 +93,7 @@ HEADERS += \
 # purposes, NOT for general/automated testing)
 SOURCES += \
     \#../unit-tests/all-tests-driver.cpp \ # empty?!
-    \#../unit-tests/TestGrid.cpp \
+    ../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
     \#../unit-tests/test-string-utils.cpp \
@@ -101,7 +101,7 @@ SOURCES += \
     \#../unit-tests/vector-tests.cpp \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
     \#../demos/sf-util-demos.cpp \ # problems here
-    ../unit-tests/test-ColorString.cpp \
+    \#../unit-tests/test-ColorString.cpp \
     #../unit-tests/test-new-vectors.cpp
 
 INCLUDEPATH += \

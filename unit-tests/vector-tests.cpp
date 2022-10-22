@@ -1,12 +1,47 @@
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/Vector2.hpp>
-#   include <common/VectorUtils.hpp>
-#   include <common/sf/VectorTraits.hpp>
-#   include <common/RectangleUtils.hpp>
-#else
-#   include <common/Vector2Util.hpp>
-#endif
+#include <ariajanke/cul/Vector2.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+#include <ariajanke/cul/sf/VectorTraits.hpp>
+#include <ariajanke/cul/RectangleUtils.hpp>
 #include <unordered_map>
+
+// namespace tn {
+//
+// using VectorI = cul::Vector2<int>;
+//
+// struct Cust {
+//
+// };
+//
+// Cust operator + (const Cust &, const Cust &) {
+//     return Cust();
+// }
+//
+// void do_vector_stuff() {
+//     [[maybe_unused]] Cust c;
+//     VectorI a, b;
+//     a + b;
+// }
+//
+// struct VectorHasher {
+//     std::size_t operator () (const VectorI & r) const
+//         { return r.x + r.y*1000; }
+// };
+//
+// }
+//
+//
+// void do_other_vector_stuff() {
+//     using VectorI = cul::Vector2<int>;
+//     std::unordered_map<VectorI, tn::Cust, tn::VectorHasher> map;
+//     map[VectorI(1, 0)] = tn::Cust();
+// }
+
+#include <SFML/System/Vector2.hpp>
+
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+
+#include <iostream>
 
 namespace tn {
 
@@ -39,22 +74,6 @@ void do_other_vector_stuff() {
     std::unordered_map<VectorI, tn::Cust, tn::VectorHasher> map;
     map[VectorI(1, 0)] = tn::Cust();
 }
-
-#include <SFML/System/Vector2.hpp>
-
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-
-#include <common/Vector2.hpp>
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/VectorUtils.hpp>
-#   include <common/sf/VectorTraits.hpp>
-#else
-#   include <common/Vector2Util.hpp>
-#   include <common/SfmlVectorTraits.hpp>
-#endif
-#include <iostream>
-#ifdef MACRO_NEW_20220728_VECTORS
 
 // maybe should be in its own header... (rather than copy+paste)
 namespace cul {
@@ -108,42 +127,9 @@ struct VectorTraits<glm::vec<kt_dimensionality, T, Q>> {
 
 } // end of cul(n) namespace
 
-#else
-namespace cul {
-
-template <>
-struct Vector2Scalar<glm::vec2> {
-    using Type = glm::vec2::value_type;
-};
-
-template <>
-struct Vector2Traits<glm::vec2::value_type, glm::vec2> {
-    using Scal = glm::vec2::value_type;
-
-    static constexpr const bool k_is_vector_type          = true ;
-    static constexpr const bool k_should_define_operators = false;
-
-    struct GetX {
-        Scal operator () (const glm::vec2 & r) const { return r.x; }
-    };
-    struct GetY {
-        Scal operator () (const glm::vec2 & r) const { return r.y; }
-    };
-    struct Make {
-        glm::vec2 operator () (const Scal & x_, const Scal & y_) const
-            { return glm::vec2{x_, y_}; }
-    };
-};
-
-} // end of cul namespace
-#endif
 struct A {};
 
 int main() {
-#   if 0
-    cul::ConstString abc = "hello there";
-    assert(abc != "hello nobody");
-#   endif
     {
     cul::Vector2<float> a, b;
     (void)(a != b);
@@ -160,13 +146,6 @@ int main() {
     sf::Vector2i a { 50, 20 }, b;
     a + b;
     std::cout << std::boolalpha;
-#   ifndef MACRO_NEW_20220728_VECTORS
-    std::cout << cul::k_is_convertible_vector2<A> << std::endl;
-    std::cout << cul::k_is_convertible_vector2<sf::Vector2<int>> << std::endl;
-    std::cout << cul::k_is_convertible_vector2<glm::vec2> << std::endl;
-    std::cout << cul::k_is_convertible_vector2<glm::vec3> << std::endl;
-    std::cout << cul::k_is_convertible_vector2<cul::Vector2<int>> << std::endl;
-#   endif
     std::cout << cul::magnitude(a) << std::endl;
 
     glm::vec2 c { 4.5, -1.2 };
@@ -315,9 +294,6 @@ int main() {
         std::cout << std::boolalpha
                   << cul::is_real(sf::Vector2f(900, 5.12e26f)) << " "
                   << cul::is_real(sf::Vector2i(1, 1)) << " "
-#                 ifndef MACRO_NEW_20220728_VECTORS
-                  << cul::is_real(cul::get_no_solution_sentinel<VecD>())
-#                 endif
                   << std::endl;
     }
     assert(cul::are_within(
@@ -348,11 +324,6 @@ int main() {
     static_assert(SizeI{}.width == 0, "");
     static_assert(SizeI{2, 2}.width == 2, "");
 
-#   ifndef MACRO_NEW_20220728_VECTORS
-    [[maybe_unused]] static constexpr const auto k_no_sol =
-        cul::k_no_solution_for_v2<double>;
-    static_assert(std::is_same_v<decltype(k_no_sol.x), double>, "");
-#   endif
     }
 
     return 0;

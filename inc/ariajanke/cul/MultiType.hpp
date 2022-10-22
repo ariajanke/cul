@@ -279,7 +279,7 @@ class MultiTypePriv {
     static void destruct(TypeList<Head, Types...>, int id, void * ptr) {
         using Fork = typename TypeList<Head, Types...>::Fork;
         if (id == Fork::k_middle_index) {
-            using MidType = typename Fork::MidType;
+            using MidType = typename Fork::MiddleType;
             MidType * t = reinterpret_cast<MidType *>(ptr);
             t->~MidType();
             return;
@@ -287,7 +287,7 @@ class MultiTypePriv {
             return destruct(typename Fork::Left{}, id /* no alterations */, ptr);
         } else {
             assert(id > Fork::k_middle_index);
-            return destruct(typename Fork::Right{}, id - Fork::k_middle_index, ptr);
+            return destruct(typename Fork::Right{}, id - Fork::k_middle_index - 1, ptr);
         }
     }
 
@@ -312,7 +312,7 @@ class MultiTypePriv {
     {
         using Fork = typename TypeList<Types...>::Fork;
         if (id == Fork::k_middle_index) {
-            using MidType = typename Fork::MidType;
+            using MidType = typename Fork::MiddleType;
             auto object_ptr = reinterpret_cast<const MidType *>(src);
             ConstUpcastPair<T> rv;
             rv.object_pointer = object_ptr;
@@ -323,7 +323,7 @@ class MultiTypePriv {
             return get_by_id_then_upcast<T>(typename Fork::Left{}, id /* no alterations */, src);
         } else {
             assert(id > Fork::k_middle_index);
-            return get_by_id_then_upcast<T>(typename Fork::Right{}, id - Fork::k_middle_index, src);
+            return get_by_id_then_upcast<T>(typename Fork::Right{}, id - Fork::k_middle_index - 1, src);
         }
     }
 
@@ -334,20 +334,18 @@ class MultiTypePriv {
     }
 
     template <typename ... Types>
-    static void copy(TypeList<Types...>, int id, void * dest, const void * src)
+    static void copy(TypeList<Types...> tl, int id, void * dest, const void * src)
     {
         using Fork = typename TypeList<Types...>::Fork;
-        typename Fork::Left l;
-        TypeTag<typename Fork::MidType> mt;
         if (id == Fork::k_middle_index) {
-            using MidType = typename Fork::MidType;
+            using MidType = typename Fork::MiddleType;
             const MidType * t = reinterpret_cast<const MidType *>(src);
             new (dest) MidType(*t);
         } else if (id < Fork::k_middle_index) {
             return copy(typename Fork::Left{}, id /* no alterations */, dest, src);
         } else {
             assert(id > Fork::k_middle_index);
-            return copy(typename Fork::Right{}, id - Fork::k_middle_index, dest, src);
+            return copy(typename Fork::Right{}, id - Fork::k_middle_index - 1, dest, src);
         }
 #       if 0
         using HeadType = typename TypeList<Types...>::template TypeAtIndex<0>;
@@ -381,7 +379,7 @@ class MultiTypePriv {
     {
         using Fork = typename TypeList<Types...>::Fork;
         if (id == Fork::k_middle_index) {
-            using MidType = typename Fork::MidType;
+            using MidType = typename Fork::MiddleType;
 
             MidType * ht = new (dest) MidType{};
             UpcastPair<T> rv;
@@ -432,7 +430,7 @@ class MultiTypePriv {
                       "This maybe a result of a bad enum value.");
         using Fork = typename TypeList<Types...>::Fork;
         if (id == Fork::k_middle_index) {
-            using MidType = typename Fork::MidType;
+            using MidType = typename Fork::MiddleType;
             const MidType * ht = reinterpret_cast<const MidType *>(src);
             if constexpr (CAST_T == k_do_static_cast)
                 return static_cast<const T *>(ht);

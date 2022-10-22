@@ -24,8 +24,8 @@
 
 *****************************************************************************/
 
-#include <common/MultiType.hpp>
-#include <common/TestSuite.hpp>
+#include <ariajanke/cul/MultiType.hpp>
+#include <ariajanke/cul/TestSuite.hpp>
 
 #include <iostream>
 #include <variant>

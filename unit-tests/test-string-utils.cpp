@@ -24,8 +24,8 @@
 
 *****************************************************************************/
 
-#include <common/StringUtil.hpp>
-#include <common/TestSuite.hpp>
+#include <ariajanke/cul/StringUtil.hpp>
+#include <ariajanke/cul/TestSuite.hpp>
 
 #include <cstring>
 #include <cassert>

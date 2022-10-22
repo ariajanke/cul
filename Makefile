@@ -1,6 +1,6 @@
 CXX = g++
 LD = g++
-CXXFLAGS = -std=c++17 -I./inc -O3 -Wall -pedantic -Werror -fno-pretty-templates -DMACRO_PLATFORM_LINUX -DMACRO_NEW_20220728_VECTORS
+CXXFLAGS = -std=c++17 -I./inc -O3 -Wall -pedantic -Werror -fno-pretty-templates -DMACRO_PLATFORM_LINUX -Wno-deprecated-declarations
 SOURCES  = $(shell find src | grep '[.]cpp$$')
 OBJECTS_DIR = .release-build
 OUTPUT = libcommon.a

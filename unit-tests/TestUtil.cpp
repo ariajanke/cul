@@ -24,15 +24,11 @@
 
 *****************************************************************************/
 
-#include <common/Util.hpp>
-#ifdef MACRO_NEW_20220728_VECTORS
-#   include <common/Vector2.hpp>
-#   include <common/sf/VectorTraits.hpp>
-#   include <common/VectorUtils.hpp>
-#else
-#   include <common/Vector2Util.hpp>
-#   include <common/SfmlVectorTraits.hpp>
-#endif
+#include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/Vector2.hpp>
+#include <ariajanke/cul/sf/VectorTraits.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+
 #include <SFML/System/Vector2.hpp>
 
 #include <iostream>

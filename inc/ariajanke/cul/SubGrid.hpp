@@ -233,11 +233,17 @@ private:
     ParentPointer m_parent = nullptr;
 };
 
-template <typename T>
-using SubGrid = SubGridImpl<false, T>;
+template
+    <typename T,
+     SubGridParentAccess kt_parent_access_option =
+         SubGridParentAccess::prohibit_access_to_parent_elements>
+using SubGrid = SubGridImpl<false, T, kt_parent_access_option>;
 
-template <typename T>
-using ConstSubGrid = SubGridImpl<true, T>;
+template
+    <typename T,
+     SubGridParentAccess kt_parent_access_option =
+         SubGridParentAccess::prohibit_access_to_parent_elements>
+using ConstSubGrid = SubGridImpl<true, T, kt_parent_access_option>;
 
 // ------------------------ make_sub_grid for Grid type ------------------------
 

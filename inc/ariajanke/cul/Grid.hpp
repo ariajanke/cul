@@ -101,6 +101,18 @@ public:
     /** @copydoc Grid<T>::set_size(int,int,Element&&) */
     void set_size(int width, int height, const Element &);
 
+    /** @brief set grid size in number of elements
+     *  @param size new size of the grid both width and height
+     *  @param el default value of inserted element
+     */
+    void set_size(const Size & size, const Element & el = Element{});
+
+    /** @brief set grid size in number of elements
+     *  @param size new size of the grid both width and height
+     *  @param el default value of inserted element (moved)
+     */
+    void set_size(const Size & size, Element && el = Element{});
+
     /** @brief Reserves memory for exactly n elements in the container
      *  @note Does exactly std::vector<T>::reserve.
      *  @param n reserves memory for n many elements
@@ -254,6 +266,14 @@ void Grid<T>::set_size(int width_, int height_, const Element & obj) {
     m_elements.resize(std::size_t(width_*height_), obj);
     m_width = width_;
 }
+
+template <typename T>
+void Grid<T>::set_size(const Size & size, const Element & el)
+    { set_size(size.width, size.height, el); }
+
+template <typename T>
+void Grid<T>::set_size(const Size & size, Element && el)
+    { set_size(size.width, size.height, std::move(el)); }
 
 template <typename T>
 void Grid<T>::reserve(std::size_t n) { m_elements.reserve(n); }

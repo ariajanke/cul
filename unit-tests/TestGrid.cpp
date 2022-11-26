@@ -162,6 +162,18 @@ void test_grid() {
         }
         return ts::test(false);
     });
+
+    // test allow access to parent for subgrid
+    mark(tsuite).test([] {
+        Grid<int> grid {
+            { 5, 1, 1 },
+            { 1, 1, 1 },
+            { 1, 1, 1 }
+        };
+        SubGrid<int, SubGridParentAccess::allow_access_to_parent_elements>
+            subg{grid, VectorI{1, 1}};
+        return ts::test(subg(-1, -1) == 5);
+    });
 }
 
 void test_make_sub_grid() {

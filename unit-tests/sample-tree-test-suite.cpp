@@ -39,42 +39,61 @@ class BUsesA final {
 
 class ExecutionOrderEnforcer final {
 public:
-    void enforce_step(int i) {
-        if (m_step + 1 >= i) return;
-        if (i != m_step) {
+    void within_steps(int at_least_step, int at_most_step) {
+        if (m_step >= at_least_step && m_step <= at_most_step)
+            return;
+        throw RtError{""};
+    }
+
+    void enforce_step(int expected_step) {
+        if (expected_step != m_step) {
             throw RtError{"execution out of order"};
         }
         ++m_step;
     }
 private:
-    int m_step;
+    int m_step = 0;
 };
 
 int main() {
     using namespace cul::tree_ts;
+    using std::cout, std::endl;
     static ExecutionOrderEnforcer order;
+    auto & inst = TreeTestSuite::instance();
     describe<BUsesA>("B handles something").depends_on<A>()([] {
-        order.enforce_step(3);
+        cout << "B handles something" << endl;
+        order.within_steps(2, 3);
         it("does something", [] {
-            order.enforce_step(4);
+            //cout << "does something" << endl;
+            order.enforce_step(2);
             return test_that(true);
         });
         it("does something else", [] {
-            order.enforce_step(5);
+            //cout << "does something else" << endl;
+            order.enforce_step(3);
             return test_that(true);
         });
     });
     describe<A>("A does something else")([] {
-        order.enforce_step(0);
+        cout << "A does something else" << endl;
+        order.within_steps(0, 1);
         it("does something", [] {
-            order.enforce_step(1);
+            //cout << "does something" << endl;
+            order.enforce_step(0);
             return test_that(true);
         });
         it("does something else", [] {
-            order.enforce_step(2);
+            //cout << "does something else" << endl;
+            order.enforce_step(1);
             return test_that(true);
         });
     });
-    run_tests();
-    return 0;
+    describe<A>("A in another describe block")([] {
+        //cout << "does something unexpected" << endl;
+        it("does something unexpected", [] {
+            return test_that(true);
+        });
+    });
+    // I want to call describe without a type
+    return run_tests();
 }

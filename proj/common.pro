@@ -94,7 +94,7 @@ HEADERS += \
 # purposes, NOT for general/automated testing)
 SOURCES += \
     \#../unit-tests/all-tests-driver.cpp \ # empty?!
-    ../unit-tests/TestGrid.cpp \
+    \#../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
     \#../unit-tests/test-string-utils.cpp \

@@ -27,15 +27,17 @@
 #include <ariajanke/cul/TreeTestSuite.hpp>
 #include <ariajanke/cul/Util.hpp>
 
+#include <cassert>
+
 using namespace cul::exceptions_abbr;
 
-class A final {
+class A final {};
+class C final {};
+class B final {};
+class D final {};
 
-};
-
-class BUsesA final {
-
-};
+class BUsesA final {};
+class DUsesC final {};
 
 class ExecutionOrderEnforcer final {
 public:
@@ -55,45 +57,156 @@ private:
     int m_step = 0;
 };
 
+void tests_execute_in_dependant_order();
+void multiple_describes_work();
+void failing_dependee_does_not_run_depender();
+void depender_without_dependee_never_runs();
+void typeless_describes();
+void depends_on_type_mismatch_throws();
+void it_cases_surpress_exceptions();
+
+#define mark_it mark_source_position(__LINE__, __FILE__).it
+
 int main() {
+    static const auto & ttsuite = cul::tree_ts::TreeTestSuite::instance();
+    // the test program should freaking crash if any test fails
+    tests_execute_in_dependant_order();
+    multiple_describes_work();
+    failing_dependee_does_not_run_depender();
+    depender_without_dependee_never_runs();
+    typeless_describes();
+    depends_on_type_mismatch_throws();
+    it_cases_surpress_exceptions();
+
+    return 0;
+}
+
+void tests_execute_in_dependant_order() {
     using namespace cul::tree_ts;
-    using std::cout, std::endl;
     static ExecutionOrderEnforcer order;
-    auto & inst = TreeTestSuite::instance();
+
     describe<BUsesA>("B handles something").depends_on<A>()([] {
-        cout << "B handles something" << endl;
-        order.within_steps(2, 3);
-        it("does something", [] {
-            //cout << "does something" << endl;
+        order.within_steps(1, 2);
+        mark_it("does something", [] {
+            order.enforce_step(1);
+            return test_that(true);
+        });
+        mark_it("does something else", [] {
             order.enforce_step(2);
             return test_that(true);
         });
-        it("does something else", [] {
-            //cout << "does something else" << endl;
-            order.enforce_step(3);
-            return test_that(true);
-        });
     });
-    describe<A>("A does something else")([] {
-        cout << "A does something else" << endl;
-        order.within_steps(0, 1);
-        it("does something", [] {
-            //cout << "does something" << endl;
+    describe<A>("A in another describe block")([] {
+        mark_it("does something unexpected", [] {
             order.enforce_step(0);
             return test_that(true);
         });
-        it("does something else", [] {
-            //cout << "does something else" << endl;
+    });
+    run_tests();
+}
+
+void multiple_describes_work() {
+    using namespace cul::tree_ts;
+    static ExecutionOrderEnforcer order;
+
+    describe<A>("A does something else")([] {
+        order.within_steps(0, 1);
+        mark_it("does something", [] {
+            order.enforce_step(0);
+            return test_that(true);
+        });
+        mark_it("does something else", [] {
             order.enforce_step(1);
             return test_that(true);
         });
     });
     describe<A>("A in another describe block")([] {
-        //cout << "does something unexpected" << endl;
-        it("does something unexpected", [] {
+        mark_it("does something unexpected", [] {
             return test_that(true);
         });
     });
+    run_tests();
+}
+
+void failing_dependee_does_not_run_depender() {
+    using namespace cul::tree_ts;
+    describe<C>("has a failing test")([] {
+        mark_it("fails a test", [] {
+            return test_that(false);
+        });
+    });
+    describe<DUsesC>("should not run at all").depends_on<C>()([] {
+        // no worries, right?
+        assert(false);
+    });
+    run_tests();
+}
+
+void depender_without_dependee_never_runs() {
+    using namespace cul::tree_ts;
+    describe<DUsesC>("should not run at all").depends_on<C>()([] {
+        // no worries, right?
+        assert(false);
+    });
+    run_tests();
+}
+
+void typeless_describes() {
+    using namespace cul::tree_ts;
+    static int hits = 0;
     // I want to call describe without a type
-    return run_tests();
+    describe("simple utility")([] {
+        mark_it("does something useful", [] {
+            ++hits;
+            return test_that(true);
+        });
+    });
+
+    describe("another utility")([] {
+        mark_it("does something useful", [] {
+            ++hits;
+            return test_that(true);
+        });
+    });
+    run_tests();
+    assert(hits == 2);
+}
+
+void depends_on_type_mismatch_throws() {
+    using namespace cul::tree_ts;
+    try {
+        describe<A>("A in another describe block").depends_on<D>()([] {
+            assert(false);
+            mark_it("does something unexpected", [] {
+                return test_that(true);
+            });
+        });
+        describe<A>("A in another describe block").depends_on<B>()([] {
+            assert(false);
+            mark_it("does something unexpected", [] {
+                return test_that(true);
+            });
+        });
+        run_tests();
+    } catch (...) {
+        return;
+    }
+    assert(false);
+}
+
+void it_cases_surpress_exceptions() {
+    using namespace cul::tree_ts;
+    static int hits = 0;
+    describe<A>("A describe with a throwing test")([] {
+        mark_it("this failing testing, because an exception was thrown", [] {
+            throw RtError{"exception text"};
+            return test_that(true);
+        });
+        mark_it("but this test case passes", [] {
+            ++hits;
+            return test_that(true);
+        });
+    });
+    run_tests();
+    assert(hits == 1);
 }

@@ -410,7 +410,7 @@ inline int TreeTestSuite::run_tests() {
         bool gv = pop_non_depending_tests
             (unrun_describes, already_ran, m_current_describer, m_out);
 
-        rv = gv || rv;
+        rv = gv && rv;
         if (unrun_describes.size() == old_size)
             { break; }
         old_size = unrun_describes.size();

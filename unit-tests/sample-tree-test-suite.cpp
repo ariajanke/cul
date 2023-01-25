@@ -64,6 +64,7 @@ void depender_without_dependee_never_runs();
 void typeless_describes();
 void depends_on_type_mismatch_throws();
 void it_cases_surpress_exceptions();
+void it_handles_failures_correctly();
 
 #define mark_it mark_source_position(__LINE__, __FILE__).it
 
@@ -77,6 +78,7 @@ int main() {
     typeless_describes();
     depends_on_type_mismatch_throws();
     it_cases_surpress_exceptions();
+    it_handles_failures_correctly();
 
     return 0;
 }
@@ -209,4 +211,19 @@ void it_cases_surpress_exceptions() {
     });
     run_tests();
     assert(hits == 1);
+}
+
+void it_handles_failures_correctly() {
+    using namespace cul::tree_ts;
+    describe("a")([] {
+        mark_it("has a passing test case", [] {
+            return test_that(true);
+        });
+    });
+    describe("z")([] {
+        mark_it("has a failing test case", [] {
+            return test_that(false);
+        });
+    });
+    assert(run_tests() != 0);
 }

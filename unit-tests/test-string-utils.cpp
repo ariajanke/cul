@@ -54,7 +54,6 @@ int main() {
             for (char c_ : b) {
                 c += (c_ - 'a') + 'A';
             }
-            throw "sike";
             return test_that(c == "HELLO");
         });
     });

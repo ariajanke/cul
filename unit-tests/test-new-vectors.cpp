@@ -4,11 +4,11 @@
 
 #include <cmath>
 
-#include <common/Util.hpp>
-#include <common/Vector2.hpp>
-#include <common/Vector3.hpp>
-#include <common/VectorUtils.hpp>
-#include <common/sf/VectorTraits.hpp>
+#include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/Vector2.hpp>
+#include <ariajanke/cul/Vector3.hpp>
+#include <ariajanke/cul/VectorUtils.hpp>
+#include <ariajanke/cul/sf/VectorTraits.hpp>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>

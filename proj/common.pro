@@ -97,14 +97,14 @@ SOURCES += \
     \#../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
-    \#../unit-tests/test-string-utils.cpp \
+    ../unit-tests/test-string-utils.cpp \
     \#../unit-tests/test-math-utils.cpp \
     \#../unit-tests/vector-tests.cpp \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
     \#../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
-    \#../unit-tests/test-new-vectors.cpp
-    ../unit-tests/sample-tree-test-suite.cpp
+    \#../unit-tests/test-new-vectors.cpp \
+    #../unit-tests/sample-tree-test-suite.cpp
 
 INCLUDEPATH += \
     ../inc

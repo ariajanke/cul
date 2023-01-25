@@ -53,6 +53,7 @@ class TestAssertion final {
 };
 
 class TreeTestSuite;
+class TestAssertionAttn;
 
 class Describer {
 public:
@@ -75,8 +76,6 @@ protected:
     virtual void handle_exception
         (const char * it_string, const std::exception *) noexcept = 0;
 };
-
-class TestAssertionAttn;
 
 class TreeTestPriv {
     friend class TreeTestSuite;
@@ -195,6 +194,8 @@ class TreeTestPriv {
     static std::size_t type_to_id();
 }; // end of class TreeTestPriv
 
+
+
 class Described final {
     using DescribeType = TreeTestPriv::DescribeType;
     using SuiteForDescribed = TreeTestPriv::SuiteForDescribed;
@@ -266,57 +267,12 @@ private:
     std::ostream * m_out = &std::cout;
 };
 
-
-#if 0
-template <typename Callback>
-Describer & Describer::it(const char * it_string, Callback && callback) {
-    if (at_current_it()) {
-        try {
-            set_current_it(callback());
-            print_it_string(it_string);
-        } catch (std::exception & exp) {
-            handle_exception(it_string, &exp);
-        } catch (...) {
-            handle_exception(it_string, nullptr);
-        }
-    }
-    increment_it_count();
-    return *this;
-}
-
-inline void TreeTestPriv::DescriberN::set_current_it(TestAssertion ta) {
-    ++m_last_executed_test;
-    m_has_run = true;
-    auto to_succeed = [](bool b)
-        { return b ? Succeed::yes : Succeed::no; };
-    auto ta_val = TestAssertionAttn::get(ta);
-    if (!ta_val) {
-        *m_out << "\t[ Test Failed ] ";
-        if (m_source_position) {
-            m_source_position.print_position(*m_out);
-        } else {
-            *m_out << "(source position not set)";
-        }
-        *m_out << std::endl;
-    }
-    switch (m_all_secceed) {
-    case Succeed::indeterminate:
-    case Succeed::yes:
-        m_all_secceed = to_succeed(ta_val);
-        break;
-    case Succeed::no: break;
-    }
-    m_source_position = SourcePosition{};
-}
-#endif
-inline Described describe(const char * description) {
-    return TreeTestSuite::instance().describe(description);
-}
+inline Described describe(const char * description)
+    { return TreeTestSuite::instance().describe(description); }
 
 template <typename TestedType>
-Described describe(const char * description) {
-    return TreeTestSuite::instance().describe<TestedType>(description);
-}
+Described describe(const char * description)
+    { return TreeTestSuite::instance().describe<TestedType>(description); }
 
 template <typename Callback>
 Describer & it(const char * it_string, Callback && callback) {
@@ -330,10 +286,7 @@ Describer & mark_source_position(int line, const char * file) {
 }
 
 TestAssertion test_that(bool);
-#if 0
-inline TestAssertion test_that(bool b)
-    { return TestAssertionAttn::make(b); }
-#endif
+
 inline int run_tests()
     { return TreeTestSuite::instance().run_tests(); }
 
@@ -591,9 +544,8 @@ inline std::ostream & TreeTestPriv::SourcePosition::print_position
 
 // ----------------------------------------------------------------------------
 
-inline bool TreeTestPriv::DescriberN::at_end_it() const {
-    return m_last_executed_test + 1 == m_max_it_count;
-}
+inline bool TreeTestPriv::DescriberN::at_end_it() const
+    { return m_last_executed_test + 1 == m_max_it_count; }
 
 inline bool TreeTestPriv::DescriberN::all_succeed() const {
     if (m_all_secceed == Succeed::indeterminate) {
@@ -614,9 +566,8 @@ inline Describer & TreeTestPriv::DescriberN::mark_source_position
     return *this;
 }
 
-/* private */ inline void TreeTestPriv::DescriberN::increment_it_count() {
-    m_max_it_count = std::max(m_max_it_count, ++m_max_it_counter);
-}
+/* private */ inline void TreeTestPriv::DescriberN::increment_it_count()
+    { m_max_it_count = std::max(m_max_it_count, ++m_max_it_counter); }
 
 /* private */ inline bool TreeTestPriv::DescriberN::at_current_it() const {
     return    m_last_executed_test + 1 == m_max_it_counter
@@ -652,9 +603,7 @@ inline Describer & TreeTestPriv::DescriberN::mark_source_position
 
 /* private */ inline void TreeTestPriv::DescriberN::print_it_string
     (const char * it_string)
-{
-    *m_out << "\t" << it_string << std::endl;
-}
+{ *m_out << "\t" << it_string << std::endl; }
 
 /* private */ inline void TreeTestPriv::DescriberN::handle_exception
     (const char * it_string, const std::exception * exp) noexcept
@@ -675,9 +624,7 @@ inline TreeTestPriv::SuiteForDescribed::SuiteForDescribed
     (std::map<std::size_t, DescribeType> & describes, bool & has_current_desc):
     m_describes(describes),
     m_has_current_desc(&has_current_desc)
-{
-    set_as_having_current_describe();
-}
+{ set_as_having_current_describe(); }
 
 inline TreeTestPriv::SuiteForDescribed::SuiteForDescribed
     (SuiteForDescribed && lhs):
@@ -701,9 +648,8 @@ inline void TreeTestPriv::SuiteForDescribed::clear_current_describe() {
     *m_has_current_desc = false;
 }
 
-inline void TreeTestPriv::SuiteForDescribed::forget_current_describe() {
-    m_has_current_desc = nullptr;
-}
+inline void TreeTestPriv::SuiteForDescribed::forget_current_describe()
+    { m_has_current_desc = nullptr; }
 
 inline bool TreeTestPriv::SuiteForDescribed::has_current_describe() const noexcept
     { return m_has_current_desc ? *m_has_current_desc : false; }

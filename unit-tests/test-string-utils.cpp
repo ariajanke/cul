@@ -145,7 +145,9 @@ void add_string_to_number_tests() {
             bool res = string_to_number_assume_negative(str, str + strlen(str), out);
             return test_that(res && magnitude(out + 123.34) < 0.005f);
         });
-        mark_it("", [] {
+        mark_it("converts unsigned types, while assuming negative, still "
+                "produces a valid integer", []
+        {
             std::string samp = "5786";
             std::size_t out = 0;
             bool res = string_to_number_assume_negative(samp.begin(), samp.end(), out);

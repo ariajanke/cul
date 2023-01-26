@@ -78,6 +78,7 @@ HEADERS += \
     ../inc/ariajanke/cul/Vector3.hpp                 \
     ../inc/ariajanke/cul/RectangleUtils.hpp          \
     ../inc/ariajanke/cul/VectorUtils.hpp             \
+    ../inc/ariajanke/cul/TreeTestSuite.hpp           \
     \ # SFML Utilities
     ../inc/ariajanke/cul/sf/DrawText.hpp             \
     ../inc/ariajanke/cul/sf/DrawRectangle.hpp        \
@@ -93,7 +94,7 @@ HEADERS += \
 # purposes, NOT for general/automated testing)
 SOURCES += \
     \#../unit-tests/all-tests-driver.cpp \ # empty?!
-    ../unit-tests/TestGrid.cpp \
+    \#../unit-tests/TestGrid.cpp \
     \#../unit-tests/TestUtil.cpp \
     \#../unit-tests/TestMultiType.cpp \
     \#../unit-tests/test-string-utils.cpp \
@@ -102,7 +103,8 @@ SOURCES += \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
     \#../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
-    #../unit-tests/test-new-vectors.cpp
+    ../unit-tests/test-new-vectors.cpp \
+    #../unit-tests/sample-tree-test-suite.cpp
 
 INCLUDEPATH += \
     ../inc

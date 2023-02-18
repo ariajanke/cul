@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2022 Aria Janke
+    Copyright (c) 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -65,11 +65,16 @@ void typeless_describes();
 void depends_on_type_mismatch_throws();
 void it_cases_surpress_exceptions();
 void it_handles_failures_correctly();
+void it_does_not_stop_with_failed_describe();
+
+// empty describes should not crash/break anything
+void it_throws_on_empty_describes();
 
 #define mark_it mark_source_position(__LINE__, __FILE__).it
 
 int main() {
-    static const auto & ttsuite = cul::tree_ts::TreeTestSuite::instance();
+    assert(cul::tree_ts::run_tests() == 0);
+
     // the test program should freaking crash if any test fails
     tests_execute_in_dependant_order();
     multiple_describes_work();
@@ -79,6 +84,8 @@ int main() {
     depends_on_type_mismatch_throws();
     it_cases_surpress_exceptions();
     it_handles_failures_correctly();
+    it_does_not_stop_with_failed_describe();
+    it_throws_on_empty_describes();
 
     return 0;
 }
@@ -225,5 +232,30 @@ void it_handles_failures_correctly() {
             return test_that(false);
         });
     });
+    assert(run_tests() != 0);
+}
+
+void it_does_not_stop_with_failed_describe() {
+    using namespace cul::tree_ts;
+    static int count = 0;
+    describe<A>("a")([] {
+        ++count;
+        mark_it("has a failing test case", [] {
+            return test_that(false);
+        });
+    });
+    describe<B>("b")([] {
+        ++count;
+        mark_it("has a failing test case", [] {
+            return test_that(false);
+        });
+    });
+    run_tests();
+    assert(count == 2);
+}
+
+void it_throws_on_empty_describes() {
+    using namespace cul::tree_ts;
+    describe("empty describe")([] {});
     assert(run_tests() != 0);
 }

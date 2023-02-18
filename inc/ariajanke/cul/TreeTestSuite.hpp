@@ -64,6 +64,10 @@ public:
 
     virtual Describer & mark_source_position(int line, const char * file) = 0;
 
+    // test me
+    template <typename Callback>
+    Describer & next(Callback && callback);
+
 protected:
     virtual void increment_it_count() = 0;
 
@@ -75,6 +79,8 @@ protected:
 
     virtual void handle_exception
         (const char * it_string, const std::exception *) noexcept = 0;
+
+    virtual bool has_run() const noexcept = 0;
 };
 
 class TreeTestPriv {
@@ -85,6 +91,10 @@ class TreeTestPriv {
     // class TreeTestPriv
 
     using DescribeCallback = std::function<void(Describer &)>;
+
+    static constexpr const auto k_indent = "  ";
+
+    class EmptyDescribeException final {};
 
     class SourcePosition final {
     public:
@@ -126,6 +136,9 @@ class TreeTestPriv {
         void increment_it_count() final;
 
         bool at_current_it() const final;
+
+        bool has_run() const noexcept final
+            { return m_has_run; }
 
         void set_current_it(TestAssertion) final;
 
@@ -246,6 +259,7 @@ public:
 
 private:
     using DescribeType = TreeTestPriv::DescribeType;
+    static constexpr const auto k_indent = TreeTestPriv::k_indent;
 
     static bool pop_non_depending_tests
         (std::map<std::size_t, DescribeType> & unrun_describes,
@@ -280,12 +294,16 @@ Describer & it(const char * it_string, Callback && callback) {
         it(it_string, std::move(callback));
 }
 
-Describer & mark_source_position(int line, const char * file) {
+inline Describer & mark_source_position(int line, const char * file) {
     return TreeTestSuite::instance().current_describer().
         mark_source_position(line, file);
 }
 
 TestAssertion test_that(bool);
+
+// test me
+template <typename ExpType, typename Func>
+TestAssertion expect_exception(Func &&);
 
 inline int run_tests()
     { return TreeTestSuite::instance().run_tests(); }
@@ -332,6 +350,13 @@ Describer & Describer::it(const char * it_string, Callback && callback) {
     return *this;
 }
 
+template <typename Callback>
+Describer & Describer::next(Callback && callback) {
+    if (!has_run())
+        { callback(); }
+    return *this;
+}
+
 // ----------------------------------------------------------------------------
 
 inline Described::Described
@@ -371,7 +396,7 @@ Described Described::depends_on() {
 
 // ----------------------------------------------------------------------------
 
-/* static */ TreeTestSuite & TreeTestSuite::instance() {
+/* static */ inline TreeTestSuite & TreeTestSuite::instance() {
     static TreeTestSuite suite;
     return suite;
 }
@@ -452,13 +477,15 @@ inline Describer & TreeTestSuite::current_describer() const {
 
         if (itr->second.depended_type == DescribeType::k_no_dependancies) {
             // no dependants
-            rv = rv && run_describe_();
+            rv = run_describe_() && rv;
             itr = mark_as_ran(itr);
         } else {
             auto dependee = already_run_describes.find(itr->second.depended_type);
             if (dependee != already_run_describes.end()) {
                 // has ran dependees
-                rv = rv && run_describe_();
+                if (dependee->second.all_passes) {
+                    rv = run_describe_() && rv;
+                }
                 itr = mark_as_ran(itr);
             } else {
                 // yet to run dependees
@@ -472,17 +499,24 @@ inline Describer & TreeTestSuite::current_describer() const {
 /* private static */ inline bool TreeTestSuite::run_describe
     (DescribeType & type, Describer *& describer_ptr, std::ostream * out) noexcept
 {
+    using EmptyDescribeException = TreeTestPriv::EmptyDescribeException;
     bool all_succeed = true;
     for (auto & block : type.blocks) {
         TreeTestPriv::DescriberN describer{out};
         describer_ptr = &describer;
         *out << block.description << std::endl;
         do {
-            describer.reset_counters();
+            describer.reset_counters();            
             block.callback(describer);
         } while (!describer.at_end_it());
-        if (!describer.all_succeed()) {
+        try {
+            if (!describer.all_succeed()) {
+                all_succeed = false;
+            }
+        } catch (EmptyDescribeException &) {
             all_succeed = false;
+            *out << "[[ !! This describe has no it statements !! ]"
+                 << std::endl;
         }
     }
     type.blocks.clear();
@@ -494,14 +528,14 @@ inline Describer & TreeTestSuite::current_describer() const {
 /* private static */ inline void TreeTestSuite::list_unrun_blocks
     (const DescribeType & type, std::ostream * out) noexcept
 {
-    *out << "Not running following describe blocks, due to previously failed tests:\n";
+    *out << "Not running following describes, due to previously failed tests:\n";
     for (auto & block : type.blocks) {
-        *out << "\t" << block.description << "\n";
+        *out << k_indent << block.description << "\n";
     }
     *out << std::flush;
 }
 
-/* private */ void TreeTestSuite::clear() {
+/* private */ inline void TreeTestSuite::clear() {
     m_describes.clear();
     m_has_active_desribe = false;
     m_current_describer = nullptr;
@@ -511,6 +545,16 @@ inline Describer & TreeTestSuite::current_describer() const {
 
 inline TestAssertion test_that(bool b)
     { return TestAssertionAttn::make(b); }
+
+template <typename ExpType, typename Func>
+TestAssertion expect_exception(Func && f) {
+    try {
+        f();
+    } catch (ExpType &) {
+        return test_that(true);
+    }
+    return test_that(false);
+}
 
 // ----------------------------------------------------------------------------
 
@@ -548,8 +592,11 @@ inline bool TreeTestPriv::DescriberN::at_end_it() const
     { return m_last_executed_test + 1 == m_max_it_count; }
 
 inline bool TreeTestPriv::DescriberN::all_succeed() const {
+    //using cul::exceptions_abbr::RtError;
     if (m_all_secceed == Succeed::indeterminate) {
-        throw std::runtime_error{""};
+        throw EmptyDescribeException{};
+        //throw RtError{"...::all_succeed: describe block needs at least one it "
+        //              "statement"};
     }
     return m_all_secceed == Succeed::yes;
 }
@@ -583,7 +630,7 @@ inline Describer & TreeTestPriv::DescriberN::mark_source_position
         { return b ? Succeed::yes : Succeed::no; };
     auto ta_val = TestAssertionAttn::get(ta);
     if (!ta_val) {
-        *m_out << "\t[ Test Failed ] ";
+        *m_out << k_indent << "[ Test Failed ] ";
         if (m_source_position) {
             m_source_position.print_position(*m_out);
         } else {
@@ -603,7 +650,7 @@ inline Describer & TreeTestPriv::DescriberN::mark_source_position
 
 /* private */ inline void TreeTestPriv::DescriberN::print_it_string
     (const char * it_string)
-{ *m_out << "\t" << it_string << std::endl; }
+{ *m_out << k_indent << it_string << std::endl; }
 
 /* private */ inline void TreeTestPriv::DescriberN::handle_exception
     (const char * it_string, const std::exception * exp) noexcept
@@ -611,8 +658,8 @@ inline Describer & TreeTestPriv::DescriberN::mark_source_position
     set_current_it(test_that(false));
     print_it_string(it_string);
     if (exp) {
-        *m_out << "An exception was thrown:\n\t"
-               << exp->what() << std::endl;
+        *m_out << "An exception was thrown:\n" << k_indent << exp->what()
+               << std::endl;
     } else {
         *m_out << "An unknown exception was thrown." << std::endl;
     }

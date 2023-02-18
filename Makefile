@@ -30,6 +30,7 @@ test: $(OUTPUT)
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/test-math-utils.cpp -lcommon -o unit-tests/.tmu
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/vector-tests.cpp -lcommon -o unit-tests/.vt
 	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/test-ColorString.cpp -o unit-tests/.test-ColorString
+	$(CXX) $(CXXFLAGS) -L$(shell pwd) unit-tests/sample-tree-test-suite.cpp unit-tests/test-tree-test-suite-p2.cpp -lcommon -o unit-tests/.tts
 	./unit-tests/.tu
 	./unit-tests/.tmt
 	./unit-tests/.tg
@@ -38,4 +39,5 @@ test: $(OUTPUT)
 	./unit-tests/.tmu
 	./unit-tests/.vt
 	./unit-tests/.test-ColorString
+	./unit-tests/.tts
 

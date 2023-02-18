@@ -103,8 +103,9 @@ SOURCES += \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
     \#../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
-    ../unit-tests/test-new-vectors.cpp \
-    #../unit-tests/sample-tree-test-suite.cpp
+    \#../unit-tests/test-new-vectors.cpp \
+    ../unit-tests/sample-tree-test-suite.cpp \
+    ../unit-tests/test-tree-test-suite-p2.cpp
 
 INCLUDEPATH += \
     ../inc

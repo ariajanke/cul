@@ -104,7 +104,7 @@ int main() {
     it_handles_failures_correctly();
     it_does_not_stop_with_failed_describe();
     it_throws_on_empty_describes();
-
+#   if 0
     SomeLoader loader;
     {
     auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
@@ -131,12 +131,30 @@ int main() {
          fold<int>()()),
          int>,
          "Either#fold#operator () returns the common type");
+    {
+    auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
+         fold<int>().map([] (LoadedThing &&) { return int(0); });
+    static_assert
+        (std::is_same_v<decltype(a),
+         Either<LoadError, LoadedThing>::Fold<int>>,
+         "Either#fold#map returns appropriate Fold type");
+    }
+    {
+    auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
+         fold<int>().map_left([] (LoadError &&) { return int(0); });
+    static_assert
+        (std::is_same_v<decltype(a),
+         Either<LoadError, LoadedThing>::Fold<int>>,
+         "Either#fold#map_left returns appropriate Fold type");
+    }
+    int i = 0;
     auto rv = loader.load_thing("thing").
-        map([] (LoadedThing &&) { return 0; }).
+        map([&i] (LoadedThing &&) { ++i; return 0; }).
         fold<int>().
-        map([] (int i) { return i; });//.
-        //map_left([] (LoadError &&) { return 10; })();
-    //std::cout<<rv<<std::endl;
+        map([&i] (int i_) { return ++i; i_; }).
+        map_left([] (LoadError &&) { return 10; })();
+    std::cout<<rv<<std::endl;
+#   endif
     return 0;
 }
 

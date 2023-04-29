@@ -79,6 +79,8 @@ HEADERS += \
     ../inc/ariajanke/cul/RectangleUtils.hpp          \
     ../inc/ariajanke/cul/VectorUtils.hpp             \
     ../inc/ariajanke/cul/TreeTestSuite.hpp           \
+    ../inc/ariajanke/cul/Either.hpp                  \
+    ../inc/ariajanke/cul/FunctionTraits.hpp          \
     \ # SFML Utilities
     ../inc/ariajanke/cul/sf/DrawText.hpp             \
     ../inc/ariajanke/cul/sf/DrawRectangle.hpp        \

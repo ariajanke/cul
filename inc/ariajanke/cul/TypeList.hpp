@@ -29,25 +29,7 @@
 #include <type_traits>
 
 namespace cul {
-#if 0
-template <bool TF_VAL, int A, int B>
-struct ConstIntSelect { static const constexpr int k_value = A; };
 
-template <int A, int B>
-struct ConstIntSelect<false, A, B> { static const constexpr int k_value = B; };
-
-template <typename T1, typename ... Types>
-struct UniqueTypes {
-    static constexpr const bool k_value = true;
-};
-
-template <typename T1, typename T2, typename ... Types>
-struct UniqueTypes<T1, T2, Types...> : UniqueTypes<T2, Types...> {
-    static constexpr const bool k_value =
-        !std::is_same<T1, T2>::value &&
-        UniqueTypes<T2, Types...>::k_value && UniqueTypes<T1, Types...>::k_value;
-};
-#endif
 template <typename T> struct TypeTag {};
 
 /** @brief Utility class used to define a sequential, non-unique list of types.

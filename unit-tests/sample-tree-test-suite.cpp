@@ -78,18 +78,6 @@ void it_throws_on_empty_describes();
 
 #define mark_it mark_source_position(__LINE__, __FILE__).it
 
-
-class LoadError final {};
-class LoadedThing final {};
-
-class SomeLoader final {
-public:
-    Either<LoadError, LoadedThing> load_thing(const char * s) const {
-        if (s) return LoadedThing{};
-        return LoadError{};
-    }
-};
-
 int main() {
     assert(cul::tree_ts::run_tests() == 0);
 
@@ -104,57 +92,6 @@ int main() {
     it_handles_failures_correctly();
     it_does_not_stop_with_failed_describe();
     it_throws_on_empty_describes();
-#   if 0
-    SomeLoader loader;
-    {
-    auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
-         map([] (LoadedThing &&) { return int(1); });
-    static_assert
-        (std::is_same_v<decltype(a), Either<LoadError, int>>,
-         "Either<Left, Right>#map (function returning Other) is Either<Left, Other>");
-    }
-    {
-    auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
-         map_left([] (LoadError &&) { return int(1); });
-    static_assert
-         (std::is_same_v<decltype(a), Either<int, LoadedThing>>,
-         "Either<Left, Right>#map_left (function returning Other) is "
-         "Either<Other, Right>");
-    }
-    static_assert
-        (std::is_same_v<decltype(Either<LoadError, LoadedThing>{LoadedThing{}}.
-         fold<int>()),
-         Either<LoadError, LoadedThing>::Fold<int>>,
-         "Either#fold returns a Either::Fold type");
-    static_assert
-        (std::is_same_v<decltype(Either<LoadError, LoadedThing>{LoadedThing{}}.
-         fold<int>()()),
-         int>,
-         "Either#fold#operator () returns the common type");
-    {
-    auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
-         fold<int>().map([] (LoadedThing &&) { return int(0); });
-    static_assert
-        (std::is_same_v<decltype(a),
-         Either<LoadError, LoadedThing>::Fold<int>>,
-         "Either#fold#map returns appropriate Fold type");
-    }
-    {
-    auto a = Either<LoadError, LoadedThing>{LoadedThing{}}.
-         fold<int>().map_left([] (LoadError &&) { return int(0); });
-    static_assert
-        (std::is_same_v<decltype(a),
-         Either<LoadError, LoadedThing>::Fold<int>>,
-         "Either#fold#map_left returns appropriate Fold type");
-    }
-    int i = 0;
-    auto rv = loader.load_thing("thing").
-        map([&i] (LoadedThing &&) { ++i; return 0; }).
-        fold<int>().
-        map([&i] (int i_) { return ++i; i_; }).
-        map_left([] (LoadError &&) { return 10; })();
-    std::cout<<rv<<std::endl;
-#   endif
     return 0;
 }
 

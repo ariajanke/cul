@@ -82,6 +82,8 @@ HEADERS += \
     ../inc/ariajanke/cul/Either.hpp                  \
     ../inc/ariajanke/cul/FunctionTraits.hpp          \
     ../inc/ariajanke/cul/OptionalEither.hpp          \
+    ../inc/ariajanke/cul/detail/either-helpers.hpp   \
+    ../inc/ariajanke/cul/EitherFold.hpp              \
     \ # SFML Utilities
     ../inc/ariajanke/cul/sf/DrawText.hpp             \
     ../inc/ariajanke/cul/sf/DrawRectangle.hpp        \

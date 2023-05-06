@@ -278,7 +278,7 @@ describe("the 'consumed' either") ([] {});
     static_assert
         (std::is_same_v<decltype(Either<SomeError, SomeThing>{SomeThing{}}.
          fold<int>()),
-         Fold<SomeError, SomeThing, int>>,
+         either::Fold<SomeError, SomeThing, int>>,
          "Either#fold returns a Either::Fold type");
     static_assert
         (std::is_same_v<decltype(Either<SomeError, SomeThing>{SomeThing{}}.
@@ -290,7 +290,7 @@ describe("the 'consumed' either") ([] {});
          fold<int>().map([] (SomeThing &&) constexpr { return int(0); });
     static_assert
         (std::is_same_v<decltype(a),
-         Fold<SomeError, SomeThing, int>>,
+         either::Fold<SomeError, SomeThing, int>>,
          "Either#fold#map returns appropriate Fold type");
     }
     {
@@ -298,7 +298,7 @@ describe("the 'consumed' either") ([] {});
          fold<int>().map_left([] (SomeError &&) { return int(0); });
     static_assert
         (std::is_same_v<decltype(a),
-         Fold<SomeError, SomeThing, int>>,
+         either::Fold<SomeError, SomeThing, int>>,
          "Either#fold#map_left returns appropriate Fold type");
     }
 //});

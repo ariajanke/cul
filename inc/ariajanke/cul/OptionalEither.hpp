@@ -26,368 +26,25 @@
 
 #pragma once
 
-#include <ariajanke/cul/FunctionTraits.hpp>
-#include <ariajanke/cul/Util.hpp>
-
-#include <optional>
-#include <variant>
-#include <stdexcept>
+#include <ariajanke/cul/detail/either-helpers.hpp>
+#include <ariajanke/cul/EitherFold.hpp>
 
 namespace cul {
 
-template <typename LeftT, typename RightT>
-class OptionalEither;
-
-class FoldBase;
-
-template <typename LeftT, typename RightT>
-class Either;
-
-class OptionalEitherBase {
-protected:
-    template <typename Func>
-    using ReturnTypeOf = typename FunctionTraitsOf<Func>::ReturnType;
-
-    template <typename Func>
-    using StrippedArgumentTypesOf = typename FunctionTraitsOf<Func>::
-        ArgumentTypes::
-        template Transform<std::remove_reference_t>::
-        template Transform<std::remove_cv_t>;
-
-private:
-    template <typename AnyT>
-    struct IsEither final {
-        static constexpr const bool k_value = false;
-    };
-
-    template <typename AnyT>
-    struct IsOptionalEither final {
-        static constexpr const bool k_value = false;
-    };
-
-    template <typename LeftT, typename RightT>
-    struct IsOptionalEither<OptionalEither<LeftT, RightT>> final {
-        static constexpr const bool k_value = true;
-    };
-
-    template <typename LeftT, typename RightT>
-    struct IsEither<Either<LeftT, RightT>> final {
-        static constexpr const bool k_value = true;
-    };
-
-    template <typename AnyT>
-    struct EitherTraits final {};
-
-    template <typename LeftT, typename RightT>
-    struct EitherTraits<Either<LeftT, RightT>> final {
-        using LeftType = LeftT;
-        using RightType = RightT;
-    };
-
-    template <typename LeftT, typename RightT>
-    struct EitherTraits<OptionalEither<LeftT, RightT>> final {
-        using LeftType = LeftT;
-        using RightType = RightT;
-    };
-
-protected:
-    template <typename ... Types>
-    static constexpr const bool kt_is_either = IsEither<Types...>::k_value;
-
-    template <typename ... Types>
-    static constexpr const bool kt_is_optional_either =
-        IsOptionalEither<Types...>::k_value;
-
-    template <typename Type>
-    static constexpr const bool kt_is_void = std::is_same_v<void, Type>;
-
-    template <typename ... Types>
-    using EitherTypeLeft = typename EitherTraits<Types...>::LeftType;
-
-    template <typename ... Types>
-    using EitherTypeRight = typename EitherTraits<Types...>::RightType;
-
-    template <typename Func, typename SideType>
-    struct VerifyArgumentsForSide final {
-        using ArgumentTypes = StrippedArgumentTypesOf<Func>;
-        static_assert(ArgumentTypes::k_count == 1,
-                      "Given function must accept exactly one argument");
-        static_assert
-            (ArgumentTypes::template kt_occurance_count<SideType> == 1,
-             "Given function must accept some form of the side's type");
-    };
-
-    template <typename T>
-    using EnableIfReturnsEither =
-        std::enable_if_t<kt_is_either<ReturnTypeOf<T>>, ReturnTypeOf<T>>;
-
-    template <typename T>
-    using EnableIfReturnsOptionalEither =
-        std::enable_if_t<kt_is_optional_either<ReturnTypeOf<T>>, ReturnTypeOf<T>>;
-
-    static constexpr const int k_left_idx = 0;
-    static constexpr const int k_right_idx = 1;
-    using InPlaceRight = std::in_place_index_t<k_right_idx>;
-    using InPlaceLeft = std::in_place_index_t<k_left_idx>;
-
-    template <typename LeftType, typename RightType, typename EitherLeftOrRight>
-    using EnableIfLeftXorRightPtr_ = typename std::enable_if_t<
-        bool(std::is_same_v<EitherLeftOrRight, LeftType > ^
-             std::is_same_v<EitherLeftOrRight, RightType>),
-        void *>;
-
-    class BareEitherBase {
-    protected:
-        struct Empty final {};
-        struct Consumed final {};
-
-        static constexpr const int k_empty_idx = 2;
-        static constexpr const int k_consumed_idx = 3;
-
-        constexpr BareEitherBase() {}
-    };
-
-    template <typename LeftT, typename RightT>
-    class BareEither final : public BareEitherBase {
-        template <typename EitherLeftOrRight>
-        using EnableIfLeftXorRightPtr =
-            EnableIfLeftXorRightPtr_<LeftT, RightT, EitherLeftOrRight>;
-    public:
-        constexpr BareEither(): m_datum(Empty{}) {}
-
-        constexpr BareEither(const BareEither & rhs):
-            m_datum(rhs.m_datum) {}
-
-        constexpr BareEither(BareEither && rhs):
-            m_datum(std::move(rhs.m_datum))
-        { rhs.m_datum = DatumVariant{Consumed{}}; }
-
-        template <typename EitherLeftOrRight>
-        constexpr explicit BareEither(EitherLeftOrRight && obj,
-                                      EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr):
-            m_datum(std::move(obj)) {}
-
-        template <typename ... FurtherTypes>
-        constexpr BareEither(InPlaceLeft, FurtherTypes &&... args):
-            m_datum(std::in_place_index_t<k_left_idx>{}, std::forward<FurtherTypes>(args)...) {}
-
-        template <typename ... FurtherTypes>
-        constexpr BareEither(InPlaceRight, FurtherTypes &&... args):
-            m_datum(std::in_place_index_t<k_right_idx>{}, std::forward<FurtherTypes>(args)...) {}
-
-        constexpr BareEither & operator = (const BareEither & rhs) {
-            m_datum = rhs.m_datum;
-            return *this;
-        }
-
-        constexpr BareEither & operator = (BareEither && rhs) {
-            if (this != &rhs) {
-                m_datum = std::move(rhs);
-                rhs.m_datum = DatumVariant{Consumed{}};
-            }
-            return *this;
-        }
-
-        constexpr bool is_empty() const
-            { return std::holds_alternative<Empty>(m_datum); }
-
-        constexpr bool is_left() const
-            { return m_datum.index() == k_left_idx; }
-
-        constexpr bool is_right() const
-            { return m_datum.index() == k_right_idx; }
-
-        constexpr LeftT left() { return move_out_value<k_left_idx>(); }
-
-        constexpr RightT right() { return move_out_value<k_right_idx>(); }
-
-        template <typename NewLeft>
-        constexpr BareEither<NewLeft, RightT> with_new_left_type() {
-            switch (m_datum.index()) {
-            case k_right_idx:
-                return BareEither<NewLeft, RightT>{InPlaceRight{}, right()};
-            case k_empty_idx: return BareEither<NewLeft, RightT>{};
-            default:
-                throw std::runtime_error{""};
-            }
-        }
-
-        template <typename NewRight>
-        constexpr BareEither<LeftT, NewRight> with_new_right_type() {
-            switch (m_datum.index()) {
-            case k_left_idx :
-                return BareEither<LeftT, NewRight>{InPlaceLeft{}, left()};
-            case k_empty_idx: return BareEither<LeftT, NewRight>{};
-            default:
-                throw std::runtime_error{""};
-            }
-        }
-
-    private:        
-        using DatumVariant = std::variant<LeftT, RightT, Empty, Consumed>;
-
-        template <int kt_index>
-        constexpr auto move_out_value() {
-            auto rv = std::move(std::get<kt_index>(m_datum));
-            m_datum = DatumVariant{Consumed{}};
-            return rv;
-        }
-
-        constexpr bool is_consumed() const
-            { return std::holds_alternative<Consumed>(m_datum); }
-
-        static constexpr DatumVariant verify_not_consumed(DatumVariant && datum) {
-            if (!std::holds_alternative<Consumed>(datum))
-                { return std::move(datum); }
-            throw std::runtime_error{""};
-        }
-        DatumVariant m_datum;
-    };
-
-    friend class FoldBase;
-
-    template <typename Func>
-    struct ChainFunctionReturnsOptionalEither {
-        static_assert(kt_is_optional_either<ReturnTypeOf<Func>>,
-                      "Must return an optional either type.");
-    };
-
-    template <typename Func>
-    struct ChainFunctionReturnsEither {
-        static_assert(kt_is_either<ReturnTypeOf<Func>>,
-                      "Must return an either type.");
-    };
-
-    template <typename LeftType, typename Func>
-    struct RightChainPreserveLeft {
-        static_assert
-            (std::is_same_v<EitherTypeLeft<ReturnTypeOf<Func>>, LeftType>,
-             "Given function must preserve left type");
-    };
-
-    template <typename RightType, typename Func>
-    struct LeftChainPreserveRight {
-        static_assert
-            (std::is_same_v<EitherTypeRight<ReturnTypeOf<Func>>, RightType>,
-             "Given function must preserve right type");
-    };
-};
-
-template <typename LeftT, typename RightT>
-class Either;
-
-template <typename LeftT, typename RightT, typename CommonT>
-class Fold;
-
-
-
-class FoldBase {
-protected:
-    template <typename LeftT, typename RightT>
-    using BareEither = OptionalEitherBase::BareEither<LeftT, RightT>;
-
-    constexpr FoldBase() {}
-
-    template <typename CommonT, typename Func, typename SideType>
-    struct VerifyFoldFunctionForSide final {
-        using ReturnType = OptionalEitherBase::ReturnTypeOf<Func>;
-        using ArgumentTypes = OptionalEitherBase::StrippedArgumentTypesOf<Func>;
-        static_assert(std::is_same_v<ReturnType, CommonT>,
-                      "given function must return common type");
-        static_assert(ArgumentTypes::k_count == 1,
-                      "Given function must accept exactly one argument");
-        static_assert
-            (ArgumentTypes::template kt_occurance_count<SideType> == 1,
-             "Given function must accept some form of the side's type");
-    };
-};
-
-class FoldAttn final : public FoldBase {
-private:
-    template <typename LeftT, typename RightT>
-    friend class Either;
-
-    template <typename LeftT, typename RightT>
-    friend class OptionalEither;
-
-    template <typename LeftT, typename RightT, typename CommonT>
-    static constexpr Fold<LeftT, RightT, CommonT>
-        make_fold(OptionalEither<LeftT, RightT> &&);
-
-    template <typename LeftT, typename RightT, typename CommonT>
-    static constexpr Fold<LeftT, RightT, CommonT>
-        make_fold(CommonT &&, BareEither<LeftT, RightT> &&);
-};
-
-template <typename LeftT, typename RightT, typename CommonT>
-class Fold final : public FoldBase {
-public:
-    using CommonType = CommonT;
-    using LeftType = LeftT;
-    using RightType = RightT;
-
-    template <typename Func>
-    constexpr Fold map(Func && f);
-
-    template <typename Func>
-    constexpr Fold map_left(Func && f);
-
-    constexpr CommonType operator () () const
-        { return m_value.value(); }
-
-private:
-    using OptionalCommon = std::optional<CommonT>;
-    friend class FoldAttn;
-
-    constexpr Fold
-        (OptionalCommon && default_value, BareEither<LeftT, RightT> && datum):
-        m_value(std::move(default_value)),
-        m_datum(std::move(datum)) {}
-
-    OptionalCommon m_value;
-    BareEither<LeftT, RightT> m_datum;
-};
-
-template <typename LeftT, typename RightT, typename CommonT>
-/* private static */ constexpr Fold<LeftT, RightT, CommonT>
-    FoldAttn::make_fold
-    (OptionalEither<LeftT, RightT> && opt_either)
-{
-    return Fold<LeftT, RightT, CommonT>
-        {std::optional<CommonT>{}, std::move(opt_either.m_datum)};
-}
-
-template <typename LeftT, typename RightT, typename CommonT>
-/* private static */ constexpr Fold<LeftT, RightT, CommonT>
-    FoldAttn::make_fold(CommonT && obj, BareEither<LeftT, RightT> && opt_either)
-{
-    return Fold<LeftT, RightT, CommonT>
-        {std::optional<CommonT>{std::move(obj)}, std::move(opt_either)};
-}
-
-class OptionalEitherToEitherAttn final {
-    template <typename LeftT, typename RightT>
-    friend class Either;
-
-    template <typename LeftType, typename RightType, typename NewRightType>
-    static OptionalEither<LeftType, NewRightType>
-        new_right_type_with(OptionalEither<LeftType, RightType> && opt_either)
-    { return opt_either.template with_new_right_type<NewRightType>(); }
-
-    template <typename LeftType, typename RightType, typename NewLeftType>
-    static OptionalEither<NewLeftType, RightType>
-        new_left_type_with(OptionalEither<LeftType, RightType> && opt_either)
-    { return opt_either.template with_new_left_type<NewLeftType>(); }
-};
-
-// ----------------------------------------------------------------------------
-
 /// An optional either, is an either with a "third not present" state.
 ///
-/// Optional either is going to be *very* similar. It can be empty, folding has
-/// a required argument.
+/// Care was taken to reduce exceptions as much as possible. Unfortunately
+/// there's no way to guard against incorrect usage. If an exception is *ever*
+/// thrown, then that indicates that the either is being used incorrectly by
+/// the client.
+///
+/// @warning There is a fourth hidden state called "consumed". An either is
+///          considered "consumed" if it has been moved. A consumed either is
+///          not usable and will throw on any attempt to use it. The client is
+///          expected to not use/refer to an either when they are finished
+///          with it.
 template <typename LeftT, typename RightT>
-class OptionalEither final : public OptionalEitherBase {
+class OptionalEither final : public detail::EitherBase {
     template <typename EitherLeftOrRight>
     using EnableIfLeftXorRightPtr =
         EnableIfLeftXorRightPtr_<LeftT, RightT, EitherLeftOrRight>;
@@ -398,97 +55,93 @@ public:
     static_assert(!kt_is_void<LeftType> , "LeftType may not be void" );
     static_assert(!kt_is_void<RightType>, "RightType may not be void");
 
-    constexpr OptionalEither():
-        m_datum() {}
+    /// Construct an empty either, which contains neither a left or right.
+    ///
+    /// This makes optional either special, it maybe empty.
+    constexpr OptionalEither(): m_datum() {}
 
+    /// Constructs a right or left based on the type.
+    ///
+    /// available when left and right types are distinct
     template <typename EitherLeftOrRight>
-    constexpr OptionalEither(EitherLeftOrRight && obj,
-                             EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr):
-        m_datum(std::move(obj)) {}
+    constexpr OptionalEither(EitherLeftOrRight && left_or_right,
+                             EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr);
 
-    constexpr OptionalEither(TypeTag<LeftType>, RightType && obj):
-        m_datum(InPlaceRight{}, std::move(obj)) {}
+    /// unambiguously constructs a right using typetag as a stand in for the
+    /// left type
+    constexpr OptionalEither(TypeTag<LeftType>, RightType && right_);
 
-    constexpr OptionalEither(LeftType && obj, TypeTag<RightType>):
-        m_datum(InPlaceLeft{}, std::move(obj)) {}
+    /// unambiguously constructs a left using typetag as a stand in for the
+    /// right type
+    constexpr OptionalEither(LeftType && left_, TypeTag<RightType>);
 
-    constexpr OptionalEither(OptionalEither && rhs):
-        m_datum(std::move(rhs.m_datum)) {}
+    constexpr OptionalEither(OptionalEither && rhs);
 
-    constexpr OptionalEither(const OptionalEither & rhs):
-        m_datum(rhs.m_datum) {}
+    constexpr OptionalEither(const OptionalEither & rhs);
 
+    /// @note either is consumed after this call
     template <typename Func>
-    [[nodiscard]] constexpr OptionalEither<LeftType, ReturnTypeOf<Func>> map(Func && f) {
-        using NewRight = ReturnTypeOf<Func>;
-        static_assert(!std::is_same_v<void, NewRight>,
-                      "Return type of given function may not be void");
-        VerifyArgumentsForSide<Func, RightType>{};
-        if (is_right())
-            return OptionalEither<LeftType, NewRight>{TypeTag<LeftType>{}, f(right())};
-        return with_new_right_type<NewRight>();
-    }
+    [[nodiscard]] constexpr EnableIfReturnsOptionalEither<Func>
+        chain(Func && f);
 
+    /// @note either is consumed after this call
     template <typename Func>
-    [[nodiscard]] constexpr OptionalEither<ReturnTypeOf<Func>, RightType> map_left(Func && f) {
-        using NewLeft = ReturnTypeOf<Func>;
-        static_assert(!std::is_same_v<void, NewLeft>,
-                      "Return type of given function may not be void");
-        VerifyArgumentsForSide<Func, LeftType>{};
-        if (is_left())
-            return OptionalEither<NewLeft, RightType>{f(left()), TypeTag<RightType>{}};
-        return with_new_left_type<NewLeft>();
-    }
+    [[nodiscard]] constexpr EnableIfReturnsOptionalEither<Func>
+        chain_left(Func && f);
 
+    /// @note either is consumed after this call
     template <typename CommonT>
-    [[nodiscard]] constexpr Fold<LeftT, RightT, CommonT> fold
-        (CommonT && default_value)
-    {
-        return FoldAttn::make_fold<LeftT, RightT, CommonT>
-            (std::move(default_value), std::move(m_datum));
-    }
+    [[nodiscard]] constexpr either::Fold<LeftT, RightT, CommonT> fold
+        (CommonT && default_value);
 
+    /// @returns true if the either contains a left value
+    constexpr bool is_left() const;
+
+    /// @returns true if the either contains a right value
+    constexpr bool is_right() const;
+
+    /// @returns true if the optional either contains no value
+    constexpr bool is_empty() const;
+
+    /// @returns contained left value.
+    ///
+    /// @note either is consumed after this call
+    /// @throws if the either does not contain a left
+    constexpr LeftT left();
+
+    /// Transforms the right value if it exists according to the given function.
+    ///
+    /// @param f given function that transforms the right value, must take the
+    ///          following form: \n
+    ///         [*anything*] (RightType *any qualifier*) { return *any*; }
+    /// @returns a new either containing the transformed value if the previous
+    ///          either contained a right
+    /// @note either is consumed after this call
     template <typename Func>
-    [[nodiscard]] constexpr EnableIfReturnsOptionalEither<Func> chain(Func && f) {
-        RightChainFunctionReturnRequirements<Func>{};
-        VerifyArgumentsForSide<Func, RightType>{};
-        if (is_right())
-            { return f(right()); }
-        return with_new_right_type<EitherTypeRight<ReturnTypeOf<Func>>>();
-    }
+    [[nodiscard]] constexpr OptionalEither<LeftType, ReturnTypeOf<Func>>
+        map(Func && f);
 
+    /// @note either is consumed after this call
     template <typename Func>
-    [[nodiscard]] constexpr EnableIfReturnsOptionalEither<Func> chain_left(Func && f) {
-        LeftChainFunctionReturnRequirements<Func>{};
-        VerifyArgumentsForSide<Func, LeftType>{};
-        if (is_left())
-            { return f(left()); }
-        return with_new_left_type<EitherTypeLeft<ReturnTypeOf<Func>>>();
-    }
+    [[nodiscard]] constexpr OptionalEither<ReturnTypeOf<Func>, RightType>
+        map_left(Func && f);
 
-    constexpr LeftT left()
-        { return m_datum.left(); }
+    /// @returns contained right value
+    ///
+    /// @note either is consumed after this call
+    /// @throws if the either does not contain a right
+    constexpr RightT right();
 
-    constexpr RightT right()
-        { return m_datum.right(); }
-
-    constexpr bool is_left() const
-        { return m_datum.is_left(); }
-
-    constexpr bool is_right() const
-        { return m_datum.is_right(); }
-
-    constexpr bool is_empty() const
-        { return m_datum.is_empty(); }
+// -------------------------- PAUSE PUBLIC INTERFACE -------------------------
 
 private:
     using BareEither_ = BareEither<LeftT, RightT>;
 
     template <typename OtherLeft, typename OtherRight>
-    friend class OptionalEither;
+    friend class ::cul::OptionalEither;
 
-    friend class OptionalEitherToEitherAttn;
-    friend class FoldAttn;
+    friend class cul::detail::OptionalEitherToEitherAttn;
+    friend class cul::detail::FoldAttn;
 
     template <typename Func>
     struct RightChainFunctionReturnRequirements final :
@@ -502,23 +155,18 @@ private:
         public LeftChainPreserveRight<RightType, Func>
     {};
 
-    constexpr explicit OptionalEither(BareEither_ && either_datum_):
-        m_datum(std::move(either_datum_)) {}
+    constexpr explicit OptionalEither(BareEither_ &&);
 
     template <typename NewRightType>
-    constexpr OptionalEither<LeftType, NewRightType> with_new_right_type() {
-        return OptionalEither<LeftType, NewRightType>
-            {m_datum.template with_new_right_type<NewRightType>()};
-    }
+    constexpr OptionalEither<LeftType, NewRightType> with_new_right_type();
 
     template <typename NewLeftType>
-    constexpr OptionalEither<NewLeftType, RightType> with_new_left_type() {
-        return OptionalEither<NewLeftType, RightType>
-            {m_datum.template with_new_left_type<NewLeftType>()};
-    }
+    constexpr OptionalEither<NewLeftType, RightType> with_new_left_type();
 
     BareEither_ m_datum;
 };
+
+// ------------------------- PUBLIC INTERFACE CONTINUES -----------------------
 
 namespace either {
 
@@ -569,38 +217,147 @@ constexpr OptionalEitherLeftMaker<LeftType> optional_left()
 
 } // end of either namespace -> into ::cul
 
+// -------------------------- END OF PUBLIC INTERFACE -------------------------
 
-// ----------------------------------------------------------------------------
+template <typename LeftT, typename RightT>
+template <typename EitherLeftOrRight>
+constexpr OptionalEither<LeftT, RightT>::OptionalEither
+    (EitherLeftOrRight && obj,
+     EnableIfLeftXorRightPtr<EitherLeftOrRight>):
+    m_datum(std::move(obj)) {}
 
-template <typename LeftT, typename RightT, typename CommonT>
+template <typename LeftT, typename RightT>
+constexpr OptionalEither<LeftT, RightT>::OptionalEither
+    (TypeTag<LeftType>, RightType && right_):
+    m_datum(InPlaceRight{}, std::move(right_)) {}
+
+template <typename LeftT, typename RightT>
+constexpr OptionalEither<LeftT, RightT>::OptionalEither
+    (LeftType && left_, TypeTag<RightType>):
+    m_datum(InPlaceLeft{}, std::move(left_)) {}
+
+template <typename LeftT, typename RightT>
+constexpr OptionalEither<LeftT, RightT>::OptionalEither(OptionalEither && rhs):
+    m_datum(std::move(rhs.m_datum)) {}
+
+template <typename LeftT, typename RightT>
+constexpr OptionalEither<LeftT, RightT>::OptionalEither(const OptionalEither & rhs):
+    m_datum(rhs.m_datum) {}
+
+template <typename LeftT, typename RightT>
 template <typename Func>
-constexpr Fold<LeftT, RightT, CommonT>
-    Fold<LeftT, RightT, CommonT>::map(Func && f)
+[[nodiscard]] constexpr
+    OptionalEither<LeftT,
+                   typename OptionalEither<LeftT, RightT>::
+                       template ReturnTypeOf<Func>>
+    OptionalEither<LeftT, RightT>::map(Func && f)
 {
-    VerifyFoldFunctionForSide<CommonT, Func, RightType>{};
-    if (m_datum.is_right()) {
-        OptionalCommon rv = f(m_datum.right());
-        return Fold{std::move(rv), std::move(m_datum)};
-    }
-
-    return Fold{std::move(m_value), std::move(m_datum)};
+    using NewRight = ReturnTypeOf<Func>;
+    static_assert(!std::is_same_v<void, NewRight>,
+                  "Return type of given function may not be void");
+    VerifyArgumentsForSide<Func, RightType>{};
+    if (is_right())
+        return OptionalEither<LeftType, NewRight>{TypeTag<LeftType>{}, f(right())};
+    return with_new_right_type<NewRight>();
 }
 
-template <typename LeftT, typename RightT, typename CommonT>
+template <typename LeftT, typename RightT>
 template <typename Func>
-constexpr Fold<LeftT, RightT, CommonT>
-    Fold<LeftT, RightT, CommonT>::map_left(Func && f)
+[[nodiscard]] constexpr
+    OptionalEither<typename OptionalEither<LeftT, RightT>::
+                       template ReturnTypeOf<Func>,
+                   RightT>
+    OptionalEither<LeftT, RightT>::map_left(Func && f)
 {
-    VerifyFoldFunctionForSide<CommonT, Func, LeftType>{};
-    if (m_datum.is_left()) {
-        OptionalCommon rv = f(m_datum.left());
-        return Fold{std::move(rv), std::move(m_datum)};
-    }
-    return Fold{std::move(m_value), std::move(m_datum)};
+    using NewLeft = ReturnTypeOf<Func>;
+    static_assert(!std::is_same_v<void, NewLeft>,
+                  "Return type of given function may not be void");
+    VerifyArgumentsForSide<Func, LeftType>{};
+    if (is_left())
+        return OptionalEither<NewLeft, RightType>{f(left()), TypeTag<RightType>{}};
+    return with_new_left_type<NewLeft>();
 }
 
-// ----------------------------------------------------------------------------
+template <typename LeftT, typename RightT>
+template <typename CommonT>
+[[nodiscard]] constexpr
+    either::Fold<LeftT, RightT, CommonT>
+    OptionalEither<LeftT, RightT>::fold
+    (CommonT && default_value)
+{
+    return detail::FoldAttn::make_fold<LeftT, RightT, CommonT>
+        (std::move(default_value), std::move(m_datum));
+}
 
+template <typename LeftT, typename RightT>
+template <typename Func>
+[[nodiscard]] constexpr
+    typename OptionalEither<LeftT, RightT>::
+        template EnableIfReturnsOptionalEither<Func>
+    OptionalEither<LeftT, RightT>::chain(Func && f)
+{
+    RightChainFunctionReturnRequirements<Func>{};
+    VerifyArgumentsForSide<Func, RightType>{};
+    if (is_right())
+        { return f(right()); }
+    return with_new_right_type<EitherTypeRight<ReturnTypeOf<Func>>>();
+}
 
+template <typename LeftT, typename RightT>
+template <typename Func>
+[[nodiscard]] constexpr
+    typename OptionalEither<LeftT, RightT>::
+        template EnableIfReturnsOptionalEither<Func>
+    OptionalEither<LeftT, RightT>::chain_left(Func && f)
+{
+    LeftChainFunctionReturnRequirements<Func>{};
+    VerifyArgumentsForSide<Func, LeftType>{};
+    if (is_left())
+        { return f(left()); }
+    return with_new_left_type<EitherTypeLeft<ReturnTypeOf<Func>>>();
+}
+
+template <typename LeftT, typename RightT>
+constexpr LeftT OptionalEither<LeftT, RightT>::left()
+    { return m_datum.left(); }
+
+template <typename LeftT, typename RightT>
+constexpr RightT OptionalEither<LeftT, RightT>::right()
+    { return m_datum.right(); }
+
+template <typename LeftT, typename RightT>
+constexpr bool OptionalEither<LeftT, RightT>::is_left() const
+    { return m_datum.is_left(); }
+
+template <typename LeftT, typename RightT>
+constexpr bool OptionalEither<LeftT, RightT>::is_right() const
+    { return m_datum.is_right(); }
+
+template <typename LeftT, typename RightT>
+constexpr bool OptionalEither<LeftT, RightT>::is_empty() const
+    { return m_datum.is_empty(); }
+
+template <typename LeftT, typename RightT>
+constexpr /* private */ OptionalEither<LeftT, RightT>::OptionalEither
+    (BareEither_ && either_datum_):
+    m_datum(std::move(either_datum_)) {}
+
+template <typename LeftType, typename RightType>
+template <typename NewRightType>
+constexpr /* private */ OptionalEither<LeftType, NewRightType>
+    OptionalEither<LeftType, RightType>::with_new_right_type()
+{
+    return OptionalEither<LeftType, NewRightType>
+        {m_datum.template with_new_right_type<NewRightType>()};
+}
+
+template <typename LeftType, typename RightType>
+template <typename NewLeftType>
+constexpr /* private */ OptionalEither<NewLeftType, RightType>
+    OptionalEither<LeftType, RightType>::with_new_left_type()
+{
+    return OptionalEither<NewLeftType, RightType>
+        {m_datum.template with_new_left_type<NewLeftType>()};
+}
 
 } // end of cul namespace

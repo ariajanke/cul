@@ -122,7 +122,7 @@ template <typename LeftType>
 class EitherLeftMaker final {
 public:
     explicit constexpr EitherLeftMaker(LeftType && left_obj):
-        m_obj(left_obj) {}
+        m_obj(std::move(left_obj)) {}
 
     template <typename RightType>
     constexpr Either<LeftType, RightType> with()
@@ -247,7 +247,7 @@ template <typename LeftT, typename RightT>
     (const char * caller, OptionalEither<LeftT, RightT> && opt_either)
 {
     using namespace exceptions_abbr;
-    if (!opt_either.is_empty()) return opt_either;
+    if (!opt_either.is_empty()) return std::move(opt_either);
     throw RtError{"Either::" + std::string{caller} +
                   ": given optional either must not be empty."};
 }

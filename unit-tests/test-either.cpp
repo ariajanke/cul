@@ -27,6 +27,8 @@
 #include <ariajanke/cul/TreeTestSuite.hpp>
 #include <ariajanke/cul/Either.hpp>
 
+#include <memory>
+
 namespace {
 
 using namespace cul;
@@ -210,52 +212,93 @@ describe("Either#chain") ([] {
         return test_that(a == 10);
     });
 });
-#if 0 // already done?
-describe("Either#fold") ([] {
-    mark_it()
-});
-#endif
+
 describe("either::optional_left") ([] {
-
-
+    using namespace either;
+    mark_it("can create an empty either", [] {
+        return test_that(optional_left<SomeError>().with<SomeThing>().is_empty());
+    }).
+    mark_it("creates a left either", [] {
+        return test_that(optional_left(SomeThing{}).with<int>().is_left());
+    }).
+    mark_it("makes a gettable left", [] {
+        optional_left<int>(1).with<SomeThing>().left();
+        return test_that(true);
+    }).
+    mark_it("preserves initial value of the left", [] {
+        auto rv = optional_left<int>(10).with<SomeThing>().left();
+        return test_that(rv == 10);
+    });
+    static_assert(either::optional_left<char>().with<int>().is_empty());
+    static_assert(either::optional_left<char>('a').with<int>().left() == 'a');
+    static_assert
+        (either::optional_left<char>('a').with<int>().
+         map_left([](char c) constexpr { return char(c + 2); }).left() == 'c');
+    static_assert
+        (either::optional_left<int>(8).with<char>().
+         map_left([](int i) constexpr { return i*2; }).
+         map([] (char) constexpr { return 'a'; }).
+         left() == 16);
+    static_assert
+        (either::optional_left<int>(8).with<char>().
+         map_left([](int i) constexpr { return i*2; }).
+         fold<int>(0).
+            map_left([](int i) constexpr { return i + 4; })() ==
+         20);
+    static_assert
+        (either::optional_left<int>(8).with<char>().
+         map_left([](int i) constexpr { return i*2; }).
+         map([] (char) constexpr { return 'a'; }).
+         fold<int>(0).
+            map_left([](int i) constexpr { return i + 4; }).
+            map([] (char) { return 3; })() == 20);
+    static_assert
+        (either::optional_left<int>().with<char>().
+         fold<int>(int(10)).
+            map([] (char) constexpr { return int(0); }).
+            map_left([] (int) constexpr { return int(1); })()
+             == 10);
 });
 
 describe("either::optional_right") ([] {
     using namespace either;
+    mark_it("can create an empty either", [] {
+        return test_that(optional_right<SomeError>().with<SomeThing>().is_empty());
+    }).
     mark_it("creates a right either", [] {
-        return test_that(right<int>().with(SomeThing{}).is_right());
+        return test_that(optional_right<int>().with(SomeThing{}).is_right());
     }).
     mark_it("makes a gettable right", [] {
-        right<int>()(SomeThing{}).right();
+        optional_right<int>()(SomeThing{}).right();
         return test_that(true);
     }).
     mark_it("preserves initial value of the right", [] {
-        auto rv = right<SomeError>().with(int(10)).right();
+        auto rv = optional_right<SomeError>().with(int(10)).right();
         return test_that(rv == 10);
     });
-    static_assert(either::right<char>().with(int(8)).right() == 8);
+    static_assert(either::optional_right<char>().with<int>().is_empty());
+    static_assert(either::optional_right<char>().with(int(8)).right() == 8);
     static_assert
-        (either::right<char>().with(int(8)).
+        (either::optional_right<char>().with(int(8)).
          map([](int i) constexpr { return i*2; }).right() == 16);
     static_assert
-        (either::right<char>().with(int(8)).
+        (either::optional_right<char>().with(int(8)).
          map([](int i) constexpr { return i*2; }).
          map_left([] (char) constexpr { return 'a'; }).
          right() == 16);
     static_assert
-        (either::right<char>().with(int(8)).
+        (either::optional_right<char>().with(int(8)).
          map([](int i) constexpr { return i*2; }).
-         fold<int>().
+         fold<int>(0).
             map([](int i) constexpr { return i + 4; })() ==
          20);
     static_assert
-        (either::right<char>().with(int(8)).
+        (either::optional_right<char>().with(int(8)).
          map([](int i) constexpr { return i*2; }).
          map_left([] (char) constexpr { return 'a'; }).
-         fold<int>().
+         fold<int>(0).
             map([](int i) constexpr { return i + 4; }).
             map_left([] (char) { return 3; })() == 20);
-    // optional specifics
     static_assert
         (either::optional_right<int>().with<char>().
          fold<int>(int(10)).
@@ -263,14 +306,110 @@ describe("either::optional_right") ([] {
             map_left([] (int) constexpr { return int(1); })()
              == 10);
 });
-#if 0 // tested too
-describe("OptionalEither{}") ([] {});
-#endif
-describe("OptionalEither::chain") ([] {});
 
-describe("OptionalEither::chain_left") ([] {});
+describe("OptionalEither::chain") ([] {
+    using namespace either;
+    mark_it("chains a right returning a right either", [] {
+        auto a = optional_right<SomeError>().with(SomeThing{}).
+            chain([] (SomeThing) { return optional_right<SomeError>()(int(10)); }).
+            right();
+        return test_that(a == 10);
+    }).
+    mark_it("chains a right returning a left either", [] {
+        auto a = optional_right<int>().with(SomeThing{}).
+            chain([] (SomeThing) { return optional_left(int(10)).with<SomeThing>(); }).
+            left();
+        return test_that(a == 10);
+    }).
+    mark_it("does not chains on an empty", [] {
+        int i = 0;
+        (void)optional_right<int>().with<SomeThing>().
+            chain([&i] (SomeThing &&) { ++i; return optional_left<int>().with<char>(); });
+        return test_that(i == 0);
+    });
+});
 
-describe("the 'consumed' either") ([] {});
+describe("OptionalEither::chain_left") ([] {
+    using namespace either;
+    mark_it("chains a left returning a right either", [] {
+        auto a = optional_left(SomeError{}).with<int>().
+            chain_left([] (SomeError) { return optional_right<int>()(int(10)); }).
+            right();
+        return test_that(a == 10);
+    }).
+    mark_it("chains a left returning a left either", [] {
+        auto a = optional_left(SomeThing{}).with<int>().
+            chain_left([] (SomeThing) { return optional_left(int(10)).with<int>(); }).
+            left();
+        return test_that(a == 10);
+    }).
+    mark_it("does not chains on an empty", [] {
+        int i = 0;
+        (void)optional_right<int>().with<SomeThing>().
+            chain_left([&i] (int) { ++i; return optional_left<int>().with<SomeThing>(); });
+        return test_that(i == 0);
+    });
+});
+
+describe("the 'consumed' either") ([] {
+    mark_it("is consumed on call to left", [] {
+        auto ei = either::left(SomeError{}).with<SomeThing>();
+        (void)ei.left();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.left();
+        });
+    }).
+    mark_it("is consumed on call to right", [] {
+        auto ei = either::right<SomeError>().with(SomeThing{});
+        (void)ei.right();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.right();
+        });
+    }).
+    mark_it("is consumed on call to fold", [] {
+        auto ei = either::right<SomeError>().with(SomeThing{});
+        (void)ei.fold<int>();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.fold<int>();
+        });
+    });
+});
+
+describe("unique_ptr compatible") ([] {
+    using IntUPtr = std::unique_ptr<int>;
+    mark_it("can do right things with a unique pointer", [] {
+        int gv = either::right<SomeError>().
+            with(std::make_unique<int>(10)).
+            map([] (IntUPtr && uptr) {
+                *uptr *= 2;
+                return std::move(uptr);
+            }).
+            chain([] (IntUPtr && uptr)
+            {
+                if (uptr) return either::right<SomeError>().with(std::move(uptr));
+                return either::left<SomeError>(SomeError{}).with<IntUPtr>();
+            }).fold<int>().
+                map([] (IntUPtr && uptr) { return *uptr; }).
+                map_left([] (SomeError) { return 0; })();
+        return test_that(gv == 20);
+    }).
+    mark_it("can do left things with a unique pointer", [] {
+        int gv = either::left<IntUPtr>(std::make_unique<int>(10)).
+            with<SomeThing>().
+            map_left([] (IntUPtr && uptr) {
+                *uptr *= 2;
+                return std::move(uptr);
+            }).
+            chain_left([] (IntUPtr && uptr)
+            {
+                if (uptr) return either::left<IntUPtr>(std::move(uptr)).with<SomeThing>();
+                return either::right<IntUPtr>().with(SomeThing{});
+            }).fold<int>().
+                map([] (SomeThing) { return 0; }).
+                map_left([] (IntUPtr && uptr) { return *uptr; })();
+        return test_that(gv == 20);
+    });
+});
 
 //describe("")([] {
 

@@ -42,26 +42,28 @@ class SomeThing final {};
 auto x = [] {
 
 describe("cul::make_right") ([] {
+    using namespace either;
     mark_it("creates a right either", [] {
-        return test_that(make_right<int>(SomeThing{}).is_right());
+        return test_that(right<int>().with(SomeThing{}).is_right());
     }).
     mark_it("makes a gettable right", [] {
-        make_right<SomeError>(SomeThing{}).right();
+        right<int>()(SomeThing{}).right();
         return test_that(true);
     }).
     mark_it("preserves initial value of the right", [] {
-        auto rv = make_right<SomeError>(int(10)).right();
+        auto rv = right<SomeError>().with(int(10)).right();
         return test_that(rv == 10);
     });
 });
-
+#if 1
 describe("cul::make_left") ([] {
     mark_it("creates a left either", [] {
-        return test_that(make_left<SomeThing>(SomeError{}).is_left());
+        return test_that(either::left(SomeError{}).with<SomeThing>().is_left());
     });
 });
 
 describe("Either#map*") ([] {
+    using namespace either;
     {
     auto a = Either<SomeError, SomeThing>{SomeThing{}}.
          map([] (SomeThing &&) { return int(1); });
@@ -78,25 +80,26 @@ describe("Either#map*") ([] {
          "Either<Other, Right>");
     }
     mark_it("changes right's to return value of the map function", [] {
-        int gv = make_right<SomeError>(SomeThing{}).
+        int gv = right<SomeError>().with(SomeThing{}).
             map([] (SomeThing) { return int(2); }).
             right();
         return test_that(gv == 2);
     }).
     mark_it("does not affect left's value when a right", [] {
-        auto gv = make_left<SomeThing>(int(10)).
+        auto gv = left(int(10)).with<SomeThing>().
             map([] (SomeThing) { return int(2); }).
             left();
         return test_that(gv == 10);
     }).
     mark_it("changes left's to return value of the map function", [] {
-        int gv = make_left<SomeThing>(SomeError{}).
+        left(SomeError{}).with<SomeThing>();
+        int gv = left(SomeError{}).with<SomeThing>().
             map_left([] (SomeError) { return int(2); }).
             left();
         return test_that(gv == 2);
     }).
     mark_it("does not affect right's value when a left", [] {
-        auto gv = make_right<SomeThing>(int(10)).
+        auto gv = right<SomeThing>().with(int(10)).
             map_left([] (SomeThing) { return int(2); }).
             right();
         return test_that(gv == 10);
@@ -104,39 +107,40 @@ describe("Either#map*") ([] {
 });
 
 describe("Either#chain") ([] {
+    using namespace either;
     mark_it("chains a right returning a right either", [] {
-        auto a = make_right<SomeError>(SomeThing{}).
-            chain([] (SomeThing) { return make_right<SomeError>(int(10)); }).
+        auto a = right<SomeError>().with(SomeThing{}).
+            chain([] (SomeThing) { return right<SomeError>()(int(10)); }).
             right();
         return test_that(a == 10);
     }).
     mark_it("chains a right returning a left either", [] {
-        auto a = make_right<int>(SomeThing{}).
-            chain([] (SomeThing) { return make_left<SomeError>(int(10)); }).
+        auto a = right<int>().with(SomeThing{}).
+            chain([] (SomeThing) { return left(int(10)).with<SomeThing>(); }).
             left();
         return test_that(a == 10);
     }).
     mark_it("chains a left returning a right either", [] {
-        auto a = make_left<SomeThing>(SomeError{}).
-            chain_left([] (SomeError) { return make_right<SomeThing>(int(10)); }).
+        auto a = left(SomeError{}).with<int>().
+            chain_left([] (SomeError) { return right<SomeThing>()(int(10)); }).
             right();
         return test_that(a == 10);
     }).
     mark_it("chains a left returning a left either", [] {
-        auto a = make_left<SomeThing>(SomeError{}).
-            chain_left([] (SomeError) { return make_left<SomeError>(int(10)); }).
+        auto a = left(SomeError{}).with<SomeThing>().
+            chain_left([] (SomeError) { return left(int(10)).with<SomeThing>(); }).
             left();
         return test_that(a == 10);
     });
 });
 
-describe("")([] {
+//describe("")([] {
 
 
     static_assert
         (std::is_same_v<decltype(Either<SomeError, SomeThing>{SomeThing{}}.
          fold<int>()),
-         Either<SomeError, SomeThing>::Fold<int>>,
+         Fold<SomeError, SomeThing, int>>,
          "Either#fold returns a Either::Fold type");
     static_assert
         (std::is_same_v<decltype(Either<SomeError, SomeThing>{SomeThing{}}.
@@ -148,7 +152,7 @@ describe("")([] {
          fold<int>().map([] (SomeThing &&) { return int(0); });
     static_assert
         (std::is_same_v<decltype(a),
-         Either<SomeError, SomeThing>::Fold<int>>,
+         Fold<SomeError, SomeThing, int>>,
          "Either#fold#map returns appropriate Fold type");
     }
     {
@@ -156,17 +160,19 @@ describe("")([] {
          fold<int>().map_left([] (SomeError &&) { return int(0); });
     static_assert
         (std::is_same_v<decltype(a),
-         Either<SomeError, SomeThing>::Fold<int>>,
+         Fold<SomeError, SomeThing, int>>,
          "Either#fold#map_left returns appropriate Fold type");
     }
     int i = 0;
-    auto rv = make_right<SomeError>(SomeThing{}).
+    auto rv = either::right<SomeError>()(SomeThing{}).
         map([&i] (SomeThing &&) { ++i; return 0; }).
         fold<int>().
-        map([&i] (int i_) { return ++i; i_; }).
+        map([&i] (int i_) { ++i; return i_; }).
         map_left([] (SomeError &&) { return 10; })();
-});
-
+//});
+#endif
 return [] {};
 
 } ();
+
+int main() { return cul::tree_ts::run_tests(); }

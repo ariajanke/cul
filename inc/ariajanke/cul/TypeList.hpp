@@ -30,7 +30,7 @@
 
 namespace cul {
 
-template <typename T> struct TypeTag {};
+template <typename T> struct TypeTag final {};
 
 /** @brief Utility class used to define a sequential, non-unique list of types.
  *

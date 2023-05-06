@@ -41,7 +41,7 @@ class SomeThing final {};
 
 auto x = [] {
 
-describe("cul::make_right") ([] {
+describe("cul::either::right") ([] {
     using namespace either;
     mark_it("creates a right either", [] {
         return test_that(right<int>().with(SomeThing{}).is_right());
@@ -54,16 +54,93 @@ describe("cul::make_right") ([] {
         auto rv = right<SomeError>().with(int(10)).right();
         return test_that(rv == 10);
     });
-});
-#if 1
-describe("cul::make_left") ([] {
-    mark_it("creates a left either", [] {
-        return test_that(either::left(SomeError{}).with<SomeThing>().is_left());
-    });
+    static_assert(either::right<char>().with(int(8)).right() == 8);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).right() == 16);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).
+         map_left([] (char) constexpr { return 'a'; }).
+         right() == 16);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).
+         fold<int>().
+            map([](int i) constexpr { return i + 4; })() ==
+         20);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).
+         map_left([] (char) constexpr { return 'a'; }).
+         fold<int>().
+            map([](int i) constexpr { return i + 4; }).
+            map_left([] (char) { return 3; })() == 20);
 });
 
-describe("Either#map*") ([] {
+describe("cul::either::left") ([] {
+    mark_it("creates a left either", [] {
+        return test_that(either::left(SomeError{}).with<SomeThing>().is_left());
+    }).
+    mark_it("makes a gettable left", [] {
+        either::left(SomeError{}).with<SomeThing>().left();
+        return test_that(true);
+    }).
+    mark_it("preserves initial value of the left", [] {
+        int rv = either::left(int(10)).with<SomeThing>().left();
+        return test_that(rv == 10);
+    });
+    static_assert(either::left<char>('a').with<int>().left() == 'a');
+    static_assert
+        (either::left<char>('a').with<int>().
+         map_left([](char c) constexpr { return char(c + 2); }).
+         left() == 'c');
+    static_assert
+        (either::left<char>('a').with<int>().
+         map([](int) constexpr { return 2; }).
+         map_left([] (char c) constexpr { return char(c + 4); }).
+         left() == 'e');
+    static_assert
+        (either::left<char>('a').with<int>().
+         map_left([](char c) constexpr { return char(c + 4); }).
+         fold<char>().
+            map_left([](char c) constexpr { return char(c - 2); })() ==
+         'c');
+    static_assert
+        (either::left<char>('a').with<int>().
+         map([](int i) constexpr { return i*2; }).
+         map_left([] (char) constexpr { return 'a'; }).
+         fold<int>().
+            map([](int i) constexpr { return i + 4; }).
+            map_left([] (char) { return 3; })() == 3);
+
+});
+
+describe("Either{}") ([] {
+    mark_it("disambiguates when both types are the same", [] {
+        return test_that(
+            Either<int, int>{TypeTag<int>{}, int(0)}.is_right() &&
+            Either<char, char>{'h', TypeTag<char>{}}.is_left());
+    }).
+    mark_it("allows construction with one argument when types are distinct", [] {
+        return test_that(
+            Either<int, char>{int(0)}.is_left() &&
+            Either<int, char>{'i'}.is_right());
+    }).
+    mark_it("throws if constructing from an empty optional either", [] {
+        try {
+            Either<int, char>{OptionalEither<int, char>{}};
+        } catch (...) {
+            return test_that(true);
+        }
+        return test_that(false);
+    });
+    // copy and move?
+});
+
+describe("(Optional)Either#map*") ([] {
     using namespace either;
+
     {
     auto a = Either<SomeError, SomeThing>{SomeThing{}}.
          map([] (SomeThing &&) { return int(1); });
@@ -133,6 +210,67 @@ describe("Either#chain") ([] {
         return test_that(a == 10);
     });
 });
+#if 0 // already done?
+describe("Either#fold") ([] {
+    mark_it()
+});
+#endif
+describe("either::optional_left") ([] {
+
+
+});
+
+describe("either::optional_right") ([] {
+    using namespace either;
+    mark_it("creates a right either", [] {
+        return test_that(right<int>().with(SomeThing{}).is_right());
+    }).
+    mark_it("makes a gettable right", [] {
+        right<int>()(SomeThing{}).right();
+        return test_that(true);
+    }).
+    mark_it("preserves initial value of the right", [] {
+        auto rv = right<SomeError>().with(int(10)).right();
+        return test_that(rv == 10);
+    });
+    static_assert(either::right<char>().with(int(8)).right() == 8);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).right() == 16);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).
+         map_left([] (char) constexpr { return 'a'; }).
+         right() == 16);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).
+         fold<int>().
+            map([](int i) constexpr { return i + 4; })() ==
+         20);
+    static_assert
+        (either::right<char>().with(int(8)).
+         map([](int i) constexpr { return i*2; }).
+         map_left([] (char) constexpr { return 'a'; }).
+         fold<int>().
+            map([](int i) constexpr { return i + 4; }).
+            map_left([] (char) { return 3; })() == 20);
+    // optional specifics
+    static_assert
+        (either::optional_right<int>().with<char>().
+         fold<int>(int(10)).
+            map([] (char) constexpr { return int(0); }).
+            map_left([] (int) constexpr { return int(1); })()
+             == 10);
+});
+#if 0 // tested too
+describe("OptionalEither{}") ([] {});
+#endif
+describe("OptionalEither::chain") ([] {});
+
+describe("OptionalEither::chain_left") ([] {});
+
+describe("the 'consumed' either") ([] {});
 
 //describe("")([] {
 
@@ -149,7 +287,7 @@ describe("Either#chain") ([] {
          "Either#fold#operator () returns the common type");
     {
     auto a = Either<SomeError, SomeThing>{SomeThing{}}.
-         fold<int>().map([] (SomeThing &&) { return int(0); });
+         fold<int>().map([] (SomeThing &&) constexpr { return int(0); });
     static_assert
         (std::is_same_v<decltype(a),
          Fold<SomeError, SomeThing, int>>,
@@ -163,14 +301,8 @@ describe("Either#chain") ([] {
          Fold<SomeError, SomeThing, int>>,
          "Either#fold#map_left returns appropriate Fold type");
     }
-    int i = 0;
-    auto rv = either::right<SomeError>()(SomeThing{}).
-        map([&i] (SomeThing &&) { ++i; return 0; }).
-        fold<int>().
-        map([&i] (int i_) { ++i; return i_; }).
-        map_left([] (SomeError &&) { return 10; })();
 //});
-#endif
+
 return [] {};
 
 } ();

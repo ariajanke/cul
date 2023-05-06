@@ -40,10 +40,8 @@ class OptionalEither;
 
 class FoldBase;
 
-
 template <typename LeftT, typename RightT>
 class Either;
-
 
 class OptionalEitherBase {
 protected:
@@ -93,11 +91,6 @@ private:
     };
 
 protected:
-#   if 0
-    class LeftTag final {};
-    class RightTag final {};
-#   endif
-
     template <typename ... Types>
     static constexpr const bool kt_is_either = IsEither<Types...>::k_value;
 
@@ -167,7 +160,7 @@ protected:
 
         constexpr BareEither(BareEither && rhs):
             m_datum(std::move(rhs.m_datum))
-        { rhs.m_datum = Consumed{}; }
+        { rhs.m_datum = DatumVariant{Consumed{}}; }
 
         template <typename EitherLeftOrRight>
         constexpr explicit BareEither(EitherLeftOrRight && obj,
@@ -190,7 +183,7 @@ protected:
         constexpr BareEither & operator = (BareEither && rhs) {
             if (this != &rhs) {
                 m_datum = std::move(rhs);
-                rhs.m_datum = Consumed{};
+                rhs.m_datum = DatumVariant{Consumed{}};
             }
             return *this;
         }
@@ -236,7 +229,7 @@ protected:
         template <int kt_index>
         constexpr auto move_out_value() {
             auto rv = std::move(std::get<kt_index>(m_datum));
-            m_datum = Consumed{};
+            m_datum = DatumVariant{Consumed{}};
             return rv;
         }
 
@@ -286,21 +279,14 @@ class Either;
 template <typename LeftT, typename RightT, typename CommonT>
 class Fold;
 
-class FoldAttn final {
-private:
-    template <typename LeftT, typename RightT>
-    friend class Either;
 
-    template <typename LeftT, typename RightT, typename CommonT>
-    static Fold<LeftT, RightT, CommonT> make_fold(OptionalEither<LeftT, RightT> &&);
-};
 
 class FoldBase {
 protected:
     template <typename LeftT, typename RightT>
     using BareEither = OptionalEitherBase::BareEither<LeftT, RightT>;
 
-    FoldBase() {}
+    constexpr FoldBase() {}
 
     template <typename CommonT, typename Func, typename SideType>
     struct VerifyFoldFunctionForSide final {
@@ -314,6 +300,23 @@ protected:
             (ArgumentTypes::template kt_occurance_count<SideType> == 1,
              "Given function must accept some form of the side's type");
     };
+};
+
+class FoldAttn final : public FoldBase {
+private:
+    template <typename LeftT, typename RightT>
+    friend class Either;
+
+    template <typename LeftT, typename RightT>
+    friend class OptionalEither;
+
+    template <typename LeftT, typename RightT, typename CommonT>
+    static constexpr Fold<LeftT, RightT, CommonT>
+        make_fold(OptionalEither<LeftT, RightT> &&);
+
+    template <typename LeftT, typename RightT, typename CommonT>
+    static constexpr Fold<LeftT, RightT, CommonT>
+        make_fold(CommonT &&, BareEither<LeftT, RightT> &&);
 };
 
 template <typename LeftT, typename RightT, typename CommonT>
@@ -346,11 +349,20 @@ private:
 };
 
 template <typename LeftT, typename RightT, typename CommonT>
-/* private static */ Fold<LeftT, RightT, CommonT> FoldAttn::make_fold
+/* private static */ constexpr Fold<LeftT, RightT, CommonT>
+    FoldAttn::make_fold
     (OptionalEither<LeftT, RightT> && opt_either)
 {
     return Fold<LeftT, RightT, CommonT>
         {std::optional<CommonT>{}, std::move(opt_either.m_datum)};
+}
+
+template <typename LeftT, typename RightT, typename CommonT>
+/* private static */ constexpr Fold<LeftT, RightT, CommonT>
+    FoldAttn::make_fold(CommonT && obj, BareEither<LeftT, RightT> && opt_either)
+{
+    return Fold<LeftT, RightT, CommonT>
+        {std::optional<CommonT>{std::move(obj)}, std::move(opt_either)};
 }
 
 class OptionalEitherToEitherAttn final {
@@ -367,6 +379,8 @@ class OptionalEitherToEitherAttn final {
         new_left_type_with(OptionalEither<LeftType, RightType> && opt_either)
     { return opt_either.template with_new_left_type<NewLeftType>(); }
 };
+
+// ----------------------------------------------------------------------------
 
 /// An optional either, is an either with a "third not present" state.
 ///
@@ -393,10 +407,16 @@ public:
         m_datum(std::move(obj)) {}
 
     constexpr OptionalEither(TypeTag<LeftType>, RightType && obj):
-        m_datum(std::in_place_index_t<k_right_idx>{}, std::move(obj)) {}
+        m_datum(InPlaceRight{}, std::move(obj)) {}
 
     constexpr OptionalEither(LeftType && obj, TypeTag<RightType>):
-        m_datum(std::in_place_index_t<k_left_idx>{}, std::move(obj)) {}
+        m_datum(InPlaceLeft{}, std::move(obj)) {}
+
+    constexpr OptionalEither(OptionalEither && rhs):
+        m_datum(std::move(rhs.m_datum)) {}
+
+    constexpr OptionalEither(const OptionalEither & rhs):
+        m_datum(rhs.m_datum) {}
 
     template <typename Func>
     [[nodiscard]] constexpr OptionalEither<LeftType, ReturnTypeOf<Func>> map(Func && f) {
@@ -421,8 +441,12 @@ public:
     }
 
     template <typename CommonT>
-    [[nodiscard]] constexpr Fold<LeftT, RightT, CommonT> fold(CommonT && default_value)
-        { return FoldAttn::make_fold<LeftT, RightT, CommonT>(std::move(default_value), std::move(m_datum)); }
+    [[nodiscard]] constexpr Fold<LeftT, RightT, CommonT> fold
+        (CommonT && default_value)
+    {
+        return FoldAttn::make_fold<LeftT, RightT, CommonT>
+            (std::move(default_value), std::move(m_datum));
+    }
 
     template <typename Func>
     [[nodiscard]] constexpr EnableIfReturnsOptionalEither<Func> chain(Func && f) {
@@ -482,19 +506,69 @@ private:
         m_datum(std::move(either_datum_)) {}
 
     template <typename NewRightType>
-    OptionalEither<LeftType, NewRightType> with_new_right_type() {
+    constexpr OptionalEither<LeftType, NewRightType> with_new_right_type() {
         return OptionalEither<LeftType, NewRightType>
             {m_datum.template with_new_right_type<NewRightType>()};
     }
 
     template <typename NewLeftType>
-    OptionalEither<NewLeftType, RightType> with_new_left_type() {
+    constexpr OptionalEither<NewLeftType, RightType> with_new_left_type() {
         return OptionalEither<NewLeftType, RightType>
             {m_datum.template with_new_left_type<NewLeftType>()};
     }
 
     BareEither_ m_datum;
 };
+
+namespace either {
+
+template <typename LeftType>
+class OptionalEitherRightMaker final {
+public:
+    template <typename RightType>
+    constexpr OptionalEither<LeftType, RightType> with(RightType && right) const
+        { return OptionalEither<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
+
+    template <typename RightType>
+    constexpr OptionalEither<LeftType, RightType> with() const
+        { return OptionalEither<LeftType, RightType>{}; }
+
+    template <typename RightType>
+    constexpr OptionalEither<LeftType, RightType> operator() (RightType && right) const
+        { return with<RightType>(std::move(right)); }
+};
+
+template <typename LeftType>
+class OptionalEitherLeftMaker final {
+public:
+    explicit constexpr OptionalEitherLeftMaker(LeftType && left_obj):
+        m_obj(left_obj) {}
+
+    constexpr OptionalEitherLeftMaker(): m_obj() {}
+
+    template <typename RightType>
+    constexpr OptionalEither<LeftType, RightType> with() {
+        if (!m_obj) { return OptionalEither<LeftType, RightType>{}; }
+        return OptionalEither<LeftType, RightType>{std::move(*m_obj), TypeTag<RightType>{}}; }
+
+private:
+    std::optional<LeftType> m_obj;
+};
+
+template <typename LeftType>
+constexpr OptionalEitherRightMaker<LeftType> optional_right()
+    { return OptionalEitherRightMaker<LeftType>{}; }
+
+template <typename LeftType>
+constexpr OptionalEitherLeftMaker<LeftType> optional_left(LeftType && obj)
+    { return OptionalEitherLeftMaker<LeftType>{std::move(obj)}; }
+
+template <typename LeftType>
+constexpr OptionalEitherLeftMaker<LeftType> optional_left()
+    { return OptionalEitherLeftMaker<LeftType>{}; }
+
+} // end of either namespace -> into ::cul
+
 
 // ----------------------------------------------------------------------------
 
@@ -529,32 +603,4 @@ constexpr Fold<LeftT, RightT, CommonT>
 
 
 
-#if 0
-// ----------------------------------------------------------------------------
-
-template <typename Func>
-Fold<CommonType> map(Func && f) {
-    using Rt = ReturnTypeOf<Func>;
-    static_assert(std::is_same_v<Rt, CommonT>,
-                  "given function must return common type");
-    OptionalCommon rv;
-    auto ei = m_ei.map([&rv, f = std::move(f)]
-         (RightType && right)
-    { return *(rv = OptionalCommon{f(std::move(right))}); });
-    return Fold{std::move(rv), std::move(ei)};
-}
-
-template <typename Func>
-Fold<CommonType> map_left(Func && f) {
-    using Rt = ReturnTypeOf<Func>;
-    static_assert(std::is_same_v<Rt, CommonT>,
-                  "given function must return common type");
-    OptionalCommon rv;
-    auto ei = m_ei.map_left([&rv, f = std::move(f)]
-        (LeftType && left)
-    { return *(rv = OptionalCommon{f(std::move(left))}); });
-    return Fold{std::move(rv), std::move(m_ei)};
-}
-
-#endif
 } // end of cul namespace

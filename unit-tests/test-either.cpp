@@ -351,7 +351,71 @@ describe("OptionalEither::chain_left") ([] {
     });
 });
 
-describe("the 'consumed' either") ([] {
+describe("Either#operator=/copying") ([] {
+    mark_it("move constructs", [] {
+        auto ei = either::right<std::unique_ptr<int>>().with<int>(10);
+        return test_that(Either{std::move(ei)}.is_right());
+    }).
+    mark_it("copy constructs", [] {
+        auto ei = either::right<char>().with<int>(19);
+        Either new_ei{ei};
+        return test_that(ei.right() == new_ei.right());
+    }).
+    mark_it("copy assigns", [] {
+        Either<char, int> new_ei{'a'};
+        auto ei = either::right<char>().with<int>(19);
+        new_ei = ei;
+        return test_that(ei.right() == new_ei.right());
+    }).
+    mark_it("move assigns", [] {
+        Either<char, int> new_ei{'a'};
+        auto ei = either::right<char>().with<int>(19);
+        new_ei = std::move(ei);
+        return test_that(new_ei.right() == 19);
+    }).
+    mark_it("move assigned becomes 'consumed'", [] {
+        Either<char, int> new_ei{'a'};
+        auto ei = either::right<char>().with<int>(19);
+        new_ei = std::move(ei);
+        return expect_exception<std::runtime_error>([&ei] {
+            ei.right();
+        });
+    });
+});
+
+describe("OptionalEither#operator=/copying") ([] {
+    mark_it("move constructs", [] {
+        auto ei = either::optional_right<std::unique_ptr<int>>().with<int>(10);
+        return test_that(OptionalEither{std::move(ei)}.is_right());
+    }).
+    mark_it("copy constructs", [] {
+        auto ei = either::optional_right<char>().with<int>(19);
+        OptionalEither new_ei{ei};
+        return test_that(ei.right() == new_ei.right());
+    }).
+    mark_it("copy assigns", [] {
+        OptionalEither<char, int> new_ei{'a'};
+        auto ei = either::optional_right<char>().with<int>(19);
+        new_ei = ei;
+        return test_that(ei.right() == new_ei.right());
+    }).
+    mark_it("move assigns", [] {
+        OptionalEither<char, int> new_ei{'a'};
+        auto ei = either::optional_right<char>().with<int>(19);
+        new_ei = std::move(ei);
+        return test_that(new_ei.right() == 19);
+    }).
+    mark_it("move assigned becomes 'consumed'", [] {
+        OptionalEither<char, int> new_ei{'a'};
+        auto ei = either::optional_right<char>().with<int>(19);
+        new_ei = std::move(ei);
+        return expect_exception<std::runtime_error>([&ei] {
+            ei.right();
+        });
+    });
+});
+
+describe("Either is 'consumed'") ([] {
     mark_it("is consumed on call to left", [] {
         auto ei = either::left(SomeError{}).with<SomeThing>();
         (void)ei.left();
@@ -370,7 +434,41 @@ describe("the 'consumed' either") ([] {
         auto ei = either::right<SomeError>().with(SomeThing{});
         (void)ei.fold<int>();
         return expect_exception<std::runtime_error>([&ei] {
-            (void)ei.fold<int>();
+            (void)ei.fold<int>().map([](SomeThing) { return 0; });
+        });
+    }).
+    mark_it("is consumed on call to map", [] {
+        auto ei = either::right<SomeError>().with(SomeThing{});
+        (void)ei.right();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.map([] (SomeThing) { return SomeThing{}; });
+        });
+    });
+    mark_it("is consumed on call to chain", [] {
+        auto ei = either::right<SomeError>().with(SomeThing{});
+        (void)ei.right();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.chain([] (SomeThing)
+            {
+                return either::right<SomeError>().with(SomeThing{});
+            });
+        });
+    });
+    mark_it("is consumed on call to map_left", [] {
+        auto ei = either::right<SomeError>().with(SomeThing{});
+        (void)ei.right();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.map_left([] (SomeError) { return SomeThing{}; });
+        });
+    });
+    mark_it("is consumed on call to chain_left", [] {
+        auto ei = either::right<SomeError>().with(SomeThing{});
+        (void)ei.right();
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.chain_left([] (SomeError)
+            {
+                return either::right<SomeError>().with(SomeThing{});
+            });
         });
     });
 });

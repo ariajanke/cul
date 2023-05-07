@@ -190,7 +190,7 @@ protected:
 
         constexpr BareEither & operator = (BareEither && rhs) {
             if (this != &rhs) {
-                m_datum = std::move(rhs);
+                m_datum = std::move(rhs.m_datum);
                 rhs.m_datum = DatumVariant{Consumed{}};
             }
             return *this;
@@ -236,7 +236,7 @@ protected:
 
         template <int kt_index>
         constexpr auto move_out_value() {
-            auto rv = std::move(std::get<kt_index>(m_datum));
+            auto rv = std::move(std::get<kt_index>(verify_not_consumed(std::move(m_datum))));
             m_datum = DatumVariant{Consumed{}};
             return rv;
         }

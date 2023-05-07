@@ -79,6 +79,10 @@ public:
 
     constexpr OptionalEither(const OptionalEither & rhs);
 
+    constexpr OptionalEither & operator = (OptionalEither && rhs);
+
+    constexpr OptionalEither & operator = (const OptionalEither & rhs);
+
     /// @note either is consumed after this call
     template <typename Func>
     [[nodiscard]] constexpr EnableIfReturnsOptionalEither<Func>
@@ -243,6 +247,26 @@ constexpr OptionalEither<LeftT, RightT>::OptionalEither(OptionalEither && rhs):
 template <typename LeftT, typename RightT>
 constexpr OptionalEither<LeftT, RightT>::OptionalEither(const OptionalEither & rhs):
     m_datum(rhs.m_datum) {}
+
+template <typename LeftT, typename RightT>
+constexpr OptionalEither<LeftT, RightT> &
+    OptionalEither<LeftT, RightT>::operator = (OptionalEither && rhs)
+{
+    if (this != &rhs) {
+        m_datum = std::move(rhs.m_datum);
+    }
+    return *this;
+}
+
+template <typename LeftT, typename RightT>
+constexpr OptionalEither<LeftT, RightT> &
+    OptionalEither<LeftT, RightT>::operator = (const OptionalEither & rhs)
+{
+    if (this != &rhs) {
+        m_datum = rhs.m_datum;
+    }
+    return *this;
+}
 
 template <typename LeftT, typename RightT>
 template <typename Func>

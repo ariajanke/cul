@@ -42,17 +42,27 @@ private:
     template <typename EitherLeftOrRight>
     using EnableIfLeftXorRightPtr =
         EnableIfLeftXorRightPtr_<LeftType, RightType, EitherLeftOrRight>;
+    using EnableIfCopyConstructible_ =
+        std::enable_if_t<std::is_copy_constructible_v<LeftT> &&
+                         std::is_copy_constructible_v<RightT>,
+                         const Either &>;
 
 public:
     constexpr explicit Either(OptionalEither<LeftT, RightT> && opt_either);
 
     template <typename EitherLeftOrRight>
-    constexpr explicit Either(EitherLeftOrRight && obj,
-                              EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr);
+    constexpr Either(EitherLeftOrRight && obj,
+                     EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr);
 
+    // more move related tests with unique pointers
+    // vector of eithers of unique pointers?
+    // how do vector of unique pointers normally work?
     constexpr Either(TypeTag<LeftType>, RightType && right);
 
     constexpr Either(LeftType && left, TypeTag<RightType>);
+
+    constexpr Either(EnableIfCopyConstructible_ rhs):
+        m_datum(rhs.m_datum) {}
 
     template <typename CommonT>
     constexpr either::Fold<LeftType, RightType, CommonT> fold();
@@ -111,7 +121,7 @@ class EitherRightMaker final {
 public:
     template <typename RightType>
     constexpr Either<LeftType, RightType> with(RightType && right) const
-        { return Either<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
+        { return std::move(Either<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}); }
 
     template <typename RightType>
     constexpr Either<LeftType, RightType> operator() (RightType && right) const
@@ -141,7 +151,17 @@ template <typename LeftType>
 constexpr EitherLeftMaker<LeftType> left(LeftType && obj) {
     return EitherLeftMaker<LeftType>{std::move(obj)};
 }
+#if 0 // might not be necessary?
+// feature request
+// include implicitly convertible wrappers
+template <typename LeftType>
+class AsLeft final {
+public:
+};
 
+template <typename LeftType>
+AsLeft<LeftType> as_left(LeftType && obj);
+#endif
 } // end of either namespace -> into ::cul
 
 // ----------------------------------------------------------------------------
@@ -205,8 +225,8 @@ template <typename Func>
     typename Either<LeftT, RightT>::template EnableIfReturnsEither<Func>
     Either<LeftT, RightT>::chain(Func && f)
 {
-    RightChainFunctionReturnRequirements<Func>{};
-    VerifyArgumentsForSide<Func, RightType>{};
+    (void)RightChainFunctionReturnRequirements<Func>{};
+    (void)VerifyArgumentsForSide<Func, RightType>{};
     if (is_right())
         { return f(right()); }
     return with_new_right_type<EitherTypeRight<ReturnTypeOf<Func>>>();
@@ -218,8 +238,8 @@ template <typename Func>
     typename Either<LeftT, RightT>::template EnableIfReturnsEither<Func>
     Either<LeftT, RightT>::chain_left(Func && f)
 {
-    LeftChainFunctionReturnRequirements<Func>{};
-    VerifyArgumentsForSide<Func, LeftType>{};
+    (void)LeftChainFunctionReturnRequirements<Func>{};
+    (void)VerifyArgumentsForSide<Func, LeftType>{};
     if (is_left())
         { return f(left()); }
     return with_new_left_type<EitherTypeLeft<ReturnTypeOf<Func>>>();

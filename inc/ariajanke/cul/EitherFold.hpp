@@ -32,6 +32,7 @@ namespace cul {
 
 namespace either {
 
+// feature request, allow folding to void
 template <typename LeftT, typename RightT, typename CommonT>
 class Fold final : public detail::FoldBase {
 public:
@@ -46,6 +47,9 @@ public:
     constexpr Fold map_left(Func && f);
 
     constexpr CommonType operator () () const
+        { return m_value.value(); }
+
+    constexpr CommonType value() const
         { return m_value.value(); }
 
 // -------------------------- END OF PUBLIC INTERFACE -------------------------

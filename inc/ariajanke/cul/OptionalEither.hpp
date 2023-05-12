@@ -48,6 +48,10 @@ class OptionalEither final : public detail::EitherBase {
     template <typename EitherLeftOrRight>
     using EnableIfLeftXorRightPtr =
         EnableIfLeftXorRightPtr_<LeftT, RightT, EitherLeftOrRight>;
+    using EnableIfCopyConstructible_ =
+        std::enable_if_t<std::is_copy_constructible_v<LeftT> &&
+                         std::is_copy_constructible_v<RightT>,
+                         const OptionalEither &>;
 public:
     using LeftType = LeftT;
     using RightType = RightT;
@@ -77,7 +81,7 @@ public:
 
     constexpr OptionalEither(OptionalEither && rhs);
 
-    constexpr OptionalEither(const OptionalEither & rhs);
+    constexpr OptionalEither(EnableIfCopyConstructible_);
 
     constexpr OptionalEither & operator = (OptionalEither && rhs);
 
@@ -125,6 +129,13 @@ public:
     [[nodiscard]] constexpr OptionalEither<LeftType, ReturnTypeOf<Func>>
         map(Func && f);
 
+    /// Transforms the left value if it exists according to the given function.
+    ///
+    /// @param f given function that transforms the left value, must take the
+    ///          following form: \n
+    ///         [*anything*] (LeftType *any qualifier*) { return *any*; }
+    /// @returns a new either containing the transformed value if the previous
+    ///          either contained a left
     /// @note either is consumed after this call
     template <typename Func>
     [[nodiscard]] constexpr OptionalEither<ReturnTypeOf<Func>, RightType>
@@ -245,7 +256,8 @@ constexpr OptionalEither<LeftT, RightT>::OptionalEither(OptionalEither && rhs):
     m_datum(std::move(rhs.m_datum)) {}
 
 template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither(const OptionalEither & rhs):
+constexpr OptionalEither<LeftT, RightT>::OptionalEither
+    (EnableIfCopyConstructible_ rhs):
     m_datum(rhs.m_datum) {}
 
 template <typename LeftT, typename RightT>
@@ -279,7 +291,7 @@ template <typename Func>
     using NewRight = ReturnTypeOf<Func>;
     static_assert(!std::is_same_v<void, NewRight>,
                   "Return type of given function may not be void");
-    VerifyArgumentsForSide<Func, RightType>{};
+    (void)VerifyArgumentsForSide<Func, RightType>{};
     if (is_right())
         return OptionalEither<LeftType, NewRight>{TypeTag<LeftType>{}, f(right())};
     return with_new_right_type<NewRight>();
@@ -296,7 +308,7 @@ template <typename Func>
     using NewLeft = ReturnTypeOf<Func>;
     static_assert(!std::is_same_v<void, NewLeft>,
                   "Return type of given function may not be void");
-    VerifyArgumentsForSide<Func, LeftType>{};
+    (void)VerifyArgumentsForSide<Func, LeftType>{};
     if (is_left())
         return OptionalEither<NewLeft, RightType>{f(left()), TypeTag<RightType>{}};
     return with_new_left_type<NewLeft>();
@@ -320,8 +332,8 @@ template <typename Func>
         template EnableIfReturnsOptionalEither<Func>
     OptionalEither<LeftT, RightT>::chain(Func && f)
 {
-    RightChainFunctionReturnRequirements<Func>{};
-    VerifyArgumentsForSide<Func, RightType>{};
+    (void)RightChainFunctionReturnRequirements<Func>{};
+    (void)VerifyArgumentsForSide<Func, RightType>{};
     if (is_right())
         { return f(right()); }
     return with_new_right_type<EitherTypeRight<ReturnTypeOf<Func>>>();
@@ -334,8 +346,8 @@ template <typename Func>
         template EnableIfReturnsOptionalEither<Func>
     OptionalEither<LeftT, RightT>::chain_left(Func && f)
 {
-    LeftChainFunctionReturnRequirements<Func>{};
-    VerifyArgumentsForSide<Func, LeftType>{};
+    (void)LeftChainFunctionReturnRequirements<Func>{};
+    (void)VerifyArgumentsForSide<Func, LeftType>{};
     if (is_left())
         { return f(left()); }
     return with_new_left_type<EitherTypeLeft<ReturnTypeOf<Func>>>();

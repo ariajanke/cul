@@ -144,6 +144,12 @@ protected:
              std::is_same_v<EitherLeftOrRight, RightType>),
         void *>;
 
+    template <typename LeftType, typename RightType>
+    using EnableIfCopyConstructible =
+        typename std::enable_if_t<
+            std::is_copy_constructible_v<LeftType> &&
+            std::is_copy_constructible_v<RightType>, void *>;
+
     class BareEitherBase {
     protected:
         struct Empty final {};
@@ -163,7 +169,8 @@ protected:
     public:
         constexpr BareEither(): m_datum(Empty{}) {}
 
-        constexpr BareEither(const BareEither & rhs):
+        constexpr BareEither(const BareEither & rhs,
+                             EnableIfCopyConstructible<LeftT, RightT> = nullptr):
             m_datum(rhs.m_datum) {}
 
         constexpr BareEither(BareEither && rhs):

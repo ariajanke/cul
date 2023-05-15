@@ -44,48 +44,24 @@ namespace cul {
 ///          expected to not use/refer to an either when they are finished
 ///          with it.
 template <typename LeftT, typename RightT>
-class OptionalEither final : public detail::EitherBase {
-    template <typename EitherLeftOrRight>
-    using EnableIfLeftXorRightPtr =
-        EnableIfLeftXorRightPtr_<LeftT, RightT, EitherLeftOrRight>;
-    using EnableIfCopyConstructible_ =
-        std::enable_if_t<std::is_copy_constructible_v<LeftT> &&
-                         std::is_copy_constructible_v<RightT>,
-                         const OptionalEither &>;
+class OptionalEither final :
+    public detail::EitherConstructors
+        <LeftT, RightT, detail::EitherDefaultConstructor::enable>,
+    public detail::EitherHelpersBase
+{
+    using Super = detail::EitherConstructors
+        <LeftT, RightT, detail::EitherDefaultConstructor::enable>;
 public:
+    /// Exposes the following:
+    /// - default constructor
+    /// - copy constructor
+    /// - move constructor
+    /// - copy assignment
+    /// - move assignment
+    using Super::Super;
+
     using LeftType = LeftT;
     using RightType = RightT;
-
-    static_assert(!kt_is_void<LeftType> , "LeftType may not be void" );
-    static_assert(!kt_is_void<RightType>, "RightType may not be void");
-
-    /// Construct an empty either, which contains neither a left or right.
-    ///
-    /// This makes optional either special, it maybe empty.
-    constexpr OptionalEither(): m_datum() {}
-
-    /// Constructs a right or left based on the type.
-    ///
-    /// available when left and right types are distinct
-    template <typename EitherLeftOrRight>
-    constexpr OptionalEither(EitherLeftOrRight && left_or_right,
-                             EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr);
-
-    /// unambiguously constructs a right using typetag as a stand in for the
-    /// left type
-    constexpr OptionalEither(TypeTag<LeftType>, RightType && right_);
-
-    /// unambiguously constructs a left using typetag as a stand in for the
-    /// right type
-    constexpr OptionalEither(LeftType && left_, TypeTag<RightType>);
-
-    constexpr OptionalEither(OptionalEither && rhs);
-
-    constexpr OptionalEither(EnableIfCopyConstructible_);
-
-    constexpr OptionalEither & operator = (OptionalEither && rhs);
-
-    constexpr OptionalEither & operator = (const OptionalEither & rhs);
 
     /// @note either is consumed after this call
     template <typename Func>
@@ -150,13 +126,8 @@ public:
 // -------------------------- PAUSE PUBLIC INTERFACE -------------------------
 
 private:
-    using BareEither_ = BareEither<LeftT, RightT>;
-
     template <typename OtherLeft, typename OtherRight>
     friend class ::cul::OptionalEither;
-
-    friend class cul::detail::OptionalEitherToEitherAttn;
-    friend class cul::detail::FoldAttn;
 
     template <typename Func>
     struct RightChainFunctionReturnRequirements final :
@@ -170,15 +141,11 @@ private:
         public LeftChainPreserveRight<RightType, Func>
     {};
 
-    constexpr explicit OptionalEither(BareEither_ &&);
-
     template <typename NewRightType>
     constexpr OptionalEither<LeftType, NewRightType> with_new_right_type();
 
     template <typename NewLeftType>
     constexpr OptionalEither<NewLeftType, RightType> with_new_left_type();
-
-    BareEither_ m_datum;
 };
 
 // ------------------------- PUBLIC INTERFACE CONTINUES -----------------------
@@ -190,7 +157,7 @@ class OptionalEitherRightMaker final {
 public:
     template <typename RightType>
     constexpr OptionalEither<LeftType, RightType> with(RightType && right) const
-        { return OptionalEither<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
+        { return OptionalEither<LeftType, RightType>::make_right(std::move(right)); }
 
     template <typename RightType>
     constexpr OptionalEither<LeftType, RightType> with() const
@@ -233,59 +200,38 @@ constexpr OptionalEitherLeftMaker<LeftType> optional_left()
 } // end of either namespace -> into ::cul
 
 // -------------------------- END OF PUBLIC INTERFACE -------------------------
-
+#if 0
 template <typename LeftT, typename RightT>
 template <typename EitherLeftOrRight>
 constexpr OptionalEither<LeftT, RightT>::OptionalEither
     (EitherLeftOrRight && obj,
-     EnableIfLeftXorRightPtr<EitherLeftOrRight>):
-    m_datum(std::move(obj)) {}
+     EnableIfLeftXorRightPtr<EitherLeftOrRight>)
+{ this->m_datum = std::move(obj); }
+
+template <typename LeftT, typename RightT>
+template <typename EitherLeftOrRight>
+constexpr OptionalEither<LeftT, RightT>::OptionalEither
+    (const EitherLeftOrRight & left_or_right,
+     EnableIfLeftXorRightPtr<EitherLeftOrRight>)
+{ this->m_datum = left_or_right; }
 
 template <typename LeftT, typename RightT>
 constexpr OptionalEither<LeftT, RightT>::OptionalEither
     (TypeTag<LeftType>, RightType && right_):
-    m_datum(InPlaceRight{}, std::move(right_)) {}
+    Super(detail::InPlaceRight{}, std::move(right_)) {}
 
 template <typename LeftT, typename RightT>
 constexpr OptionalEither<LeftT, RightT>::OptionalEither
     (LeftType && left_, TypeTag<RightType>):
-    m_datum(InPlaceLeft{}, std::move(left_)) {}
+    Super(detail::InPlaceLeft{}, std::move(left_)) {}
+#endif
 
-template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither(OptionalEither && rhs):
-    m_datum(std::move(rhs.m_datum)) {}
-
-template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither
-    (EnableIfCopyConstructible_ rhs):
-    m_datum(rhs.m_datum) {}
-
-template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT> &
-    OptionalEither<LeftT, RightT>::operator = (OptionalEither && rhs)
-{
-    if (this != &rhs) {
-        m_datum = std::move(rhs.m_datum);
-    }
-    return *this;
-}
-
-template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT> &
-    OptionalEither<LeftT, RightT>::operator = (const OptionalEither & rhs)
-{
-    if (this != &rhs) {
-        m_datum = rhs.m_datum;
-    }
-    return *this;
-}
 
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
     OptionalEither<LeftT,
-                   typename OptionalEither<LeftT, RightT>::
-                       template ReturnTypeOf<Func>>
+                   typename detail::EitherHelpersBase::template ReturnTypeOf<Func>>
     OptionalEither<LeftT, RightT>::map(Func && f)
 {
     using NewRight = ReturnTypeOf<Func>;
@@ -300,8 +246,7 @@ template <typename Func>
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
-    OptionalEither<typename OptionalEither<LeftT, RightT>::
-                       template ReturnTypeOf<Func>,
+    OptionalEither<typename detail::EitherHelpersBase::template ReturnTypeOf<Func>,
                    RightT>
     OptionalEither<LeftT, RightT>::map_left(Func && f)
 {
@@ -322,14 +267,13 @@ template <typename CommonT>
     (CommonT && default_value)
 {
     return detail::FoldAttn::make_fold<LeftT, RightT, CommonT>
-        (std::move(default_value), std::move(m_datum));
+        (std::move(default_value), std::move(this->m_datum));
 }
 
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
-    typename OptionalEither<LeftT, RightT>::
-        template EnableIfReturnsOptionalEither<Func>
+    typename detail::EitherHelpersBase::template EnableIfReturnsOptionalEither<Func>
     OptionalEither<LeftT, RightT>::chain(Func && f)
 {
     (void)RightChainFunctionReturnRequirements<Func>{};
@@ -342,8 +286,7 @@ template <typename Func>
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
-    typename OptionalEither<LeftT, RightT>::
-        template EnableIfReturnsOptionalEither<Func>
+    typename detail::EitherHelpersBase::template EnableIfReturnsOptionalEither<Func>
     OptionalEither<LeftT, RightT>::chain_left(Func && f)
 {
     (void)LeftChainFunctionReturnRequirements<Func>{};
@@ -355,28 +298,23 @@ template <typename Func>
 
 template <typename LeftT, typename RightT>
 constexpr LeftT OptionalEither<LeftT, RightT>::left()
-    { return m_datum.left(); }
+    { return Super::left_(); }
 
 template <typename LeftT, typename RightT>
 constexpr RightT OptionalEither<LeftT, RightT>::right()
-    { return m_datum.right(); }
+    { return Super::right_(); }
 
 template <typename LeftT, typename RightT>
 constexpr bool OptionalEither<LeftT, RightT>::is_left() const
-    { return m_datum.is_left(); }
+    { return Super::is_left_(); }
 
 template <typename LeftT, typename RightT>
 constexpr bool OptionalEither<LeftT, RightT>::is_right() const
-    { return m_datum.is_right(); }
+    { return Super::is_right_(); }
 
 template <typename LeftT, typename RightT>
 constexpr bool OptionalEither<LeftT, RightT>::is_empty() const
-    { return m_datum.is_empty(); }
-
-template <typename LeftT, typename RightT>
-constexpr /* private */ OptionalEither<LeftT, RightT>::OptionalEither
-    (BareEither_ && either_datum_):
-    m_datum(std::move(either_datum_)) {}
+    { return Super::is_empty_(); }
 
 template <typename LeftType, typename RightType>
 template <typename NewRightType>
@@ -384,7 +322,7 @@ constexpr /* private */ OptionalEither<LeftType, NewRightType>
     OptionalEither<LeftType, RightType>::with_new_right_type()
 {
     return OptionalEither<LeftType, NewRightType>
-        {m_datum.template with_new_right_type<NewRightType>()};
+        { Super::template with_new_right_type_<NewRightType>() };
 }
 
 template <typename LeftType, typename RightType>
@@ -393,7 +331,7 @@ constexpr /* private */ OptionalEither<NewLeftType, RightType>
     OptionalEither<LeftType, RightType>::with_new_left_type()
 {
     return OptionalEither<NewLeftType, RightType>
-        {m_datum.template with_new_left_type<NewLeftType>()};
+        { Super::template with_new_left_type_<NewLeftType>() };
 }
 
 } // end of cul namespace

@@ -25,6 +25,8 @@
 *****************************************************************************/
 
 #include <ariajanke/cul/TreeTestSuite.hpp>
+#include <ariajanke/cul/detail/either-helpers.hpp>
+#include <ariajanke/cul/OptionalEither.hpp>
 #include <ariajanke/cul/Either.hpp>
 
 #include <memory>
@@ -151,7 +153,203 @@ public:
 
 };
 
+
+
 auto x = [] {
+
+// no copy, no move, no default
+{
+using TestConstructors =
+    detail::EitherConstructors
+        <SomeError, SomeThing,
+         detail::EitherDefaultConstructor::disable,
+         detail::EitherCopyConstructor::disable,
+         detail::EitherMoveConstructor::disable>;
+#if 1 == MACRO_ARIAJANKE_CUL_EXPECT_FAILED_COMPILATION
+TestConstructors{};
+#elif 2 == MACRO_ARIAJANKE_CUL_EXPECT_FAILED_COMPILATION
+TestConstructors{SomeThing{}};
+#elif 3 == MACRO_ARIAJANKE_CUL_EXPECT_FAILED_COMPILATION
+TestConstructors{SomeError{}};
+#endif
+(void)TypeTag<TestConstructors>{};
+}
+// no copy, no move, default
+{
+using TestConstructors =
+    detail::EitherConstructors
+        <SomeError, SomeThing,
+         detail::EitherDefaultConstructor::enable,
+         detail::EitherCopyConstructor::disable,
+         detail::EitherMoveConstructor::disable>;
+TestConstructors{};
+}
+// no copy, move, no default
+{
+using TestConstructors =
+    detail::EitherConstructors
+        <SomeError, SomeThing,
+         detail::EitherDefaultConstructor::disable,
+         detail::EitherCopyConstructor::disable,
+         detail::EitherMoveConstructor::enable>;
+#if 0
+(void)TestConstructors{}; // <- default
+#endif
+(void)TestConstructors{SomeThing{}}; // <- right move
+(void)TestConstructors{SomeError{}}; // <- left move
+(void)TestConstructors{TypeTag<SomeError>{}, SomeThing{}}; // <- unambiguous left move
+(void)TestConstructors{SomeError{}, TypeTag<SomeThing>{}}; // <- unambiguous right move
+(void)TestConstructors{TestConstructors{SomeThing{}}}; // <- regular move
+#if 0
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors{a}; // <- regular copy ctor
+}
+#elif 0
+{
+    SomeThing a;
+    TestConstructors{a}; // <- right copy ctor
+}
+#elif 0
+{
+    SomeError a;
+    TestConstructors{a}; // <- left copy ctor
+}
+#elif 0
+{
+    SomeThing a;
+    TestConstructors{TypeTag<SomeError>{}, a}; // <- unambiguous right copy ctor
+}
+#elif 0
+{
+    SomeError a;
+    TestConstructors{a, TypeTag<SomeThing>{}}; // <- unambiguous left copy ctor
+}
+#endif
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors b{SomeThing{}};
+    b = std::move(a); // <- move assignment
+}
+#if 0
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors b{SomeThing{}};
+    b = a; // <- copy assignment
+}
+#endif
+}
+// no copy, move, default
+{
+using TestConstructors =
+    detail::EitherConstructors
+        <SomeError, SomeThing,
+         detail::EitherDefaultConstructor::enable,
+         detail::EitherCopyConstructor::disable,
+         detail::EitherMoveConstructor::enable>;
+
+(void)TestConstructors{}; // <- default
+(void)TestConstructors{SomeThing{}}; // <- right move
+(void)TestConstructors{SomeError{}}; // <- left move
+(void)TestConstructors{TypeTag<SomeError>{}, SomeThing{}}; // <- unambiguous left move
+(void)TestConstructors{SomeError{}, TypeTag<SomeThing>{}}; // <- unambiguous right move
+(void)TestConstructors{TestConstructors{SomeThing{}}}; // <- regular move
+#if 0
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors{a}; // <- regular copy ctor
+}
+#elif 0
+{
+    SomeThing a;
+    TestConstructors{a}; // <- right copy ctor
+}
+#elif 0
+{
+    SomeError a;
+    TestConstructors{a}; // <- left copy ctor
+}
+#elif 0
+{
+    SomeThing a;
+    TestConstructors{TypeTag<SomeError>{}, a}; // <- unambiguous right copy ctor
+}
+#elif 0
+{
+    SomeError a;
+    TestConstructors{a, TypeTag<SomeThing>{}}; // <- unambiguous left copy ctor
+}
+#endif
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors b{SomeThing{}};
+    b = std::move(a); // <- move assignment
+}
+#if 0
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors b{SomeThing{}};
+    b = a; // <- copy assignment
+}
+#endif
+}
+// copy, no move, no default
+{
+using TestConstructors =
+    detail::EitherConstructors
+        <SomeError, SomeThing,
+         detail::EitherDefaultConstructor::disable,
+         detail::EitherCopyConstructor::enable,
+         detail::EitherMoveConstructor::disable>;
+#if 0
+(void)TestConstructors{}; // <- default
+#endif
+(void)TestConstructors{SomeThing{}}; // <- right move
+(void)TestConstructors{SomeError{}}; // <- left move
+(void)TestConstructors{TypeTag<SomeError>{}, SomeThing{}}; // <- unambiguous left move
+(void)TestConstructors{SomeError{}, TypeTag<SomeThing>{}}; // <- unambiguous right move
+(void)TestConstructors{TestConstructors{SomeThing{}}}; // <- regular move
+//#if 0
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors{a}; // <- regular copy ctor
+}
+//#elif 0
+{
+    SomeThing a;
+    TestConstructors{a}; // <- right copy ctor
+}
+//#elif 0
+{
+    SomeError a;
+    TestConstructors{a}; // <- left copy ctor
+}
+//#elif 0
+{
+    SomeThing a;
+    TestConstructors{TypeTag<SomeError>{}, a}; // <- unambiguous right copy ctor
+}
+//#elif 0
+{
+    SomeError a;
+    TestConstructors{a, TypeTag<SomeThing>{}}; // <- unambiguous left copy ctor
+}
+//#endif
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors b{SomeThing{}};
+    b = std::move(a); // <- move assignment
+}
+{
+    TestConstructors a{SomeThing{}};
+    TestConstructors b{SomeThing{}};
+    b = a; // <- copy assignment
+}
+}
+// copy, no move, default
+// copy, move, no default
+// copy, move, default
+
 
 VisisibleShit<std::unique_ptr<int>, int> a;
 VisisibleShit<std::unique_ptr<int>, int> b;
@@ -159,8 +357,8 @@ a = std::move(b);
 a = VisisibleShit<std::unique_ptr<int>, int>{std::in_place_index_t<0>{}, std::make_unique<int>(60)};
 bool ccccc = a.is_left();
 auto boomitsgone = a.left();
-VisisibleShit<std::unique_ptr<int>, int>{std::move(a)};
-#if 0
+
+#if 1
 describe("cul::either::right") ([] {
     using namespace either;
     mark_it("creates a right either", [] {
@@ -197,7 +395,8 @@ describe("cul::either::right") ([] {
             map([](int i) constexpr { return i + 4; }).
             map_left([] (char) { return 3; })() == 20);
 });
-
+#endif
+#if 0
 describe("cul::either::left") ([] {
     mark_it("creates a left either", [] {
         return test_that(either::left(SomeError{}).with<SomeThing>().is_left());
@@ -340,14 +539,15 @@ describe("Either#chain") ([] {
         return test_that(true);
     });
 });
-
+#endif
+#if 1
 describe("either::optional_left") ([] {
     using namespace either;
     mark_it("can create an empty either", [] {
         return test_that(optional_left<SomeError>().with<SomeThing>().is_empty());
     }).
     mark_it("creates a left either", [] {
-        return test_that(optional_left(SomeThing{}).with<int>().is_left());
+        return test_that(optional_left(SomeThing{}).with<int>   ().is_left());
     }).
     mark_it("makes a gettable left", [] {
         optional_left<int>(1).with<SomeThing>().left();
@@ -387,7 +587,8 @@ describe("either::optional_left") ([] {
             map_left([] (int) constexpr { return int(1); })()
              == 10);
 });
-
+#endif
+#if 0
 describe("either::optional_right") ([] {
     using namespace either;
     mark_it("can create an empty either", [] {

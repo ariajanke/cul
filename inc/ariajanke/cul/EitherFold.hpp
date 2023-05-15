@@ -34,7 +34,7 @@ namespace either {
 
 // feature request, allow folding to void
 template <typename LeftT, typename RightT, typename CommonT>
-class Fold final : public detail::FoldBase {
+class Fold final : public detail::DatumVariantUser, public detail::FoldBase {
 public:
     using CommonType = CommonT;
     using LeftType = LeftT;
@@ -58,13 +58,20 @@ private:
     using OptionalCommon = std::optional<CommonT>;
     friend class ::cul::detail::FoldAttn;
 
-    constexpr Fold
-        (OptionalCommon && default_value, BareEither<LeftT, RightT> && datum):
-        m_value(std::move(default_value)),
-        m_datum(std::move(datum)) {}
+    constexpr Fold(OptionalCommon && common,
+                   DatumVariant<LeftT, RightT> && datum,
+                   detail::EnableForMove<LeftT, RightT, CommonT> = std::monostate{}):
+        m_value(std::move(common)),
+        m_datum(std::move(datum )) {}
+
+    constexpr Fold(const OptionalCommon & common,
+                   const DatumVariant<LeftT, RightT> & datum,
+                   detail::EnableForCopy<LeftT, RightT, CommonT> = std::monostate{}):
+        m_value(common),
+        m_datum(datum ) {}
 
     OptionalCommon m_value;
-    BareEither<LeftT, RightT> m_datum;
+    DatumVariant<LeftT, RightT> m_datum;
 };
 
 // ----------------------------------------------------------------------------
@@ -75,8 +82,12 @@ constexpr Fold<LeftT, RightT, CommonT>
     Fold<LeftT, RightT, CommonT>::map(Func && f)
 {
     VerifyFoldFunctionForSide<CommonT, Func, RightType>{};
-    if (m_datum.is_right()) {
-        OptionalCommon rv = f(m_datum.right());
+    if (m_datum.index() == k_right_idx) {
+        OptionalCommon rv = f(consume_datum<k_right_idx>(m_datum));
+#       if 0
+        OptionalCommon rv = f(std::get<k_right_idx>(std::move(m_datum)));
+        m_datum = DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
+#       endif
         return Fold{std::move(rv), std::move(m_datum)};
     }
 
@@ -89,8 +100,12 @@ constexpr Fold<LeftT, RightT, CommonT>
     Fold<LeftT, RightT, CommonT>::map_left(Func && f)
 {
     VerifyFoldFunctionForSide<CommonT, Func, LeftType>{};
-    if (m_datum.is_left()) {
-        OptionalCommon rv = f(m_datum.left());
+    if (m_datum.index() == k_left_idx) {
+        OptionalCommon rv = f(consume_datum<k_left_idx>(m_datum));
+#       if 0
+        OptionalCommon rv = f(std::get<k_left_idx>(std::move( m_datum )));
+        m_datum = DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
+#       endif
         return Fold{std::move(rv), std::move(m_datum)};
     }
     return Fold{std::move(m_value), std::move(m_datum)};

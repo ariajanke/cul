@@ -33,11 +33,14 @@
 namespace cul {
 
 template <typename LeftT, typename RightT>
-class Either final : public detail::EitherBase {
+class Either final :
+    public detail::EitherBase,
+    public detail::BaseEitherCopyMove<LeftT, RightT>
+{
 public:
     using LeftType = LeftT;
     using RightType = RightT;
-
+#   if 0
 private:
     template <typename EitherLeftOrRight>
     using EnableIfLeftXorRightPtr =
@@ -46,8 +49,9 @@ private:
         std::enable_if_t<std::is_copy_constructible_v<LeftT> &&
                          std::is_copy_constructible_v<RightT>,
                          const Either &>;
-
+#endif
 public:
+#   if 0
     constexpr explicit Either(OptionalEither<LeftT, RightT> && opt_either);
 
     template <typename EitherLeftOrRight>
@@ -63,6 +67,13 @@ public:
 
     constexpr Either(EnableIfCopyConstructible_ rhs):
         m_datum(rhs.m_datum) {}
+#   endif
+
+    template <typename ... Types>
+    static constexpr Either<LeftT, RightT> make_left(Types &&...);
+
+    template <typename ... Types>
+    static constexpr Either<LeftT, RightT> make_right(Types &&...);
 
     template <typename CommonT>
     constexpr either::Fold<LeftType, RightType, CommonT> fold();
@@ -110,8 +121,6 @@ private:
 
     template <typename NewLeftType>
     Either<NewLeftType, RightType> with_new_left_type();
-
-    OptionalEither<LeftT, RightT> m_datum;
 };
 
 namespace either {
@@ -121,7 +130,7 @@ class EitherRightMaker final {
 public:
     template <typename RightType>
     constexpr Either<LeftType, RightType> with(RightType && right) const
-        { return std::move(Either<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}); }
+        { return std::move(Either<LeftType, RightType>::make_right(std::move(right))); }
 
     template <typename RightType>
     constexpr Either<LeftType, RightType> operator() (RightType && right) const
@@ -136,7 +145,7 @@ public:
 
     template <typename RightType>
     constexpr Either<LeftType, RightType> with()
-        { return Either<LeftType, RightType>{std::move(m_obj), TypeTag<RightType>{}}; }
+        { return Either<LeftType, RightType>::make_left(std::move(m_obj)); }
 
 private:
     LeftType m_obj;
@@ -165,6 +174,19 @@ AsLeft<LeftType> as_left(LeftType && obj);
 } // end of either namespace -> into ::cul
 
 // ----------------------------------------------------------------------------
+
+
+template <typename LeftT, typename RightT>
+template <typename ... Types>
+/* static */ constexpr Either<LeftT, RightT>
+    Either<LeftT, RightT>::make_left(Types &&... args)
+{
+
+}
+
+template <typename LeftT, typename RightT>
+template <typename ... Types>
+static constexpr OptionalEither<LeftT, RightT> make_right(Types &&...);
 
 template <typename LeftT, typename RightT>
 constexpr Either<LeftT, RightT>::

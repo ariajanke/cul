@@ -34,12 +34,16 @@ namespace cul {
 
 template <typename LeftT, typename RightT>
 class Either final :
-    public detail::EitherBase,
-    public detail::BaseEitherCopyMove<LeftT, RightT>
+    public detail::EitherConstructors
+        <LeftT, RightT, detail::EitherDefaultConstructor::disable>,
+    public detail::EitherHelpersBase
 {
+    using Super = detail::EitherConstructors
+        <LeftT, RightT, detail::EitherDefaultConstructor::disable>;
 public:
     using LeftType = LeftT;
     using RightType = RightT;
+    using Super::Super;
 #   if 0
 private:
     template <typename EitherLeftOrRight>
@@ -68,13 +72,13 @@ public:
     constexpr Either(EnableIfCopyConstructible_ rhs):
         m_datum(rhs.m_datum) {}
 #   endif
-
+#   if 0
     template <typename ... Types>
     static constexpr Either<LeftT, RightT> make_left(Types &&...);
 
     template <typename ... Types>
     static constexpr Either<LeftT, RightT> make_right(Types &&...);
-
+#   endif
     template <typename CommonT>
     constexpr either::Fold<LeftType, RightType, CommonT> fold();
 
@@ -117,10 +121,10 @@ private:
     {};
 
     template <typename NewRightType>
-    Either<LeftType, NewRightType> with_new_right_type();
+    constexpr Either<LeftType, NewRightType> with_new_right_type();
 
     template <typename NewLeftType>
-    Either<NewLeftType, RightType> with_new_left_type();
+    constexpr Either<NewLeftType, RightType> with_new_left_type();
 };
 
 namespace either {
@@ -130,7 +134,7 @@ class EitherRightMaker final {
 public:
     template <typename RightType>
     constexpr Either<LeftType, RightType> with(RightType && right) const
-        { return std::move(Either<LeftType, RightType>::make_right(std::move(right))); }
+        { return Either<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
 
     template <typename RightType>
     constexpr Either<LeftType, RightType> operator() (RightType && right) const
@@ -145,7 +149,7 @@ public:
 
     template <typename RightType>
     constexpr Either<LeftType, RightType> with()
-        { return Either<LeftType, RightType>::make_left(std::move(m_obj)); }
+        { return Either<LeftType, RightType>{std::move(m_obj), TypeTag<RightType>{}}; }
 
 private:
     LeftType m_obj;
@@ -175,7 +179,7 @@ AsLeft<LeftType> as_left(LeftType && obj);
 
 // ----------------------------------------------------------------------------
 
-
+#if 0
 template <typename LeftT, typename RightT>
 template <typename ... Types>
 /* static */ constexpr Either<LeftT, RightT>
@@ -207,44 +211,52 @@ constexpr Either<LeftT, RightT>::Either(TypeTag<LeftType>, RightType && right):
 template <typename LeftT, typename RightT>
 constexpr Either<LeftT, RightT>::Either(LeftType && left, TypeTag<RightType>):
     m_datum(std::move(left), TypeTag<RightType>{}) {}
-
+#endif
 template <typename LeftT, typename RightT>
 template <typename CommonT>
 constexpr either::Fold<LeftT, RightT, CommonT>
     Either<LeftT, RightT>::fold()
 {
     return detail::FoldAttn::make_fold<LeftType, RightType, CommonT>
-        (std::move(m_datum));
+        (std::optional<CommonT>{}, std::move(this->m_datum));
 }
 
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
     Either<LeftT,
-           typename Either<LeftT, RightT>::
-               template ReturnTypeOf<Func>>
+           typename detail::EitherHelpersBase::template ReturnTypeOf<Func>>
     Either<LeftT, RightT>::map(Func && f)
 {
-    return Either<LeftType, ReturnTypeOf<Func>>
-        {m_datum.template map<Func>(std::move(f))};
+    using NewRight = ReturnTypeOf<Func>;
+    static_assert(!std::is_same_v<void, NewRight>,
+                  "Return type of given function may not be void");
+    (void)VerifyArgumentsForSide<Func, RightType>{};
+    if (is_right())
+        return Either<LeftType, NewRight>{TypeTag<LeftType>{}, f(right())};
+    return with_new_right_type<NewRight>();
 }
 
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
-    Either<typename Either<LeftT, RightT>::
-               template ReturnTypeOf<Func>,
+    Either<typename detail::EitherHelpersBase::template ReturnTypeOf<Func>,
            RightT>
     Either<LeftT, RightT>::map_left(Func && f)
 {
-    return Either<ReturnTypeOf<Func>, RightType>
-        {m_datum.template map_left<Func>(std::move(f))};
+    using NewLeft = ReturnTypeOf<Func>;
+    static_assert(!std::is_same_v<void, NewLeft>,
+                  "Return type of given function may not be void");
+    (void)VerifyArgumentsForSide<Func, LeftType>{};
+    if (is_left())
+        return Either<NewLeft, RightType>{f(left()), TypeTag<RightType>{}};
+    return with_new_left_type<NewLeft>();
 }
 
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
-    typename Either<LeftT, RightT>::template EnableIfReturnsEither<Func>
+    typename detail::EitherHelpersBase::template EnableIfReturnsEither<Func>
     Either<LeftT, RightT>::chain(Func && f)
 {
     (void)RightChainFunctionReturnRequirements<Func>{};
@@ -257,7 +269,7 @@ template <typename Func>
 template <typename LeftT, typename RightT>
 template <typename Func>
 [[nodiscard]] constexpr
-    typename Either<LeftT, RightT>::template EnableIfReturnsEither<Func>
+    typename detail::EitherHelpersBase::template EnableIfReturnsEither<Func>
     Either<LeftT, RightT>::chain_left(Func && f)
 {
     (void)LeftChainFunctionReturnRequirements<Func>{};
@@ -269,19 +281,19 @@ template <typename Func>
 
 template <typename LeftT, typename RightT>
 constexpr LeftT Either<LeftT, RightT>::left()
-    { return m_datum.left(); }
+    { return this->left_(); }
 
 template <typename LeftT, typename RightT>
 constexpr RightT Either<LeftT, RightT>::right()
-    { return m_datum.right(); }
+    { return this->right_(); }
 
 template <typename LeftT, typename RightT>
 constexpr bool Either<LeftT, RightT>::is_left() const
-    { return m_datum.is_left(); }
+    { return this->is_left_(); }
 
 template <typename LeftT, typename RightT>
 constexpr bool Either<LeftT, RightT>::is_right() const
-    { return m_datum.is_right(); }
+    { return this->is_right_(); }
 
 template <typename LeftT, typename RightT>
 /* private static */ constexpr OptionalEither<LeftT, RightT>
@@ -296,24 +308,20 @@ template <typename LeftT, typename RightT>
 
 template <typename LeftT, typename RightT>
 template <typename NewRightType>
-/* private */ Either<LeftT, NewRightType>
+constexpr /* private */ Either<LeftT, NewRightType>
     Either<LeftT, RightT>::with_new_right_type()
 {
-    using namespace detail;
     return Either<LeftType, NewRightType>
-        {OptionalEitherToEitherAttn::new_right_type_with
-            <LeftType, RightType, NewRightType>(std::move(m_datum))};
+        { Super::template with_new_right_type_<NewRightType>() };
 }
 
 template <typename LeftT, typename RightT>
 template <typename NewLeftType>
-/* private */ Either<NewLeftType, RightT>
+constexpr /* private */ Either<NewLeftType, RightT>
     Either<LeftT, RightT>::with_new_left_type()
 {
-    using namespace detail;
-    return Either<NewLeftType, RightType>
-        {OptionalEitherToEitherAttn::new_left_type_with
-            <LeftType, RightType, NewLeftType>(std::move(m_datum))};
+    return Either<NewLeftType, RightT>
+        { Super::template with_new_left_type_<NewLeftType>() };
 }
 
 } // end of cul namespace

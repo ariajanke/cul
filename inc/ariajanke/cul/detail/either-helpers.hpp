@@ -738,6 +738,12 @@ public:
 #   endif
 protected:
 
+    template <typename AnyLeft, typename AnyRight>
+    friend class cul::Either;
+
+    template <typename AnyLeft, typename AnyRight>
+    friend class cul::OptionalEither;
+
     constexpr bool is_left_() const { return m_datum.index() == k_left_idx; }
 
     constexpr bool is_right_() const { return m_datum.index() == k_right_idx; }
@@ -852,7 +858,7 @@ class EitherConstructors
      EitherDefaultConstructor::enable,
      EitherCopyConstructor::enable,
      EitherMoveConstructor::disable> :
-        EnableAllEitherConstructors
+        public EnableAllEitherConstructors
 {
 public:
     using EnableAllEitherConstructors::EitherConstructors;
@@ -874,7 +880,7 @@ class EitherConstructors
      EitherDefaultConstructor::enable,
      EitherCopyConstructor::disable,
      EitherMoveConstructor::enable> :
-        EnableAllEitherConstructors
+        public EnableAllEitherConstructors
 {
 public:
     using EnableAllEitherConstructors::EitherConstructors;
@@ -896,7 +902,7 @@ class EitherConstructors
      EitherDefaultConstructor::enable,
      EitherCopyConstructor::disable,
      EitherMoveConstructor::disable> :
-        EnableAllEitherConstructors
+        public EnableAllEitherConstructors
 {
 public:
     using EnableAllEitherConstructors::EitherConstructors;
@@ -922,10 +928,10 @@ class EitherConstructors
      EitherDefaultConstructor::disable,
      kt_copy_enabled,
      kt_move_enabled> :
-        EitherConstructors<LeftT, RightT,
-        EitherDefaultConstructor::enable,
-        kt_copy_enabled,
-        kt_move_enabled>
+        public EitherConstructors<LeftT, RightT,
+                                  EitherDefaultConstructor::enable,
+                                  kt_copy_enabled,
+                                  kt_move_enabled>
 {
 public:
     using EitherConstructors<LeftT, RightT,

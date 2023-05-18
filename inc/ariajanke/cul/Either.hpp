@@ -324,4 +324,18 @@ constexpr /* private */ Either<NewLeftType, RightT>
         { Super::template with_new_left_type_<NewLeftType>() };
 }
 
+// ----------------------------------------------------------------------------
+
+template <typename LeftT, typename RightT>
+constexpr Either<LeftT, RightT> OptionalEither<LeftT, RightT>::require() {
+    if (std::holds_alternative<detail::EitherEmpty>(this->m_datum) ||
+        std::holds_alternative<detail::EitherConsumed>(this->m_datum))
+    {
+        throw std::runtime_error{""};
+    }
+    auto t = std::move(this->m_datum);
+    this->m_datum = detail::DatumVariantUser::DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
+    return Either<LeftT, RightT>{std::move(t)};
+}
+
 } // end of cul namespace

@@ -568,7 +568,7 @@ struct AreAllMoveable<Head, HeadTwo, Types...> :
 {
     static constexpr const bool k_value =
         std::is_move_constructible_v<Head> &&
-        AreAllCopyable<HeadTwo, Types...>::k_value;
+        AreAllMoveable<HeadTwo, Types...>::k_value;
 };
 
 template <typename ... Types>
@@ -576,6 +576,34 @@ constexpr const bool kt_are_all_copyable = AreAllCopyable<Types...>::k_value;
 
 template <typename ... Types>
 constexpr const bool kt_are_all_moveable = AreAllMoveable<Types...>::k_value;
+
+template <typename Head, typename ... Types>
+struct AreAnyCopyable {
+    static constexpr const bool k_value = std::is_copy_constructible_v<Head>;
+};
+
+template <typename Head, typename HeadTwo, typename ... Types>
+struct AreAnyCopyable<Head, HeadTwo, Types...> :
+    public AreAllCopyable<HeadTwo, Types...>
+{
+    static constexpr const bool k_value =
+        std::is_copy_constructible_v<Head> ||
+        AreAllCopyable<HeadTwo, Types...>::k_value;
+};
+
+template <typename Head, typename ... Types>
+struct AreAnyMoveable {
+    static constexpr const bool k_value = std::is_move_constructible_v<Head>;
+};
+
+template <typename Head, typename HeadTwo, typename ... Types>
+struct AreAnyMoveable<Head, HeadTwo, Types...> :
+    public AreAnyMoveable<HeadTwo, Types...>
+{
+    static constexpr const bool k_value =
+        std::is_move_constructible_v<Head> &&
+        AreAnyMoveable<HeadTwo, Types...>::k_value;
+};
 
 template <typename T>
 constexpr const bool kt_is_void = std::is_same_v<void, T>;
@@ -662,7 +690,7 @@ protected:
         if constexpr (kt_are_all_moveable<LeftT, RightT>) {
             auto t = std::get<k_idx>(std::move(datum));
             datum = DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
-            return std::move(t);
+            return t;
         } else {
             auto t = std::get<k_idx>(datum);
             datum = DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
@@ -676,6 +704,24 @@ template <typename LeftT, typename RightT,
     EitherCopyConstructor,
     EitherMoveConstructor>
 class EitherConstructors : public DatumVariantUser {
+    template <typename OtherLeft, typename OtherRight>
+    using EnableMovableFor = std::enable_if_t<
+    kt_are_all_moveable<OtherLeft, OtherRight>
+        //(std::is_move_constructible_v<OtherLeft> ||
+         //std::is_move_constructible_v<OtherRight> ||
+         //std::is_copy_constructible_v<OtherLeft> ||
+         //std::is_copy_constructible_v<OtherRight>
+         //)
+         &&
+            std::is_same_v<OtherLeft, LeftT> &&
+            std::is_same_v<OtherRight, RightT>,
+        std::monostate>;
+    template <typename OtherLeft, typename OtherRight>
+    using EnableCopyableFor = std::enable_if_t<
+        kt_are_all_copyable<OtherLeft, OtherRight> &&
+            std::is_same_v<OtherLeft, LeftT> &&
+            std::is_same_v<OtherRight, RightT>,
+        std::monostate>;
 public:
 
     // ---------------------------- !WARNING! -----------------------------
@@ -698,26 +744,32 @@ public:
                                  EnableMoveForAmbiguousCtor<LeftT, RightT, EitherLeftOfRight> = std::monostate{}):
         m_datum(std::move(left_or_right)) {}
 
+
+    template <typename OtherLeft, typename OtherRight>
+    constexpr EitherConstructors(TypeTag<OtherLeft>, OtherRight && right,
+                                 EnableMovableFor<OtherLeft, OtherRight> = std::monostate{}):
+        m_datum(std::in_place_index_t<k_right_idx>{}, std::move(right)) {}
+
+    template <typename OtherLeft, typename OtherRight>
+    constexpr EitherConstructors(TypeTag<OtherLeft>, const OtherRight & right,
+                                 EnableCopyableFor<OtherLeft, OtherRight> = std::monostate{}):
+        m_datum(std::in_place_index_t<k_right_idx>{}, right) {}
+
+
     template <typename EitherLeftOfRight>
     constexpr EitherConstructors(const EitherLeftOfRight & left_or_right,
                                  EnableCopyForAmbiguousCtor<LeftT, RightT, EitherLeftOfRight> = std::monostate{}):
         m_datum(left_or_right) {}
 
-    constexpr EitherConstructors(LeftT && left, TypeTag<RightT>,
-                                 EnableForMove<LeftT, RightT> = std::monostate{}):
+    template <typename OtherLeft, typename OtherRight>
+    constexpr EitherConstructors(OtherLeft && left, TypeTag<OtherRight>,
+                                 EnableMovableFor<OtherLeft, OtherRight> = std::monostate{}):
         m_datum(std::in_place_index_t<k_left_idx>{}, std::move(left)) {}
 
-    constexpr EitherConstructors(const LeftT & left, TypeTag<RightT>,
-                                 EnableForCopy<LeftT, RightT> = std::monostate{}):
+    template <typename OtherLeft, typename OtherRight>
+    constexpr EitherConstructors(const OtherLeft & left, TypeTag<OtherRight>,
+                                 EnableCopyableFor<OtherLeft, OtherRight> = std::monostate{}):
         m_datum(std::in_place_index_t<k_left_idx>{}, left) {}
-
-    constexpr EitherConstructors(TypeTag<LeftT>, RightT && right,
-                                 EnableForMove<LeftT, RightT> = std::monostate{}):
-        m_datum(std::in_place_index_t<k_right_idx>{}, std::move(right)) {}
-
-    constexpr EitherConstructors(TypeTag<LeftT>, const RightT & right,
-                                 EnableForCopy<LeftT, RightT> = std::monostate{}):
-        m_datum(std::in_place_index_t<k_right_idx>{}, right) {}
 
     constexpr EitherConstructors & operator = (const EitherConstructors & rhs) {
         if (this != & rhs)
@@ -751,10 +803,13 @@ protected:
     constexpr bool is_empty_() const { return m_datum.index() == k_empty_idx; }
 
     constexpr LeftT left_() {
-        if constexpr (kt_are_all_moveable<LeftT, RightT>) {
+        if (std::holds_alternative<EitherConsumed>(m_datum)) {
+            throw std::runtime_error{""};
+        }
+        if constexpr (std::is_move_constructible_v<LeftT>) {
             auto t = std::get<k_left_idx>(std::move(m_datum));
             m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
-            return std::move(t);
+            return t;
         } else {
             auto t = std::get<k_left_idx>(m_datum);
             m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
@@ -762,11 +817,14 @@ protected:
         }
     }
 
-    constexpr RightT right_() {
-        if constexpr (kt_are_all_moveable<LeftT, RightT>) {
+    constexpr RightT right_() {        
+        if (std::holds_alternative<EitherConsumed>(m_datum)) {
+            throw std::runtime_error{""};
+        }
+        if constexpr (std::is_move_constructible_v<RightT>) {
             auto t = std::get<k_right_idx>(std::move(m_datum));
             m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
-            return std::move(t);
+            return t;
         } else {
             auto t = std::get<k_right_idx>(m_datum);
             m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
@@ -778,12 +836,14 @@ protected:
     EitherConstructors(std::in_place_index_t<k_inplace_idx>, Types &&... args):
         m_datum(std::in_place_index_t<k_inplace_idx>{}, std::forward<Types>(args)...) {}
 #   endif
-    constexpr EitherConstructors(DatumVariant<LeftT, RightT> && datum,
-                                 EnableForMove<LeftT, RightT> = std::monostate{}):
+    template <typename OtherLeft, typename OtherRight>
+    constexpr EitherConstructors(DatumVariant<OtherLeft, OtherRight> && datum,
+                                 EnableMovableFor<OtherLeft, OtherRight> = std::monostate{}):
         m_datum(std::move(datum)) {}
 
-    constexpr EitherConstructors(const DatumVariant<LeftT, RightT> & datum,
-                                 EnableForCopy<LeftT, RightT> = std::monostate{}):
+    template <typename OtherLeft, typename OtherRight>
+    constexpr EitherConstructors(const DatumVariant<OtherLeft, OtherRight> & datum,
+                                 EnableCopyableFor<OtherLeft, OtherRight> = std::monostate{}):
         m_datum(datum) {}
 
     template <typename NewLeftType>

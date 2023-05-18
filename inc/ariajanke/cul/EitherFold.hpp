@@ -59,14 +59,18 @@ private:
     friend class ::cul::detail::FoldAttn;
 
     constexpr Fold(OptionalCommon && common,
-                   DatumVariant<LeftT, RightT> && datum,
-                   detail::EnableForMove<LeftT, RightT, CommonT> = std::monostate{}):
+                   DatumVariant<LeftT, RightT> && datum):
         m_value(std::move(common)),
         m_datum(std::move(datum )) {}
 
-    constexpr Fold(const OptionalCommon & common,
+    template <typename OtherCommonT, typename OtherLeftType, typename OtherRightType>
+    constexpr Fold(const std::optional<OtherCommonT> & common,
                    const DatumVariant<LeftT, RightT> & datum,
-                   detail::EnableForCopy<LeftT, RightT, CommonT> = std::monostate{}):
+                   std::enable_if_t<
+                       detail::kt_are_all_copyable<OtherCommonT, OtherLeftType, OtherRightType> &&
+                       std::is_same_v<OtherCommonT, CommonT> &&
+                       std::is_same_v<OtherLeftType, LeftT> &&
+                       std::is_same_v<OtherRightType, RightT>, std::monostate> = std::monostate{}):
         m_value(common),
         m_datum(datum ) {}
 

@@ -123,6 +123,8 @@ public:
     /// @throws if the either does not contain a right
     constexpr RightT right();
 
+    constexpr Either<LeftT, RightT> require();
+
 // -------------------------- PAUSE PUBLIC INTERFACE -------------------------
 
 private:
@@ -157,7 +159,7 @@ class OptionalEitherRightMaker final {
 public:
     template <typename RightType>
     constexpr OptionalEither<LeftType, RightType> with(RightType && right) const
-        { return OptionalEither<LeftType, RightType>::make_right(std::move(right)); }
+        { return OptionalEither<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
 
     template <typename RightType>
     constexpr OptionalEither<LeftType, RightType> with() const

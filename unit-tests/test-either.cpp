@@ -43,118 +43,6 @@ class SomeThing final {};
 
 }
 
-// I have to rebuild the whole damn thing, because of one fucking caveat with
-// constructors. I'm still stuck with C++17, because we're too cool to update
-// our compilers, right Apple? Fuck you
-
-// I'll be stuck with a fixed number of template parameters, but it's what I'm
-// stuck with. I don't want to spend three hours trying to find an obsecure
-// work around for n types.
-
-
-template <typename LeftT, typename RightT>
-class VisisibleShit;
-
-class ShitWrapper final {
-
-template <typename LeftT, typename RightT>
-friend class VisisibleShit;
-
-template <typename LeftT, typename RightT,
-          bool kt_is_copy_enabled = std::is_copy_constructible_v<LeftT> &&
-                                    std::is_copy_constructible_v<RightT>,
-          bool kt_is_move_enabled = std::is_move_constructible_v<LeftT> &&
-                                    std::is_move_constructible_v<RightT>>
-struct Shit {
-    static_assert(std::is_copy_constructible_v<LeftT> ==
-                  std::is_copy_assignable_v<LeftT>      );
-    static_assert(std::is_copy_constructible_v<RightT> ==
-                  std::is_copy_assignable_v<RightT>      );
-
-    Shit(): stored_shit(std::monostate{}) {}
-    Shit(const Shit & shit): stored_shit(shit.stored_shit) {}
-    Shit(Shit && shit): stored_shit(std::move(shit.stored_shit)) {}
-
-    Shit & operator = (const Shit & shit) {
-        if (this != &shit) {
-            stored_shit = shit.stored_shit;
-        }
-        return *this;
-    }
-
-    Shit & operator = (Shit && shit) {
-        if (this != &shit) {
-            stored_shit = std::move(shit.stored_shit);
-        }
-        return *this;
-    }
-protected:
-    template <std::size_t I, typename ... Types>
-    Shit(std::in_place_index_t<I>, Types &&... args):
-        stored_shit(std::in_place_index_t<I>{}, std::forward<Types>(args)...) {}
-
-    std::variant<LeftT, RightT, std::monostate> stored_shit;
-};
-
-template <typename LeftT, typename RightT>
-struct Shit<LeftT, RightT, true, false> : Shit<LeftT, RightT, true, true> {
-    using Shit<LeftT, RightT, true, true>::Shit;
-
-    Shit(const Shit &) = default;
-    Shit(Shit &&) = delete;
-
-    Shit & operator = (const Shit &) = default;
-    Shit & operator = (Shit &&) = delete;
-};
-
-template <typename LeftT, typename RightT>
-struct Shit<LeftT, RightT, false, true> : Shit<LeftT, RightT, true, true> {
-    using Shit<LeftT, RightT, true, true>::Shit;
-
-    Shit(const Shit &) = delete;
-    Shit(Shit &&) = default;
-
-    Shit & operator = (const Shit &) = delete;
-    Shit & operator = (Shit &&) = default;
-};
-
-
-template <typename LeftT, typename RightT>
-struct Shit<LeftT, RightT, false, false> : Shit<LeftT, RightT, true, true> {
-    using Shit<LeftT, RightT, true, true>::Shit;
-
-    Shit(const Shit &) = delete;
-    Shit(Shit &&) = delete;
-
-    Shit & operator = (const Shit &) = delete;
-    Shit & operator = (Shit &&) = delete;
-};
-
-};
-
-// OPE there goes making the interface visible at all lmfao
-template <typename LeftT, typename RightT>
-class VisisibleShit final : public ShitWrapper::Shit<LeftT, RightT> {
-    using Super = ShitWrapper::Shit<LeftT, RightT>;
-public:
-    using Super::Super;
-
-    template <std::size_t I, typename ... Types>
-    VisisibleShit(std::in_place_index_t<I>,
-                  Types &&... args):
-        Super(std::in_place_index_t<I>{}, std::forward<Types>(args)...) {}
-
-    LeftT left() {
-        return std::get<LeftT>(std::move(this->stored_shit));
-    }
-
-    // OMG I LOVE this->
-    bool is_left() const { return this->stored_shit.index() == 0; }
-
-};
-
-
-
 auto x = [] {
 
 // no copy, no move, no default
@@ -350,14 +238,6 @@ using TestConstructors =
 // copy, move, no default
 // copy, move, default
 
-
-VisisibleShit<std::unique_ptr<int>, int> a;
-VisisibleShit<std::unique_ptr<int>, int> b;
-a = std::move(b);
-a = VisisibleShit<std::unique_ptr<int>, int>{std::in_place_index_t<0>{}, std::make_unique<int>(60)};
-bool ccccc = a.is_left();
-auto boomitsgone = a.left();
-
 #if 1
 describe("cul::either::right") ([] {
     using namespace either;
@@ -396,7 +276,7 @@ describe("cul::either::right") ([] {
             map_left([] (char) { return 3; })() == 20);
 });
 #endif
-#if 0
+#if 1
 describe("cul::either::left") ([] {
     mark_it("creates a left either", [] {
         return test_that(either::left(SomeError{}).with<SomeThing>().is_left());
@@ -434,7 +314,8 @@ describe("cul::either::left") ([] {
             map_left([] (char) { return 3; })() == 3);
 
 });
-
+#endif
+#if 1
 describe("Either{}") ([] {
     mark_it("disambiguates when both types are the same", [] {
         return test_that(
@@ -448,7 +329,8 @@ describe("Either{}") ([] {
     }).
     mark_it("throws if constructing from an empty optional either", [] {
         try {
-            Either<int, char>{OptionalEither<int, char>{}};
+            [[maybe_unused]] Either<int, char> t =
+                OptionalEither<int, char>{}.require();
         } catch (...) {
             return test_that(true);
         }
@@ -588,7 +470,7 @@ describe("either::optional_left") ([] {
              == 10);
 });
 #endif
-#if 0
+#if 1
 describe("either::optional_right") ([] {
     using namespace either;
     mark_it("can create an empty either", [] {
@@ -635,7 +517,8 @@ describe("either::optional_right") ([] {
             map_left([] (int) constexpr { return int(1); })()
              == 10);
 });
-
+#endif
+#if 1
 describe("OptionalEither::chain") ([] {
     using namespace either;
     mark_it("chains a right returning a right either", [] {
@@ -667,7 +550,8 @@ describe("OptionalEither::chain") ([] {
         return test_that(true);
     });;
 });
-
+#endif
+#if 1
 describe("OptionalEither::chain_left") ([] {
     using namespace either;
     mark_it("chains a left returning a right either", [] {
@@ -689,7 +573,8 @@ describe("OptionalEither::chain_left") ([] {
         return test_that(i == 0);
     });
 });
-
+#endif
+#if 1
 describe("Either#operator=/copying") ([] {
     mark_it("move constructs", [] {
         auto ei = either::right<std::unique_ptr<int>>().with<int>(10);
@@ -721,7 +606,8 @@ describe("Either#operator=/copying") ([] {
         });
     });
 });
-
+#endif
+#if 1
 describe("OptionalEither#operator=/copying") ([] {
     mark_it("move constructs", [] {
         auto ei = either::optional_right<std::unique_ptr<int>>().with<int>(10);
@@ -753,7 +639,8 @@ describe("OptionalEither#operator=/copying") ([] {
         });
     });
 });
-
+#endif
+#if 1
 describe("Either is 'consumed'") ([] {
     mark_it("is consumed on call to left", [] {
         auto ei = either::left(SomeError{}).with<SomeThing>();
@@ -814,6 +701,15 @@ describe("Either is 'consumed'") ([] {
 
 describe("unique_ptr compatible") ([] {
     using IntUPtr = std::unique_ptr<int>;
+    {
+    either::right<SomeError>().
+            with(std::make_unique<int>(10));
+    cul::Either<SomeError, IntUPtr>{TypeTag<SomeError>{}, std::make_unique<int>(10)};
+    }
+    {
+    IntUPtr uptr;
+    either::right<SomeError>().with(std::move(uptr));
+    }
     mark_it("can do right things with a unique pointer", [] {
         int gv = either::right<SomeError>().
             with(std::make_unique<int>(10)).

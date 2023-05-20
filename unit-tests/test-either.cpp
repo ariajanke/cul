@@ -740,6 +740,17 @@ describe("unique_ptr compatible") ([] {
         std::vector<Either<SomeError, std::unique_ptr<int>>> vec;
         vec.emplace_back(std::make_unique<int>(10));
         return test_that(true);
+    }).
+    mark_it("folds on a move only type", [] {
+        auto ptr = either::optional_right<int>().
+            with(std::string{"10"}).
+            fold<std::unique_ptr<int>>(nullptr).
+            map([] (std::string && str) {
+                return std::make_unique<int>(str[0]);
+            }).
+            map_left([] (int i) { return std::make_unique<int>(i); })
+            ();
+        return test_that(*ptr == int('1'));
     });
 });
 

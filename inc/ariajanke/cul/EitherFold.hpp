@@ -46,11 +46,11 @@ public:
     template <typename Func>
     constexpr Fold map_left(Func && f);
 
-    constexpr CommonType operator () () const
-        { return m_value.value(); }
+    constexpr CommonType operator () ()
+        { return std::move(m_value.value()); }
 
-    constexpr CommonType value() const
-        { return m_value.value(); }
+    constexpr CommonType value()
+        { return std::move(m_value.value()); }
 
 // -------------------------- END OF PUBLIC INTERFACE -------------------------
 

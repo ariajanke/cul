@@ -197,32 +197,26 @@ using TestConstructors =
 (void)TestConstructors{TypeTag<SomeError>{}, SomeThing{}}; // <- unambiguous left move
 (void)TestConstructors{SomeError{}, TypeTag<SomeThing>{}}; // <- unambiguous right move
 (void)TestConstructors{TestConstructors{SomeThing{}}}; // <- regular move
-//#if 0
 {
     TestConstructors a{SomeThing{}};
     TestConstructors{a}; // <- regular copy ctor
 }
-//#elif 0
 {
     SomeThing a;
     TestConstructors{a}; // <- right copy ctor
 }
-//#elif 0
 {
     SomeError a;
     TestConstructors{a}; // <- left copy ctor
 }
-//#elif 0
 {
     SomeThing a;
     TestConstructors{TypeTag<SomeError>{}, a}; // <- unambiguous right copy ctor
 }
-//#elif 0
 {
     SomeError a;
     TestConstructors{a, TypeTag<SomeThing>{}}; // <- unambiguous left copy ctor
 }
-//#endif
 {
     TestConstructors a{SomeThing{}};
     TestConstructors b{SomeThing{}};

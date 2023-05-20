@@ -44,41 +44,7 @@ public:
     using LeftType = LeftT;
     using RightType = RightT;
     using Super::Super;
-#   if 0
-private:
-    template <typename EitherLeftOrRight>
-    using EnableIfLeftXorRightPtr =
-        EnableIfLeftXorRightPtr_<LeftType, RightType, EitherLeftOrRight>;
-    using EnableIfCopyConstructible_ =
-        std::enable_if_t<std::is_copy_constructible_v<LeftT> &&
-                         std::is_copy_constructible_v<RightT>,
-                         const Either &>;
-#endif
-public:
-#   if 0
-    constexpr explicit Either(OptionalEither<LeftT, RightT> && opt_either);
 
-    template <typename EitherLeftOrRight>
-    constexpr Either(EitherLeftOrRight && obj,
-                     EnableIfLeftXorRightPtr<EitherLeftOrRight> = nullptr);
-
-    // more move related tests with unique pointers
-    // vector of eithers of unique pointers?
-    // how do vector of unique pointers normally work?
-    constexpr Either(TypeTag<LeftType>, RightType && right);
-
-    constexpr Either(LeftType && left, TypeTag<RightType>);
-
-    constexpr Either(EnableIfCopyConstructible_ rhs):
-        m_datum(rhs.m_datum) {}
-#   endif
-#   if 0
-    template <typename ... Types>
-    static constexpr Either<LeftT, RightT> make_left(Types &&...);
-
-    template <typename ... Types>
-    static constexpr Either<LeftT, RightT> make_right(Types &&...);
-#   endif
     template <typename CommonT>
     constexpr either::Fold<LeftType, RightType, CommonT> fold();
 
@@ -164,54 +130,11 @@ template <typename LeftType>
 constexpr EitherLeftMaker<LeftType> left(LeftType && obj) {
     return EitherLeftMaker<LeftType>{std::move(obj)};
 }
-#if 0 // might not be necessary?
-// feature request
-// include implicitly convertible wrappers
-template <typename LeftType>
-class AsLeft final {
-public:
-};
 
-template <typename LeftType>
-AsLeft<LeftType> as_left(LeftType && obj);
-#endif
 } // end of either namespace -> into ::cul
 
 // ----------------------------------------------------------------------------
 
-#if 0
-template <typename LeftT, typename RightT>
-template <typename ... Types>
-/* static */ constexpr Either<LeftT, RightT>
-    Either<LeftT, RightT>::make_left(Types &&... args)
-{
-
-}
-
-template <typename LeftT, typename RightT>
-template <typename ... Types>
-static constexpr OptionalEither<LeftT, RightT> make_right(Types &&...);
-
-template <typename LeftT, typename RightT>
-constexpr Either<LeftT, RightT>::
-    Either(OptionalEither<LeftT, RightT> && opt_either):
-    m_datum(verify_non_empty("Either", std::move(opt_either))) {}
-
-template <typename LeftT, typename RightT>
-template <typename EitherLeftOrRight>
-constexpr Either<LeftT, RightT>::Either
-    (EitherLeftOrRight && obj,
-     EnableIfLeftXorRightPtr<EitherLeftOrRight>):
-    m_datum(std::move(obj)) {}
-
-template <typename LeftT, typename RightT>
-constexpr Either<LeftT, RightT>::Either(TypeTag<LeftType>, RightType && right):
-    m_datum(TypeTag<LeftType>{}, std::move(right)) {}
-
-template <typename LeftT, typename RightT>
-constexpr Either<LeftT, RightT>::Either(LeftType && left, TypeTag<RightType>):
-    m_datum(std::move(left), TypeTag<RightType>{}) {}
-#endif
 template <typename LeftT, typename RightT>
 template <typename CommonT>
 constexpr either::Fold<LeftT, RightT, CommonT>

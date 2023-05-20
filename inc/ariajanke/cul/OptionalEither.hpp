@@ -123,6 +123,8 @@ public:
     /// @throws if the either does not contain a right
     constexpr RightT right();
 
+    /// @returns this optioanl either returned as an either
+    /// @throws if empty (to avoid add a branch to check for empty, or fold)
     constexpr Either<LeftT, RightT> require();
 
 // -------------------------- PAUSE PUBLIC INTERFACE -------------------------
@@ -202,32 +204,6 @@ constexpr OptionalEitherLeftMaker<LeftType> optional_left()
 } // end of either namespace -> into ::cul
 
 // -------------------------- END OF PUBLIC INTERFACE -------------------------
-#if 0
-template <typename LeftT, typename RightT>
-template <typename EitherLeftOrRight>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither
-    (EitherLeftOrRight && obj,
-     EnableIfLeftXorRightPtr<EitherLeftOrRight>)
-{ this->m_datum = std::move(obj); }
-
-template <typename LeftT, typename RightT>
-template <typename EitherLeftOrRight>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither
-    (const EitherLeftOrRight & left_or_right,
-     EnableIfLeftXorRightPtr<EitherLeftOrRight>)
-{ this->m_datum = left_or_right; }
-
-template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither
-    (TypeTag<LeftType>, RightType && right_):
-    Super(detail::InPlaceRight{}, std::move(right_)) {}
-
-template <typename LeftT, typename RightT>
-constexpr OptionalEither<LeftT, RightT>::OptionalEither
-    (LeftType && left_, TypeTag<RightType>):
-    Super(detail::InPlaceLeft{}, std::move(left_)) {}
-#endif
-
 
 template <typename LeftT, typename RightT>
 template <typename Func>

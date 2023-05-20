@@ -88,10 +88,6 @@ constexpr Fold<LeftT, RightT, CommonT>
     VerifyFoldFunctionForSide<CommonT, Func, RightType>{};
     if (m_datum.index() == k_right_idx) {
         OptionalCommon rv = f(consume_datum<k_right_idx>(m_datum));
-#       if 0
-        OptionalCommon rv = f(std::get<k_right_idx>(std::move(m_datum)));
-        m_datum = DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
-#       endif
         return Fold{std::move(rv), std::move(m_datum)};
     }
 
@@ -106,10 +102,6 @@ constexpr Fold<LeftT, RightT, CommonT>
     VerifyFoldFunctionForSide<CommonT, Func, LeftType>{};
     if (m_datum.index() == k_left_idx) {
         OptionalCommon rv = f(consume_datum<k_left_idx>(m_datum));
-#       if 0
-        OptionalCommon rv = f(std::get<k_left_idx>(std::move( m_datum )));
-        m_datum = DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
-#       endif
         return Fold{std::move(rv), std::move(m_datum)};
     }
     return Fold{std::move(m_value), std::move(m_datum)};

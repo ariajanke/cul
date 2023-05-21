@@ -255,6 +255,8 @@ describe("cul::either::right") ([] {
          map([](int i) constexpr { return i*2; }).
          map_left([] (char) constexpr { return 'a'; }).
          right() == 16);
+    static_assert(either::optional_right<int>().
+                      with<char>().fold<int>(9).value() == 9);
     static_assert
         (either::right<char>().with(int(8)).
          map([](int i) constexpr { return i*2; }).
@@ -654,7 +656,16 @@ describe("Either is 'consumed'") ([] {
         auto ei = either::right<SomeError>().with(SomeThing{});
         (void)ei.fold<int>();
         return expect_exception<std::runtime_error>([&ei] {
-            (void)ei.fold<int>().map([](SomeThing) { return 0; });
+            (void)ei.fold<int>().
+                map([](SomeThing) { return 0; });
+        });
+    }).
+    mark_it("is optional consumed on call to fold", [] {
+        auto ei = either::optional_right<SomeError>().with(SomeThing{});
+        (void)ei.fold<int>(0);
+        return expect_exception<std::runtime_error>([&ei] {
+            (void)ei.fold<int>(0).
+                map([](SomeThing) { return 0; });
         });
     }).
     mark_it("is consumed on call to map", [] {
@@ -751,6 +762,45 @@ describe("unique_ptr compatible") ([] {
             map_left([] (int i) { return std::make_unique<int>(i); })
             ();
         return test_that(*ptr == int('1'));
+    });
+});
+
+describe("(Optional)Either::*right")([] {
+    mark_it("can initialize two values from one either", [] {
+        auto ei = either::optional_right<int>().with<const char *>("hello");
+        auto hello = ei.right_or_call([] { throw "something"; return ""; });
+        auto int_ = ei.left_or(10);
+        return test_that(std::string{hello} == "hello" &&
+                         int_ == 10                      );
+    }).
+    mark_it("can handle move onlys", [] {
+        auto ei = either::
+            optional_left<std::unique_ptr<int>>(std::make_unique<int>(10)).
+            with<int>();
+        auto uptr = ei.left_or_call([] {
+            throw "something";
+            return std::unique_ptr<int>{};
+        });
+        auto right = ei.right_or(12);
+        return test_that(*uptr == 10 && right == 12);
+    }).
+    mark_it("can be used on plain eithers", [] {
+        auto ei = either::left<int>(10).with<const char *>();
+        auto left_ = ei.left_or_call([] {
+            throw "something";
+            return 1;
+        });
+        std::string right = ei.right_or("hello");
+        return test_that(left_ == 10 && right == "hello");
+    }).
+    mark_it("can be used on plain eithes on move only objects", [] {
+        auto ei = either::right<char>().with(std::make_unique<int>(90));
+        auto right = ei.right_or_call([] {
+            throw "stuff";
+            return std::unique_ptr<int>{};
+        });
+        auto left = ei.left_or('a');
+        return test_that(*right == 90 && left == 'a');
     });
 });
 

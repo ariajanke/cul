@@ -45,8 +45,28 @@ public:
     using RightType = RightT;
     using Super::Super;
 
+    template <typename Func>
+    [[nodiscard]] constexpr EnableIfReturnsEither<Func> chain(Func && f);
+
+    template <typename Func>
+    [[nodiscard]] constexpr EnableIfReturnsEither<Func> chain_left(Func && f);
+
     template <typename CommonT>
-    constexpr either::Fold<LeftType, RightType, CommonT> fold();
+    [[nodiscard]] constexpr either::Fold<LeftType, RightType, CommonT> fold();
+
+    constexpr bool is_left() const;
+
+    constexpr bool is_right() const;
+
+    constexpr LeftT left();
+
+    template <typename U>
+    constexpr LeftT left_or(U && obj)
+        { return is_left() ? left() : static_cast<LeftT>(std::move(obj)); }
+
+    template <typename Func>
+    constexpr LeftT left_or_call(Func && f)
+        { return is_left() ? left() : static_cast<LeftT>(f()); }
 
     template <typename Func>
     [[nodiscard]] constexpr Either<LeftType, ReturnTypeOf<Func>>
@@ -56,19 +76,15 @@ public:
     [[nodiscard]] constexpr Either<ReturnTypeOf<Func>, RightType>
         map_left(Func && f);
 
-    template <typename Func>
-    [[nodiscard]] constexpr EnableIfReturnsEither<Func> chain(Func && f);
-
-    template <typename Func>
-    [[nodiscard]] constexpr EnableIfReturnsEither<Func> chain_left(Func && f);
-
-    constexpr LeftT left();
-
     constexpr RightT right();
 
-    constexpr bool is_left() const;
+    template <typename U>
+    constexpr RightT right_or(U && obj)
+        { return is_right() ? right() : static_cast<RightT>(std::move(obj)); }
 
-    constexpr bool is_right() const;
+    template <typename Func>
+    constexpr RightT right_or_call(Func && f)
+        { return is_right() ? right() : static_cast<RightT>(f()); }
 
 private:
     static constexpr OptionalEither<LeftT, RightT> verify_non_empty
@@ -122,14 +138,12 @@ private:
 };
 
 template <typename LeftType>
-constexpr EitherRightMaker<LeftType> right() {
-    return EitherRightMaker<LeftType>{};
-}
+constexpr EitherRightMaker<LeftType> right()
+    { return EitherRightMaker<LeftType>{}; }
 
 template <typename LeftType>
-constexpr EitherLeftMaker<LeftType> left(LeftType && obj) {
-    return EitherLeftMaker<LeftType>{std::move(obj)};
-}
+constexpr EitherLeftMaker<LeftType> left(LeftType && obj)
+    { return EitherLeftMaker<LeftType>{std::move(obj)}; }
 
 } // end of either namespace -> into ::cul
 
@@ -140,8 +154,10 @@ template <typename CommonT>
 constexpr either::Fold<LeftT, RightT, CommonT>
     Either<LeftT, RightT>::fold()
 {
-    return detail::FoldAttn::make_fold<LeftType, RightType, CommonT>
+    auto t = detail::FoldAttn::make_fold<LeftType, RightType, CommonT>
         (std::optional<CommonT>{}, std::move(this->m_datum));
+    this->mark_as_consumed();
+    return t;
 }
 
 template <typename LeftT, typename RightT>
@@ -251,13 +267,15 @@ constexpr /* private */ Either<NewLeftType, RightT>
 
 template <typename LeftT, typename RightT>
 constexpr Either<LeftT, RightT> OptionalEither<LeftT, RightT>::require() {
-    if (std::holds_alternative<detail::EitherEmpty>(this->m_datum) ||
-        std::holds_alternative<detail::EitherConsumed>(this->m_datum))
+    if (std::holds_alternative<detail::EitherEmpty   >(this->m_datum) ||
+        std::holds_alternative<detail::EitherConsumed>(this->m_datum)   )
     {
-        throw std::runtime_error{""};
+        using namespace exceptions_abbr;
+        throw RtError{"OptionalEither::require: cannot require on a "
+                      "consumed/empty either"};
     }
     auto t = std::move(this->m_datum);
-    this->m_datum = detail::DatumVariantUser::DatumVariant<LeftT, RightT>{detail::EitherConsumed{}};
+    this->mark_as_consumed();
     return Either<LeftT, RightT>{std::move(t)};
 }
 

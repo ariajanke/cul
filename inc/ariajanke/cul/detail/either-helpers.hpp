@@ -229,7 +229,8 @@ public:
         m_datum(rhs.m_datum) {}
 
     constexpr EitherConstructors(EitherConstructors && rhs):
-        m_datum(std::move(rhs.m_datum)) {}
+        m_datum(std::move(rhs.m_datum))
+    { rhs.mark_as_consumed(); }
 
     template <typename EitherLeftOfRight>
     constexpr EitherConstructors(EitherLeftOfRight && left_or_right,
@@ -270,8 +271,10 @@ public:
     }
 
     constexpr EitherConstructors & operator = (EitherConstructors && rhs) {
-        if (this != &rhs)
-            { m_datum = std::move(rhs.m_datum); }
+        if (this != &rhs) {
+            m_datum = std::move(rhs.m_datum);
+            rhs.mark_as_consumed();
+        }
         return *this;
     }
 
@@ -295,11 +298,11 @@ protected:
         }
         if constexpr (std::is_move_constructible_v<LeftT>) {
             auto t = std::get<k_left_idx>(std::move(m_datum));
-            m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+            mark_as_consumed();
             return t;
         } else {
             auto t = std::get<k_left_idx>(m_datum);
-            m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+            mark_as_consumed();
             return t;
         }
     }
@@ -310,11 +313,11 @@ protected:
         }
         if constexpr (std::is_move_constructible_v<RightT>) {
             auto t = std::get<k_right_idx>(std::move(m_datum));
-            m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+            mark_as_consumed();
             return t;
         } else {
             auto t = std::get<k_right_idx>(m_datum);
-            m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+            mark_as_consumed();
             return t;
         }
     }
@@ -337,11 +340,11 @@ protected:
         case k_right_idx:
             if constexpr (kt_are_all_moveable<LeftT, RightT>) {
                 auto temp = std::get<k_right_idx>(std::move(m_datum));
-                m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+                mark_as_consumed();
                 return NewDatumType{std::in_place_index_t<k_right_idx>{}, std::move(temp)};
             } else {
                 auto temp = std::get<k_right_idx>(m_datum);
-                m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+                mark_as_consumed();
                 return NewDatumType{std::in_place_index_t<k_right_idx>{}, temp};
             }
         case k_empty_idx:
@@ -349,7 +352,8 @@ protected:
         case k_consumed_idx:
         case k_left_idx:
         default:
-            throw RtError{""};
+            throw RtError{"*Either::with_new_left_type: cannot call on "
+                          "left/consumed"};
         }
     }
 
@@ -361,11 +365,11 @@ protected:
         case k_left_idx:
             if constexpr (kt_are_all_moveable<LeftT, RightT>) {
                 auto temp = std::get<k_left_idx>(std::move(m_datum));
-                m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+                mark_as_consumed();
                 return NewDatumType{std::in_place_index_t<k_left_idx>{}, std::move(temp)};
             } else {
                 auto temp = std::get<k_left_idx>(m_datum);
-                m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}};
+                mark_as_consumed();
                 return NewDatumType{std::in_place_index_t<k_left_idx>{}, temp};
             }
         case k_empty_idx:
@@ -373,9 +377,14 @@ protected:
         case k_consumed_idx:
         case k_right_idx:
         default:
-            throw RtError{""};
+            throw RtError{"*Either::with_new_right_type: cannot call on "
+                          "right/consumed"};
+
         }
     }
+
+    constexpr void mark_as_consumed()
+        { m_datum = DatumVariant<LeftT, RightT>{EitherConsumed{}}; }
 
     DatumVariant<LeftT, RightT> m_datum;
 };
@@ -532,9 +541,6 @@ protected:
     static constexpr const bool kt_is_optional_either =
         IsOptionalEither<Types...>::k_value;
 
-    template <typename Type>
-    static constexpr const bool kt_is_void = std::is_same_v<void, Type>;
-
     template <typename ... Types>
     using EitherTypeLeft = typename EitherTraits<Types...>::LeftType;
 
@@ -610,6 +616,7 @@ class FoldAttn final : public DatumVariantUser {
                   DatumVariant<LeftT, RightT> && datum,
                   EnableForMove<LeftT, RightT, CommonT> = std::monostate{})
     {
+        verify_not_consumed(datum);
         return either::Fold{std::move(common), std::move(datum)};
     }
 
@@ -619,7 +626,18 @@ class FoldAttn final : public DatumVariantUser {
                   const DatumVariant<LeftT, RightT> & datum,
                   EnableForCopy<LeftT, RightT, CommonT> = std::monostate{})
     {
+        verify_not_consumed(datum);
         return either::Fold{common, datum};
+    }
+
+    template <typename LeftT, typename RightT>
+    static constexpr void verify_not_consumed
+        (const DatumVariant<LeftT, RightT> & datum)
+    {
+        if (!std::holds_alternative<detail::EitherConsumed>(datum))
+            { return; }
+        using namespace exceptions_abbr;
+        throw RtError{"Fold::Fold: May not fold on consumed either"};
     }
 };
 

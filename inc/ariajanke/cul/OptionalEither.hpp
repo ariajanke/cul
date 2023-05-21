@@ -93,6 +93,14 @@ public:
     /// @throws if the either does not contain a left
     constexpr LeftT left();
 
+    template <typename U>
+    constexpr LeftT left_or(U && obj)
+        { return is_left() ? left() : static_cast<LeftT>(std::move(obj)); }
+
+    template <typename Func>
+    constexpr LeftT left_or_call(Func && f)
+        { return is_left() ? left() : static_cast<LeftT>(f()); }
+
     /// Transforms the right value if it exists according to the given function.
     ///
     /// @param f given function that transforms the right value, must take the
@@ -122,6 +130,25 @@ public:
     /// @note either is consumed after this call
     /// @throws if the either does not contain a right
     constexpr RightT right();
+
+    /// @returns contained right value, or the specified default.
+    ///
+    /// @param default_ casted to right type and returned if this is not a
+    ///                 right
+    /// @note either is consumed after this call if it is a right
+    template <typename U>
+    constexpr RightT right_or(U && default_) noexcept
+        { return is_right() ? right() : static_cast<RightT>(std::move(default_)); }
+
+    /// @returns contained right value, or a default value returned by a given
+    ///          function.
+    ///
+    /// @param f function to call if this either is not a right, it must take
+    ///          no arguments
+    /// @note either is consumed after this call if it is a right
+    template <typename Func>
+    constexpr RightT right_or_call(Func && f) noexcept
+        { return is_right() ? right() : static_cast<RightT>(f()); }
 
     /// @returns this optioanl either returned as an either
     /// @throws if empty (to avoid add a branch to check for empty, or fold)
@@ -176,18 +203,28 @@ template <typename LeftType>
 class OptionalEitherLeftMaker final {
 public:
     explicit constexpr OptionalEitherLeftMaker(LeftType && left_obj):
-        m_obj(left_obj) {}
-
-    constexpr OptionalEitherLeftMaker(): m_obj() {}
+        m_obj(std::move(left_obj)) {}
 
     template <typename RightType>
     constexpr OptionalEither<LeftType, RightType> with() {
-        if (!m_obj) { return OptionalEither<LeftType, RightType>{}; }
-        return OptionalEither<LeftType, RightType>{std::move(*m_obj), TypeTag<RightType>{}}; }
+        return OptionalEither<LeftType, RightType>
+            {std::move(m_obj), TypeTag<RightType>{}};
+    }
 
 private:
-    std::optional<LeftType> m_obj;
+    LeftType m_obj;
 };
+
+template <typename LeftType>
+class EmptyOptionalEitherLeftMaker final {
+public:
+    constexpr EmptyOptionalEitherLeftMaker() {}
+
+    template <typename RightType>
+    constexpr OptionalEither<LeftType, RightType> with()
+        { return OptionalEither<LeftType, RightType>{}; }
+};
+
 
 template <typename LeftType>
 constexpr OptionalEitherRightMaker<LeftType> optional_right()
@@ -198,8 +235,8 @@ constexpr OptionalEitherLeftMaker<LeftType> optional_left(LeftType && obj)
     { return OptionalEitherLeftMaker<LeftType>{std::move(obj)}; }
 
 template <typename LeftType>
-constexpr OptionalEitherLeftMaker<LeftType> optional_left()
-    { return OptionalEitherLeftMaker<LeftType>{}; }
+constexpr EmptyOptionalEitherLeftMaker<LeftType> optional_left()
+    { return EmptyOptionalEitherLeftMaker<LeftType>{}; }
 
 } // end of either namespace -> into ::cul
 
@@ -244,8 +281,10 @@ template <typename CommonT>
     OptionalEither<LeftT, RightT>::fold
     (CommonT && default_value)
 {
-    return detail::FoldAttn::make_fold<LeftT, RightT, CommonT>
+    auto t = detail::FoldAttn::make_fold<LeftT, RightT, CommonT>
         (std::move(default_value), std::move(this->m_datum));
+    this->mark_as_consumed();
+    return t;
 }
 
 template <typename LeftT, typename RightT>

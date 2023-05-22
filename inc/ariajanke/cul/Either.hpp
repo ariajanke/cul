@@ -32,6 +32,12 @@
 
 namespace cul {
 
+/// An implementation of the either monad.
+///
+/// Care was taken to reduce exceptions as much as possible. Unfortunately
+/// there's no way to guard against incorrect usage. If an exception is *ever*
+/// thrown, then that indicates that the either is being used incorrectly by
+/// the client.
 template <typename LeftT, typename RightT>
 class Either final :
     public detail::EitherConstructors
@@ -45,46 +51,116 @@ public:
     using RightType = RightT;
     using Super::Super;
 
+    /// Transforms right value into an either preserving the left side's type.
+    ///
+    /// If this either is not a right, then this either's type is transformed
+    /// into Either<LeftType, *AnyNewRightType*> and is returned.
+    /// @note either is consumed after this call
+    /// @param f given function that transforms the right value, must take the
+    ///          following form: \n
+    ///         [*anything*] (RightType *any qualifier*)
+    ///         { return Either<LeftType, *AnyNewRightType*>{...}; }
+    /// @returns instance of Either<LeftType, *AnyNewRightType*>
     template <typename Func>
     [[nodiscard]] constexpr EnableIfReturnsEither<Func> chain(Func && f);
 
+    /// Transforms left value into an either preserving the right side's type.
+    ///
+    /// If this either is not a left, then this either's type is transformed
+    /// into Either<*AnyNewLeftType*, RightType> and is returned.
+    /// @note either is consumed after this call
+    /// @param f given function that transforms the left value, must take the
+    ///          following form: \n
+    ///         [*anything*] (LeftType *any qualifier*)
+    ///         { return Either<*AnyNewLeftType*, RightType>{...}; }
+    /// @returns instance of Either<*AnyNewLeftType*, RightType>
     template <typename Func>
     [[nodiscard]] constexpr EnableIfReturnsEither<Func> chain_left(Func && f);
 
     template <typename CommonT>
     [[nodiscard]] constexpr either::Fold<LeftType, RightType, CommonT> fold();
 
+    /// @returns true if the either contains a left value
     constexpr bool is_left() const;
 
+    /// @returns true if the either contains a right value
     constexpr bool is_right() const;
 
+    /// @returns contained left value.
+    ///
+    /// @note either is consumed after this call
+    /// @throws if the either does not contain a left
     constexpr LeftT left();
 
+    /// @returns contained left value, or the specified default.
+    ///
+    /// @param default_ casted to left type and returned if this is not a
+    ///                 left
+    /// @note either is consumed after this call if it is a left
     template <typename U>
     constexpr LeftT left_or(U && obj)
         { return is_left() ? left() : static_cast<LeftT>(std::move(obj)); }
 
+    /// @returns contained left value, or a default value returned by a given
+    ///          function.
+    ///
+    /// @param f function to call if this either is not a left, it must take
+    ///          no arguments
+    /// @note either is consumed after this call if it is a left
     template <typename Func>
     constexpr LeftT left_or_call(Func && f)
         { return is_left() ? left() : static_cast<LeftT>(f()); }
 
+    /// Transforms the right value if it exists according to the given function.
+    ///
+    /// @param f given function that transforms the right value, must take the
+    ///          following form: \n
+    ///         [*anything*] (RightType *any qualifier*) { return *any*; }
+    /// @returns a new either containing the transformed value if the previous
+    ///          either contained a right
+    /// @note either is consumed after this call
     template <typename Func>
     [[nodiscard]] constexpr Either<LeftType, ReturnTypeOf<Func>>
         map(Func && f);
 
+    /// Transforms the left value if it exists according to the given function.
+    ///
+    /// @param f given function that transforms the left value, must take the
+    ///          following form: \n
+    ///         [*anything*] (LeftType *any qualifier*) { return *any*; }
+    /// @returns a new either containing the transformed value if the previous
+    ///          either contained a left
+    /// @note either is consumed after this call
     template <typename Func>
     [[nodiscard]] constexpr Either<ReturnTypeOf<Func>, RightType>
         map_left(Func && f);
 
+    /// @returns contained right value
+    ///
+    /// @note either is consumed after this call
+    /// @throws if the either does not contain a right
     constexpr RightT right();
 
+    /// @returns contained right value, or the specified default.
+    ///
+    /// @param default_ casted to right type and returned if this is not a
+    ///                 right
+    /// @note either is consumed after this call if it is a right
     template <typename U>
     constexpr RightT right_or(U && obj)
         { return is_right() ? right() : static_cast<RightT>(std::move(obj)); }
 
+    /// @returns contained right value, or a default value returned by a given
+    ///          function.
+    ///
+    /// @param f function to call if this either is not a right, it must take
+    ///          no arguments
+    /// @note either is consumed after this call if it is a right
     template <typename Func>
     constexpr RightT right_or_call(Func && f)
         { return is_right() ? right() : static_cast<RightT>(f()); }
+
+// -------------------------- PAUSE PUBLIC INTERFACE -------------------------
 
 private:
     static constexpr OptionalEither<LeftT, RightT> verify_non_empty
@@ -108,6 +184,8 @@ private:
     template <typename NewLeftType>
     constexpr Either<NewLeftType, RightType> with_new_left_type();
 };
+
+// ------------------------- PUBLIC INTERFACE CONTINUES -----------------------
 
 namespace either {
 
@@ -147,7 +225,7 @@ constexpr EitherLeftMaker<LeftType> left(LeftType && obj)
 
 } // end of either namespace -> into ::cul
 
-// ----------------------------------------------------------------------------
+// -------------------------- END OF PUBLIC INTERFACE -------------------------
 
 template <typename LeftT, typename RightT>
 template <typename CommonT>

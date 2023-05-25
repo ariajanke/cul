@@ -32,7 +32,7 @@ namespace cul {
 
 namespace either {
 
-// feature request, allow folding to void
+/// temporary for folding an either
 template <typename LeftT, typename RightT, typename CommonT>
 class Fold final : public detail::DatumVariantUser, public detail::FoldBase {
 public:
@@ -40,15 +40,29 @@ public:
     using LeftType = LeftT;
     using RightType = RightT;
 
+    /// transform a right value into the common type
+    ///
+    /// @param f must take the following form:
+    ///          [*anything*] (RightType *any qualifiers*) { return *common type*; }
     template <typename Func>
     constexpr Fold map(Func && f);
 
+    /// transform a left value into the common type
+    ///
+    /// @param f must take the following form:
+    ///          [*anything*] (LeftType *any qualifiers*) { return *common type*; }
     template <typename Func>
     constexpr Fold map_left(Func && f);
 
+    /// retrieves the value resulting from the fold
+    ///
+    /// @throws if the either was not properly transformed
     constexpr CommonType operator () ()
         { return std::move(m_value.value()); }
 
+    /// retrieves the value resulting from the fold
+    ///
+    /// @throws if the either was not properly transformed
     constexpr CommonType value()
         { return std::move(m_value.value()); }
 

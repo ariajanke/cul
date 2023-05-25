@@ -667,7 +667,6 @@ class OptionalEitherRightMaker;
 template <typename LeftType>
 class OptionalEitherLeftMaker;
 
-
 template <typename LeftType>
 class EitherRightMaker;
 

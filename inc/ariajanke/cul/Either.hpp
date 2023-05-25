@@ -201,7 +201,7 @@ public:
         { return Either<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
 
 private:
-    EitherRightMaker() {}
+    constexpr EitherRightMaker() {}
 
     template <typename LeftType2>
     friend constexpr EitherRightMaker<LeftType2> right();
@@ -223,7 +223,7 @@ private:
         m_obj(std::move(left_obj)) {}
 
     template <typename LeftType2>
-    friend constexpr EitherLeftMaker<LeftType2> left(LeftType &&);
+    friend constexpr EitherLeftMaker<LeftType2> left(LeftType2 &&);
 
     LeftType m_obj;
 };

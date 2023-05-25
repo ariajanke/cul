@@ -239,7 +239,7 @@ describe("cul::either::right") ([] {
         return test_that(right<int>().with(SomeThing{}).is_right());
     }).
     mark_it("makes a gettable right", [] {
-        right<int>()(SomeThing{}).right();
+        right<int>().with(SomeThing{}).right();
         return test_that(true);
     }).
     mark_it("preserves initial value of the right", [] {
@@ -255,8 +255,8 @@ describe("cul::either::right") ([] {
          map([](int i) constexpr { return i*2; }).
          map_left([] (char) constexpr { return 'a'; }).
          right() == 16);
-    static_assert(either::optional_right<int>().
-                      with<char>().fold<int>(9).value() == 9);
+    static_assert(either::optional_empty<int, char>().
+                      fold<int>(9).value() == 9);
     static_assert
         (either::right<char>().with(int(8)).
          map([](int i) constexpr { return i*2; }).
@@ -384,7 +384,7 @@ describe("Either#chain") ([] {
     using namespace either;
     mark_it("chains a right returning a right either", [] {
         auto a = right<SomeError>().with(SomeThing{}).
-            chain([] (SomeThing) { return right<SomeError>()(int(10)); }).
+            chain([] (SomeThing) { return right<SomeError>().with(int(10)); }).
             right();
         return test_that(a == 10);
     }).
@@ -396,7 +396,7 @@ describe("Either#chain") ([] {
     }).
     mark_it("chains a left returning a right either", [] {
         auto a = left(SomeError{}).with<int>().
-            chain_left([] (SomeError) { return right<SomeThing>()(int(10)); }).
+            chain_left([] (SomeError) { return right<SomeThing>().with(int(10)); }).
             right();
         return test_that(a == 10);
     }).
@@ -422,7 +422,7 @@ describe("Either#chain") ([] {
 describe("either::optional_left") ([] {
     using namespace either;
     mark_it("can create an empty either", [] {
-        return test_that(optional_left<SomeError>().with<SomeThing>().is_empty());
+        return test_that(optional_empty<SomeError, SomeThing>().is_empty());
     }).
     mark_it("creates a left either", [] {
         return test_that(optional_left(SomeThing{}).with<int>   ().is_left());
@@ -435,7 +435,7 @@ describe("either::optional_left") ([] {
         auto rv = optional_left<int>(10).with<SomeThing>().left();
         return test_that(rv == 10);
     });
-    static_assert(either::optional_left<char>().with<int>().is_empty());
+    static_assert(either::optional_empty<char, int>().is_empty());
     static_assert(either::optional_left<char>('a').with<int>().left() == 'a');
     static_assert
         (either::optional_left<char>('a').with<int>().
@@ -459,7 +459,7 @@ describe("either::optional_left") ([] {
             map_left([](int i) constexpr { return i + 4; }).
             map([] (char) { return 3; })() == 20);
     static_assert
-        (either::optional_left<int>().with<char>().
+        (either::optional_empty<int, char>().
          fold<int>(int(10)).
             map([] (char) constexpr { return int(0); }).
             map_left([] (int) constexpr { return int(1); })()
@@ -470,20 +470,20 @@ describe("either::optional_left") ([] {
 describe("either::optional_right") ([] {
     using namespace either;
     mark_it("can create an empty either", [] {
-        return test_that(optional_right<SomeError>().with<SomeThing>().is_empty());
+        return test_that(optional_empty<SomeError, SomeThing>().is_empty());
     }).
     mark_it("creates a right either", [] {
         return test_that(optional_right<int>().with(SomeThing{}).is_right());
     }).
     mark_it("makes a gettable right", [] {
-        optional_right<int>()(SomeThing{}).right();
+        optional_right<int>().with(SomeThing{}).right();
         return test_that(true);
     }).
     mark_it("preserves initial value of the right", [] {
         auto rv = optional_right<SomeError>().with(int(10)).right();
         return test_that(rv == 10);
     });
-    static_assert(either::optional_right<char>().with<int>().is_empty());
+    static_assert(either::optional_empty<char, int>().is_empty());
     static_assert(either::optional_right<char>().with(int(8)).right() == 8);
     static_assert
         (either::optional_right<char>().with(int(8)).
@@ -507,7 +507,7 @@ describe("either::optional_right") ([] {
             map([](int i) constexpr { return i + 4; }).
             map_left([] (char) { return 3; })() == 20);
     static_assert
-        (either::optional_right<int>().with<char>().
+        (either::optional_empty<int, char>().
          fold<int>(int(10)).
             map([] (char) constexpr { return int(0); }).
             map_left([] (int) constexpr { return int(1); })()
@@ -519,7 +519,7 @@ describe("OptionalEither::chain") ([] {
     using namespace either;
     mark_it("chains a right returning a right either", [] {
         auto a = optional_right<SomeError>().with(SomeThing{}).
-            chain([] (SomeThing) { return optional_right<SomeError>()(int(10)); }).
+            chain([] (SomeThing) { return optional_right<SomeError>().with(int(10)); }).
             right();
         return test_that(a == 10);
     }).
@@ -531,8 +531,8 @@ describe("OptionalEither::chain") ([] {
     }).
     mark_it("does not chains on an empty", [] {
         int i = 0;
-        (void)optional_right<int>().with<SomeThing>().
-            chain([&i] (SomeThing &&) { ++i; return optional_left<int>().with<char>(); });
+        (void)optional_empty<int, SomeThing>().
+            chain([&i] (SomeThing &&) { ++i; return optional_empty<int, char>(); });
         return test_that(i == 0);
     }).
     mark_it("handles conversion of return values", [] {
@@ -552,7 +552,7 @@ describe("OptionalEither::chain_left") ([] {
     using namespace either;
     mark_it("chains a left returning a right either", [] {
         auto a = optional_left(SomeError{}).with<int>().
-            chain_left([] (SomeError) { return optional_right<int>()(int(10)); }).
+            chain_left([] (SomeError) { return optional_right<int>().with(int(10)); }).
             right();
         return test_that(a == 10);
     }).
@@ -564,8 +564,8 @@ describe("OptionalEither::chain_left") ([] {
     }).
     mark_it("does not chains on an empty", [] {
         int i = 0;
-        (void)optional_right<int>().with<SomeThing>().
-            chain_left([&i] (int) { ++i; return optional_left<int>().with<SomeThing>(); });
+        (void)optional_empty<int, SomeThing>().
+            chain_left([&i] (int) { ++i; return optional_empty<int, SomeThing>(); });
         return test_that(i == 0);
     });
 });

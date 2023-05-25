@@ -659,4 +659,33 @@ protected:
 
 } // end of detail namespace -> ::cul
 
+namespace either {
+
+template <typename LeftType>
+class OptionalEitherRightMaker;
+
+template <typename LeftType>
+class OptionalEitherLeftMaker;
+
+
+template <typename LeftType>
+class EitherRightMaker;
+
+template <typename LeftType>
+class EitherLeftMaker;
+
+template <typename LeftType>
+constexpr OptionalEitherRightMaker<LeftType> optional_right();
+
+template <typename LeftType>
+constexpr OptionalEitherLeftMaker<LeftType> optional_left(LeftType &&);
+
+template <typename LeftType>
+constexpr EitherRightMaker<LeftType> right();
+
+template <typename LeftType>
+constexpr EitherLeftMaker<LeftType> left(LeftType &&);
+
+} // end of either namespace -> into ::cul
+
 } // end of cul namespace

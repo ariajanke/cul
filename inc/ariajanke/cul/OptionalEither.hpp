@@ -219,7 +219,7 @@ private:
 
 namespace either {
 
-/// temporary returned by cul::optional_right
+/// temporary returned by cul::either::optional_right
 template <typename LeftType>
 class OptionalEitherRightMaker final {
 public:
@@ -228,23 +228,18 @@ public:
     template <typename RightType>
     constexpr OptionalEither<LeftType, RightType> with(RightType && right) const
         { return OptionalEither<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
-#   if 0
-    template <typename RightType>
-    constexpr OptionalEither<LeftType, RightType> with() const
-        { return OptionalEither<LeftType, RightType>{}; }
-#   endif
-    template <typename RightType>
-    constexpr OptionalEither<LeftType, RightType> operator() (RightType && right) const
-        { return with<RightType>(std::move(right)); }
+
+private:
+    constexpr OptionalEitherRightMaker() {}
+
+    template <typename LeftType2>
+    friend constexpr OptionalEitherRightMaker<LeftType2> optional_right();
 };
 
-/// temporary returned by cul::optional_left
+/// temporary returned by cul::either::optional_left
 template <typename LeftType>
 class OptionalEitherLeftMaker final {
 public:
-    explicit constexpr OptionalEitherLeftMaker(LeftType && left_obj):
-        m_obj(std::move(left_obj)) {}
-
     /// @returns a new optional either with a left initial value
     /// This method must be called to indicate the right's type
     template <typename RightType>
@@ -254,38 +249,35 @@ public:
     }
 
 private:
+    explicit constexpr OptionalEitherLeftMaker(LeftType && left_obj):
+        m_obj(std::move(left_obj)) {}
+
+    template <typename LeftType2>
+    friend constexpr OptionalEitherLeftMaker<LeftType2> optional_left(LeftType2 &&);
+
     LeftType m_obj;
 };
-#if 0
-template <typename LeftType>
-class EmptyOptionalEitherLeftMaker final {
-public:
-    constexpr EmptyOptionalEitherLeftMaker() {}
 
-    template <typename RightType>
-    constexpr OptionalEither<LeftType, RightType> with()
-        { return OptionalEither<LeftType, RightType>{}; }
-};
-#endif
-/// begins construction a right
+/// begins construction an optional either with a right value
+///
 /// @note this is the preferred method of constructing an optional either
 template <typename LeftType>
 constexpr OptionalEitherRightMaker<LeftType> optional_right()
     { return OptionalEitherRightMaker<LeftType>{}; }
 
 /// begins construction of an optional either with a left value
+///
 /// @param obj initial value for the left
 /// @note this is the preferred method of constructing an optional either
 template <typename LeftType>
 constexpr OptionalEitherLeftMaker<LeftType> optional_left(LeftType && obj)
     { return OptionalEitherLeftMaker<LeftType>{std::move(obj)}; }
-#if 0
-/// begins construction of an empty optional either
-/// @note this is the preferred method of constructing an optional either
-template <typename LeftType>
-constexpr EmptyOptionalEitherLeftMaker<LeftType> optional_left()
-    { return EmptyOptionalEitherLeftMaker<LeftType>{}; }
-#endif
+
+/// creates an empty optional either
+template <typename LeftType, typename RightType>
+constexpr OptionalEither<LeftType, RightType> optional_empty()
+    { return OptionalEither<LeftType, RightType>{}; }
+
 } // end of either namespace -> into ::cul
 
 // -------------------------- END OF PUBLIC INTERFACE -------------------------

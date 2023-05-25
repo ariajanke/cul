@@ -189,36 +189,56 @@ private:
 
 namespace either {
 
+/// temporary returned by cul::either::left
 template <typename LeftType>
 class EitherRightMaker final {
 public:
+    /// @returns an either initialized with a right value
+    ///
+    /// @param obj initial right value
     template <typename RightType>
     constexpr Either<LeftType, RightType> with(RightType && right) const
         { return Either<LeftType, RightType>{TypeTag<LeftType>{}, std::move(right)}; }
 
-    template <typename RightType>
-    constexpr Either<LeftType, RightType> operator() (RightType && right) const
-        { return with<RightType>(std::move(right)); }
+private:
+    EitherRightMaker() {}
+
+    template <typename LeftType2>
+    friend constexpr EitherRightMaker<LeftType2> right();
 };
 
+/// temporary returned by cul::either::right
 template <typename LeftType>
 class EitherLeftMaker final {
 public:
-    explicit constexpr EitherLeftMaker(LeftType && left_obj):
-        m_obj(std::move(left_obj)) {}
-
+    /// @returns an either initialized with a right value
+    ///
+    /// @param obj initial right value
     template <typename RightType>
     constexpr Either<LeftType, RightType> with()
         { return Either<LeftType, RightType>{std::move(m_obj), TypeTag<RightType>{}}; }
 
 private:
+    explicit constexpr EitherLeftMaker(LeftType && left_obj):
+        m_obj(std::move(left_obj)) {}
+
+    template <typename LeftType2>
+    friend constexpr EitherLeftMaker<LeftType2> left(LeftType &&);
+
     LeftType m_obj;
 };
 
+/// begins construction of a either with a right value
+///
+/// @note this is the preferred method of constructing an either
 template <typename LeftType>
 constexpr EitherRightMaker<LeftType> right()
     { return EitherRightMaker<LeftType>{}; }
 
+/// begins construction of a either with a right value
+///
+/// @param obj initial right value
+/// @note this is the preferred method of constructing an either
 template <typename LeftType>
 constexpr EitherLeftMaker<LeftType> left(LeftType && obj)
     { return EitherLeftMaker<LeftType>{std::move(obj)}; }

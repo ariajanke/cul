@@ -26,10 +26,16 @@
 
 #include <ariajanke/cul/TreeTestSuite.hpp>
 #include <ariajanke/cul/Util.hpp>
+#include <ariajanke/cul/FunctionTraits.hpp>
+#include <ariajanke/cul/Either.hpp>
+
+#include <variant>
+#include <optional>
 
 #include <cassert>
 
 using namespace cul::exceptions_abbr;
+using cul::Either;
 
 class A final {};
 class C final {};
@@ -86,7 +92,6 @@ int main() {
     it_handles_failures_correctly();
     it_does_not_stop_with_failed_describe();
     it_throws_on_empty_describes();
-
     return 0;
 }
 

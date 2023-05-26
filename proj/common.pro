@@ -79,6 +79,11 @@ HEADERS += \
     ../inc/ariajanke/cul/RectangleUtils.hpp          \
     ../inc/ariajanke/cul/VectorUtils.hpp             \
     ../inc/ariajanke/cul/TreeTestSuite.hpp           \
+    ../inc/ariajanke/cul/Either.hpp                  \
+    ../inc/ariajanke/cul/FunctionTraits.hpp          \
+    ../inc/ariajanke/cul/OptionalEither.hpp          \
+    ../inc/ariajanke/cul/detail/either-helpers.hpp   \
+    ../inc/ariajanke/cul/EitherFold.hpp              \
     \ # SFML Utilities
     ../inc/ariajanke/cul/sf/DrawText.hpp             \
     ../inc/ariajanke/cul/sf/DrawRectangle.hpp        \
@@ -104,8 +109,9 @@ SOURCES += \
     \#../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
     \#../unit-tests/test-new-vectors.cpp \
-    ../unit-tests/sample-tree-test-suite.cpp \
-    ../unit-tests/test-tree-test-suite-p2.cpp
+    \#../unit-tests/sample-tree-test-suite.cpp \
+    \#../unit-tests/test-tree-test-suite-p2.cpp \
+    ../unit-tests/test-either.cpp
 
 INCLUDEPATH += \
     ../inc

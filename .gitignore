@@ -10,3 +10,5 @@ msvc/erfindung.VC.db
 libcommon.a
 libcommon-d.a
 html
+!.github/workflows/main.yml
+

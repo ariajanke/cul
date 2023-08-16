@@ -99,7 +99,7 @@ template <typename Func>
 constexpr Fold<LeftT, RightT, CommonT>
     Fold<LeftT, RightT, CommonT>::map(Func && f)
 {
-    VerifyFoldFunctionForSide<CommonT, Func, RightType>{};
+    (void)VerifyFoldFunctionForSide<CommonT, Func, RightType>{};
     if (m_datum.index() == k_right_idx) {
         OptionalCommon rv = f(consume_datum<k_right_idx>(m_datum));
         return Fold{std::move(rv), std::move(m_datum)};
@@ -113,7 +113,7 @@ template <typename Func>
 constexpr Fold<LeftT, RightT, CommonT>
     Fold<LeftT, RightT, CommonT>::map_left(Func && f)
 {
-    VerifyFoldFunctionForSide<CommonT, Func, LeftType>{};
+    (void)VerifyFoldFunctionForSide<CommonT, Func, LeftType>{};
     if (m_datum.index() == k_left_idx) {
         OptionalCommon rv = f(consume_datum<k_left_idx>(m_datum));
         return Fold{std::move(rv), std::move(m_datum)};

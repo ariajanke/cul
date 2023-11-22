@@ -112,7 +112,8 @@ SOURCES += \
     \#../unit-tests/test-new-vectors.cpp \
     \#../unit-tests/sample-tree-test-suite.cpp \
     \#../unit-tests/test-tree-test-suite-p2.cpp \
-    ../unit-tests/test-either.cpp
+    \#../unit-tests/test-either.cpp
+    ../unit-tests/test-HashMap.cpp
 
 INCLUDEPATH += \
     ../inc

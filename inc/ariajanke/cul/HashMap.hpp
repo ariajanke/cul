@@ -59,6 +59,7 @@ Disadvantages:
 #include <limits>
 #include <stdexcept>
 #include <vector>
+#include <optional>
 
 #include <cassert>
 #include <cstddef>
@@ -71,7 +72,7 @@ template <
     typename ElementT,
     typename Hash = std::hash<KeyT>,
     typename KeyEqualT = std::equal_to<void>,
-    typename AllocatorT = std::allocator<std::pair<KeyT, ElementT>>
+    typename AllocatorT = std::allocator<std::pair<KeyT, std::aligned_storage_t<sizeof(ElementT)>>>
 >
 class HashMap {
 public:
@@ -81,31 +82,71 @@ public:
     using Hasher = Hash;
     using KeyEquality = KeyEqualT;
     using Allocator = AllocatorT;
-    using BucketContainer = std::vector<KeyValuePairType, Allocator>;
+    using Bucket = std::pair<KeyType, std::aligned_storage_t<sizeof(ElementType)>>;
+    using BucketContainer = std::vector<Bucket, Allocator>;
     using BucketIterator = typename BucketContainer::iterator;
     using BucketConstIterator = typename BucketContainer::const_iterator;
+    template <typename T>
+    using Optional = std::optional<T>;
+
+    template <bool kt_is_constant>
+    struct PairWrapper final {
+    public:
+        using DataPtr = std::conditional_t
+            <kt_is_constant, const void *, void *>;
+
+        using ElementPtr = std::conditional_t
+            <kt_is_constant, const ElementType *, ElementType *>;
+
+        using ElementReference = std::conditional_t
+            <kt_is_constant, const ElementType &, ElementType &>;
+
+        using PairType = std::pair<const KeyType &, ElementReference>;
+
+        PairWrapper(const KeyType & key, DataPtr el_ref):
+            m_proxy(key, *reinterpret_cast<ElementPtr>(el_ref)) {}
+
+        const PairType * operator -> () const { return &m_proxy; }
+
+    private:
+        PairType m_proxy;
+    };
 
     template <bool kt_is_constant>
     class IteratorImpl final {
     public:
-        using BucketIteratorImpl =
-            std::conditional_t<kt_is_constant, BucketConstIterator, BucketIterator>;
+        using PairWrapperImpl = PairWrapper<kt_is_constant>;
+
+        using ElementReference = typename PairWrapperImpl::ElementReference;
+
+        using BucketContainerPtr = std::conditional_t
+            <kt_is_constant, const BucketContainer *, BucketContainer *>;
 
         using Reference = std::conditional_t
-            <kt_is_constant, const ElementType &, ElementType &>;
+            <kt_is_constant, const KeyValuePairType &, KeyValuePairType &>;
 
         using Pointer = std::conditional_t
-            <kt_is_constant, const ElementType *, ElementType *>;
+            <kt_is_constant, const KeyValuePairType *, KeyValuePairType *>;
 
-        static BucketIteratorImpl advance_past_empty
-            (const BucketIteratorImpl & position,
-             const BucketIteratorImpl & end,
-             const KeyType & empty);
+        // defs for std algorithms
+        using difference_type = std::ptrdiff_t;
+        using value_type = PairWrapperImpl;
+        using pointer = PairWrapperImpl;
+        using reference = typename PairWrapperImpl::PairType;
+        using iterator_category = std::bidirectional_iterator_tag;
 
         IteratorImpl
-            (const BucketIteratorImpl & position,
-             const BucketIteratorImpl & end,
+            (std::size_t index,
+             BucketContainerPtr container,
              const KeyType & empty);
+
+        IteratorImpl(const IteratorImpl &);
+
+        IteratorImpl(IteratorImpl &&);
+
+        IteratorImpl & operator = (const IteratorImpl &);
+
+        IteratorImpl & operator = (IteratorImpl &&);
 
         bool operator == (const IteratorImpl & rhs) const
             { return equal_to(rhs); }
@@ -117,28 +158,50 @@ public:
 
         IteratorImpl advance_past_empty() &&;
 
-        Reference operator * () const { return element(); }
+        PairWrapperImpl operator * () const { return element(); }
 
-        Pointer operator -> () const { return &element(); }
+        // a huge problem actually...
+        // It's possible with a proxy type
+        PairWrapperImpl operator -> () const { return element(); }
 
     private:
         friend class HashMap;
 
         bool equal_to(const IteratorImpl &) const;
 
-        Reference element() const { return m_iterator->second; }
+        PairWrapperImpl element() const {
+            auto & bucket = (*m_container)[m_index];
+            return PairWrapperImpl{bucket.first, &bucket.second};
+        }
 
-        auto key() const { return m_iterator->first; }
+        auto key() const { return (*m_container)[m_index].first; }
 
-        // not fixing now:
-        // index was very purposely chosen...
-        BucketIteratorImpl m_iterator;
-        BucketIteratorImpl m_end_iterator;
-        const KeyType & m_empty_key;
+        void advance_past_empty_();
+
+        std::size_t m_index = 0;
+        BucketContainerPtr m_container = nullptr;
+        const KeyType * m_empty_key = nullptr;
     };
 
     using Iterator      = IteratorImpl<false>;
     using ConstIterator = IteratorImpl<true>;
+
+    struct Extraction final {
+        Extraction(Iterator && nx_, ElementType && el_, KeyType && key_):
+            next(std::move(nx_)), element(std::move(el_)), key(std::move(key_)) {}
+
+        Iterator next;
+        ElementType element;
+        KeyType key;
+    };
+
+    struct Insertion final {
+        Insertion(bool success_, Iterator && position_):
+            success(success_), position(std::move(position_)) {}
+
+        bool success;
+        Iterator position;
+    };
 
     HashMap(KeyType empty_key,
             BucketContainer && = BucketContainer{},
@@ -154,25 +217,27 @@ public:
 
     ConstIterator begin() const noexcept { return cbegin(); }
 
-    Iterator begin() noexcept
-        { return make_iterator(m_bucket_container.begin()); }
+    Iterator begin() noexcept { return make_iterator(0).advance_past_empty(); }
+
+    std::size_t capacity() const noexcept
+        { return m_bucket_container.size() / k_load_factor; }
 
     ConstIterator cbegin() const noexcept
-        { return make_iterator(m_bucket_container.cbegin()); }
+        { return make_iterator(0).advance_past_empty(); }
 
     ConstIterator cend() const noexcept
-        { return make_iterator(m_bucket_container.cend()); }
+        { return make_iterator(m_bucket_container.size() - 1); }
 
     void clear() noexcept;
 
     template <typename... Types>
-    std::pair<Iterator, bool> emplace(Types &&... args)
+    Insertion emplace(Types &&... args)
         { return emplace_impl(std::forward<Types>(args)...); }
 
     ConstIterator end() const noexcept { return cend(); }
 
     Iterator end() noexcept
-        { return make_iterator(m_bucket_container.end()); }
+        { return make_iterator(m_bucket_container.size() - 1); }
 
     template <typename OtherKeyType, typename ... ArgTypes>
     Iterator ensure(const OtherKeyType & key, ArgTypes &&... args)
@@ -184,19 +249,15 @@ public:
 
     Iterator erase(const Iterator &);
 
-    template <typename KeyType>
-    Iterator find(const KeyType &);
+    Extraction extract(const Iterator &);
 
-    template <typename KeyType>
-    ConstIterator find(const KeyType &) const;
+    template <typename OtherKeyType>
+    Iterator find(const OtherKeyType &);
+
+    template <typename OtherKeyType>
+    ConstIterator find(const OtherKeyType &) const;
 
     bool is_empty() const noexcept { return m_size == 0; }
-
-    std::pair<Iterator, bool> insert(const KeyValuePairType & pair)
-        { return emplace_impl(KeyType{pair.first}, pair.second); }
-
-    std::pair<Iterator, bool> insert(KeyValuePairType && pair)
-        { return emplace_impl(std::move(pair.first), std::move(pair.second)); }
 
     BucketContainer move_out_buckets();
 
@@ -209,17 +270,16 @@ public:
     void swap(HashMap &);
 
 private:
-    Iterator make_iterator(BucketIterator itr);
+    static constexpr const std::size_t k_load_factor = 2;
 
-    ConstIterator make_iterator(BucketConstIterator itr) const;
+    Iterator make_iterator(std::size_t);
+
+    ConstIterator make_iterator(std::size_t) const;
 
     template <typename OtherKeyType, typename ... ArgTypes>
-    std::pair<Iterator, bool> emplace_impl(OtherKeyType &&, ArgTypes &&...);
+    Insertion emplace_impl(OtherKeyType &&, ArgTypes &&...);
 
-    template <typename OtherKeyType>
-    std::size_t to_index(const OtherKeyType &) const;
-
-    BucketIterator probe_next(const BucketIterator &) const noexcept;
+    std::size_t probe_next(std::size_t) const noexcept;
 
     template <typename OtherKeyType>
     std::size_t key_to_index(const OtherKeyType & key) const noexcept
@@ -236,6 +296,17 @@ private:
 
 // ----------------------------------------------------------------------------
 
+namespace detail {
+
+inline std::size_t nearest_base2_number(std::size_t n) {
+    std::size_t pow2 = 1;
+    while (pow2 < n)
+        { pow2 *= 2; }
+    return pow2;
+}
+
+} // end of cul::detail namespace -> into cul namespace
+
 #define MACRO_HASHMAP_TEMPLATES \
     template < \
         typename KeyT, \
@@ -246,35 +317,96 @@ private:
     >
 
 #define MACRO_HASHMAP_CLASSNAME \
-    HashMap<KeyT,ElementT, Hash, KeyEqualT, AllocatorT>
+    HashMap<KeyT, ElementT, Hash, KeyEqualT, AllocatorT>
 
 MACRO_HASHMAP_TEMPLATES
 template <bool kt_is_constant>
 MACRO_HASHMAP_CLASSNAME::IteratorImpl<kt_is_constant>::IteratorImpl
-    (const BucketIteratorImpl & iter_impl_,
-     const BucketIteratorImpl & end_,
+    (std::size_t index_,
+     BucketContainerPtr container_,
      const KeyType & empty_key_):
-    m_iterator(iter_impl_),
-    m_end_iterator(end_),
-    m_empty_key(empty_key_) {}
+    m_index(index_),
+    m_container(container_),
+    m_empty_key(&empty_key_) {}
+
+MACRO_HASHMAP_TEMPLATES
+template <bool kt_is_constant>
+MACRO_HASHMAP_CLASSNAME::IteratorImpl<kt_is_constant>::IteratorImpl
+    (const IteratorImpl & rhs):
+    m_index(rhs.m_index),
+    m_container(rhs.m_container),
+    m_empty_key(rhs.m_empty_key) {}
+
+MACRO_HASHMAP_TEMPLATES
+template <bool kt_is_constant>
+MACRO_HASHMAP_CLASSNAME::IteratorImpl<kt_is_constant>::IteratorImpl
+    (IteratorImpl && rhs):
+    m_index(std::move(rhs.m_index)),
+    m_container(std::move(rhs.m_container)),
+    m_empty_key(std::move(rhs.m_empty_key)) {}
+
+MACRO_HASHMAP_TEMPLATES
+template <bool kt_is_constant>
+typename MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant> &
+    MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant>::
+    operator = (const IteratorImpl & rhs)
+{
+    if (this != &rhs) {
+        m_index = rhs.m_index;
+        m_container = rhs.m_container;
+        m_empty_key = rhs.m_empty_key;
+    }
+    return *this;
+}
+
+MACRO_HASHMAP_TEMPLATES
+template <bool kt_is_constant>
+typename MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant> &
+    MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant>::
+    operator = (IteratorImpl && rhs)
+{
+    if (this != &rhs) {
+        std::swap(m_index    , rhs.m_index    );
+        std::swap(m_container, rhs.m_container);
+        std::swap(m_empty_key, rhs.m_empty_key);
+    }
+    return *this;
+}
 
 MACRO_HASHMAP_TEMPLATES
 template <bool kt_is_constant>
 typename MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant> &
     MACRO_HASHMAP_CLASSNAME::IteratorImpl<kt_is_constant>::operator++ ()
 {
-    for (/* blank */;
-         KeyEquality{}(key(), m_empty_key) &&
-            m_iterator != m_end_iterator;
-         ++m_iterator) {}
+    ++m_index;
+    advance_past_empty_();
     return *this;
+}
+
+MACRO_HASHMAP_TEMPLATES
+template <bool kt_is_constant>
+typename MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant>
+    MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant>::
+    advance_past_empty() &&
+{
+    advance_past_empty_();
+    return IteratorImpl{m_index, m_container, *m_empty_key};
+}
+
+MACRO_HASHMAP_TEMPLATES
+template <bool kt_is_constant>
+/* private */ void MACRO_HASHMAP_CLASSNAME::template IteratorImpl<kt_is_constant>::
+    advance_past_empty_()
+{
+    while (m_index < m_container->size() && KeyEquality{}(key(), *m_empty_key))
+        { ++m_index; }
 }
 
 MACRO_HASHMAP_TEMPLATES
 template <bool kt_is_constant>
 /* private */ bool MACRO_HASHMAP_CLASSNAME::IteratorImpl<kt_is_constant>::
     equal_to(const IteratorImpl & rhs) const
-{ return KeyEquality{}(key(), rhs.key()); }
+{ return m_index == rhs.m_index && m_container == rhs.m_container; }
 
 // ----------------------------------------------------------------------------
 
@@ -285,7 +417,10 @@ MACRO_HASHMAP_CLASSNAME::HashMap
      const Allocator & allocator_):
     m_empty_key(empty_key_),
     m_bucket_container(std::move(buckets_), allocator_)
-{ rehash(); }
+{
+    if (!buckets_.empty())
+        { rehash(); }
+}
 
 MACRO_HASHMAP_TEMPLATES
 MACRO_HASHMAP_CLASSNAME::HashMap(const HashMap & rhs):
@@ -334,47 +469,78 @@ MACRO_HASHMAP_TEMPLATES
 typename MACRO_HASHMAP_CLASSNAME::Iterator
     MACRO_HASHMAP_CLASSNAME::erase
     (const Iterator & iterator)
+{ return extract(iterator).first; }
+
+MACRO_HASHMAP_TEMPLATES
+typename MACRO_HASHMAP_CLASSNAME::Extraction
+    MACRO_HASHMAP_CLASSNAME::extract(const Iterator & iterator)
 {
-    auto bucket = iterator.m_iterator;
-    decltype(bucket) itr;
+    auto index  = iterator.m_index;
+    auto bucket = m_bucket_container.begin() + index;
+    const auto beg_ = m_bucket_container.begin();
     while (true) {
-        itr = probe_next(iterator.m_iterator);
-        if (KeyEquality{}(itr->first, m_empty_key) || itr < bucket) {
-            *bucket = std::make_pair(m_empty_key, ElementType{});
+        index = probe_next(index);
+        assert(index < m_bucket_container.size());
+        auto itr = beg_ + index;
+        // Why did I add this or? This is why tests are a thing
+        if (KeyEquality{}(itr->first, m_empty_key) /* || index < (bucket - ...)*/) {
             --m_size;
-            return Iterator{iterator}.advance_past_empty();
+            auto & el = *reinterpret_cast<ElementType *>(&bucket->second);
+            auto ex = Extraction
+                {Iterator{iterator}.advance_past_empty(),
+                 std::move(el),
+                 std::move(bucket->first)};
+            bucket->first = m_empty_key;
+            el.~ElementType();
+            return ex;
         }
 
         auto ideal = m_bucket_container.begin() + key_to_index(itr->first);
         // is bucket_iterator closer to ideal than itr?
         if (magnitude(bucket - ideal) < magnitude(itr - ideal)) {
+            // uh oh, can't do this anymore...
+            // we'll have to change this behavior fundementally...
+
+#           if 0 // save until after tests (and NTS get a test to hit this branch)
             *bucket = *ideal; // how is this a swap?
+#           endif
+            // purpose this to be "unsafe move"
+            {
+            auto & bucket_el = *reinterpret_cast<ElementType *>(&bucket->second);
+            auto & ideal_el  = *reinterpret_cast<ElementType *>(&ideal ->second);
+            bucket->first = std::move(ideal->first);
+            ideal->first = m_empty_key;
+            bucket_el = std::move(ideal_el);
+            ideal_el.~ElementType();
+            }
             bucket = itr;
         }
     }
 }
 
 MACRO_HASHMAP_TEMPLATES
-template <typename KeyType>
+template <typename OtherKeyType>
 typename MACRO_HASHMAP_CLASSNAME::Iterator
-    MACRO_HASHMAP_CLASSNAME::find(const KeyType & key)
+    MACRO_HASHMAP_CLASSNAME::find(const OtherKeyType & key)
 {
     if (KeyEquality{}(key, m_empty_key))
-        { return m_bucket_container.end(); }
-    for (size_t idx = key_to_idx(key);; idx = probe_next(idx)) {
-      if (key_equal()(buckets_[idx].first, key)) {
-        return iterator(this, idx);
-      }
-      if (key_equal()(buckets_[idx].first, empty_key_)) {
-        return end();
-      }
+        { return end(); }
+
+    auto index = key_to_index(key);
+    while (true) {
+        auto & bucket = m_bucket_container[index];
+        if (KeyEquality{}(bucket.first, key))
+            { return make_iterator(index); }
+        if (KeyEquality{}(bucket.first, m_empty_key))
+            { return end(); }
+        index = probe_next(index);
     }
 }
 
 MACRO_HASHMAP_TEMPLATES
-template <typename KeyType>
+template <typename OtherKeyType>
 typename MACRO_HASHMAP_CLASSNAME::ConstIterator
-    MACRO_HASHMAP_CLASSNAME::find(const KeyType & key) const
+    MACRO_HASHMAP_CLASSNAME::find(const OtherKeyType & key) const
 {
     // still dumb
     Iterator itr = const_cast<HashMap *>(this)->find(key);
@@ -396,22 +562,85 @@ typename MACRO_HASHMAP_CLASSNAME::BucketContainer
 MACRO_HASHMAP_TEMPLATES
 void MACRO_HASHMAP_CLASSNAME::rehash
     (std::size_t for_at_least_this_many_elements)
-{}
+{
+    if (is_empty()) {
+        reserve(2);
+        return;
+    }
+
+    HashMap temp{m_empty_key};
+    temp.reserve(std::min(m_bucket_container.size()*k_load_factor,
+                          for_at_least_this_many_elements));
+    auto itr = begin();
+    while (itr != end()) {
+        assert(!KeyEquality{}(itr->first, m_empty_key));
+        auto extraction = extract(itr);
+        temp.emplace(std::move(extraction.key),
+                     std::move(extraction.element));
+        itr = extraction.next;
+    }
+    swap(temp);
+}
 
 MACRO_HASHMAP_TEMPLATES
 void MACRO_HASHMAP_CLASSNAME::reserve
     (std::size_t for_at_least_this_many_elements)
-{}
+{
+    m_bucket_container.resize
+        (detail::nearest_base2_number
+            (for_at_least_this_many_elements*k_load_factor));
+}
 
 MACRO_HASHMAP_TEMPLATES
-void swap(HashMap &);
+void MACRO_HASHMAP_CLASSNAME::swap(HashMap & rhs) {
+    m_bucket_container.swap(rhs.m_bucket_container);
+    std::swap(m_empty_key, rhs.m_empty_key);
+    std::swap(m_size     , rhs.m_size     );
+}
 
-/* private */ Iterator make_iterator(BucketIterator itr);
+MACRO_HASHMAP_TEMPLATES
+/* private */ typename MACRO_HASHMAP_CLASSNAME::Iterator
+    MACRO_HASHMAP_CLASSNAME::make_iterator(std::size_t index)
+{ return Iterator{index, &m_bucket_container, m_empty_key}; }
 
-/* private */ ConstIterator make_iterator(BucketConstIterator itr) const;
+MACRO_HASHMAP_TEMPLATES
+/* private */ typename MACRO_HASHMAP_CLASSNAME::ConstIterator
+    MACRO_HASHMAP_CLASSNAME::make_iterator(std::size_t index) const
+{ return ConstIterator{index, &m_bucket_container, m_empty_key}; }
 
+MACRO_HASHMAP_TEMPLATES
 template <typename OtherKeyType, typename ... ArgTypes>
-/* private */ std::pair<Iterator, bool> emplace_impl(OtherKeyType &&, ArgTypes &&...);
+/* private */
+    typename MACRO_HASHMAP_CLASSNAME::Insertion
+    MACRO_HASHMAP_CLASSNAME::emplace_impl
+    (OtherKeyType && key, ArgTypes &&... element_args)
+{
+    if (KeyEquality{}(m_empty_key, key)) {
+        throw std::invalid_argument
+            {"Cannot use empty key for inserting elements in hash map"};
+    }
+
+    if (size() + 1 > capacity())
+        { rehash(size()*2); }
+
+    auto index = key_to_index(key);
+    while (true) {
+        auto & bucket = m_bucket_container[index];
+        if (KeyEquality{}(bucket.first, m_empty_key)) {
+            bucket.first = std::move(key);
+            new (&bucket.second) ElementType{std::forward<ArgTypes>(element_args)...};
+            ++m_size;
+            return Insertion{true, make_iterator(index)};
+        } else if (KeyEquality{}(bucket.first, key)) {
+            return Insertion{false, make_iterator(index)};
+        }
+        index = probe_next(index);
+    }
+}
+
+MACRO_HASHMAP_TEMPLATES
+std::size_t MACRO_HASHMAP_CLASSNAME::probe_next(std::size_t idx) const noexcept
+    { return (idx + 1) & size_mask(); }
 
 #undef MACRO_HASHMAP_TEMPLATES
 #undef MACRO_HASHMAP_CLASSNAME

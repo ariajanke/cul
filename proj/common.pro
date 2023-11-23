@@ -38,6 +38,7 @@ contains(CONFIG, release) {
     TARGET = common-test-app
 }
 
+INCLUDEPATH += ../lib/SFML/include
 QMAKE_CXXFLAGS += -std=c++17 -DMACRO_ARIAJANKE_CUL_ENABLE_TYPELIST_TESTS
 QMAKE_LFLAGS   += -std=c++17
 LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
@@ -107,13 +108,13 @@ SOURCES += \
     \#../unit-tests/test-math-utils.cpp \
     \#../unit-tests/vector-tests.cpp \
     \#../unit-tests/sfutils-tests.cpp \ # empty?!
-    \#../demos/sf-util-demos.cpp \ # problems here
+    ../demos/sf-util-demos.cpp \ # problems here
     \#../unit-tests/test-ColorString.cpp \
     \#../unit-tests/test-new-vectors.cpp \
     \#../unit-tests/sample-tree-test-suite.cpp \
     \#../unit-tests/test-tree-test-suite-p2.cpp \
     \#../unit-tests/test-either.cpp
-    ../unit-tests/test-HashMap.cpp
+    #../unit-tests/test-HashMap.cpp
 
 INCLUDEPATH += \
     ../inc

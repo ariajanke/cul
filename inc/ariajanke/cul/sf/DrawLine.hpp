@@ -85,7 +85,7 @@ public:
     Iterator end() const;
 
 private:
-    void draw(sf::RenderTarget &, sf::RenderStates) const final;
+    void draw(sf::RenderTarget &, const sf::RenderStates &) const final;
 
     float thickness() const;
 

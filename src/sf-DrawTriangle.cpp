@@ -32,6 +32,7 @@ namespace {
 
 using VectorF = cul::DrawTriangle::VectorF;
 
+static constexpr const auto k_triangles = sf::PrimitiveType::Triangles;
 constexpr const int k_point_a = 0;
 constexpr const int k_point_b = 1;
 constexpr const int k_point_c = 2;
@@ -84,7 +85,7 @@ void DrawTriangle::set_color(sf::Color color_) {
 }
 
 /* private */ void DrawTriangle::draw
-    (sf::RenderTarget & target, sf::RenderStates states) const
-    { target.draw(m_verticies.data(), m_verticies.size(), sf::Triangles, states); }
+    (sf::RenderTarget & target, const sf::RenderStates & states) const
+{ target.draw(m_verticies.data(), m_verticies.size(), k_triangles, states); }
 
 } // end of cul namespace

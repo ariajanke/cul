@@ -36,9 +36,9 @@ namespace cul {
 
 sf::Image to_image(const Grid<sf::Color> & grid) {
     sf::Image img;
-    img.create(unsigned(grid.width()), unsigned(grid.height()));
+    img.create(sf::Vector2u(grid.width(), grid.height()));
     for (GridVector r; r != grid.end_position(); r = grid.next(r)) {
-        img.setPixel(unsigned(r.x), unsigned(r.y), grid(r));
+        img.setPixel(convert_to<sf::Vector2u>(r), grid(r));
     }
     return img;
 }
@@ -47,7 +47,7 @@ Grid<sf::Color> to_color_grid(const sf::Image & image) {
     Grid<sf::Color> rv;
     rv.set_size(int(image.getSize().x), int(image.getSize().y));
     for (GridVector r; r != rv.end_position(); r = rv.next(r)) {
-        rv(r) = image.getPixel(unsigned(r.x), unsigned(r.y));
+        rv(r) = image.getPixel(convert_to<sf::Vector2u>(r));
     }
     return rv;
 }

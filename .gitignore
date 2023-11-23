@@ -8,4 +8,6 @@ html
 !.github/workflows/main.yml
 *.
 *.release-build
+lib/*
+libcommon.a
 unit-tests/.*

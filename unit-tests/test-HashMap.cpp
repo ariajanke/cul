@@ -118,8 +118,14 @@ static constexpr const std::size_t c_key = 3;
 static constexpr const std::size_t d_key = b_key + 8;
 
 struct Emplace final {};
+struct Reserve final {};
+struct Find final {};
+struct Insert final {};
+struct Extract final {};
+struct Rehash final {};
+struct Iterators final {};
 
-describe("HashMap#reserve")([] {
+describe<Reserve>("HashMap#reserve")([] {
     A::reset_counts();
     constexpr const static std::size_t k_empty_key = -1;
     HashMap<std::size_t, A> hmap{k_empty_key};
@@ -135,10 +141,17 @@ describe("HashMap#reserve")([] {
             ++count;
         }
         return test_that(count == 0);
+    }).
+    mark_it("reserve less space than current capacity, does not change "
+            "capacity", [&]
+    {
+        auto old_bucket_count = hmap.bucket_count();
+        hmap.reserve(1);
+        return test_that(old_bucket_count == hmap.bucket_count());
     });
 });
 
-describe/*<Emplace>*/("HashMap#emplace")/* depends on reserve */([] {
+describe<Emplace>("HashMap#emplace").depends_on<Reserve>()([] {
     A::reset_counts();
     HashMap<SharedPtr<B>, A> hmap{nullptr};
     hmap.reserve(3);
@@ -166,7 +179,7 @@ describe/*<Emplace>*/("HashMap#emplace")/* depends on reserve */([] {
     });
 });
 
-describe("HashMap#insert")/*.depends_on<Emplace>()*/([] {
+describe<Insert>("HashMap#insert").depends_on<Emplace>()([] {
     mark_it("does not consume the key passed", [] {
         HashMap<SharedPtr<B>, A> hmap{nullptr};
         hmap.reserve(3);
@@ -176,10 +189,7 @@ describe("HashMap#insert")/*.depends_on<Emplace>()*/([] {
     });
 });
 
-//struct Find final {};
-
-describe/*<Find>*/("HashMap#find")/*.depends_on<Emplace>()*/([] {
-    // sanity test
+describe<Find>("HashMap#find").depends_on<Emplace>()([] {
     A::reset_counts();
     HashMap<std::size_t, A> hmap{empty_key};
     hmap.reserve(4);
@@ -200,8 +210,7 @@ describe/*<Find>*/("HashMap#find")/*.depends_on<Emplace>()*/([] {
     });
 });
 
-describe("HashMap#extract")/*.depends_on<Find>()*/([] {
-    // sanity test
+describe<Extract>("HashMap#extract").depends_on<Find>()([] {
     A::reset_counts();
     HashMap<std::size_t, A> hmap{empty_key};
     hmap.reserve(4);
@@ -257,7 +266,7 @@ describe("HashMap#extract")/*.depends_on<Find>()*/([] {
     });
 });
 
-describe("HashMap#rehash")/*.depends_on<Emplace>()*/([] {
+describe<Rehash>("HashMap#rehash").depends_on<Emplace>()([] {
     // no copying elements OR keys >:3!!
     A::reset_counts();
     HashMap<std::size_t, A> hmap{empty_key};
@@ -275,9 +284,10 @@ describe("HashMap#rehash")/*.depends_on<Emplace>()*/([] {
     });
 });
 
-describe("HashMap iterators")/*.depends_on<Emplace>()*/([] {
+describe<Iterators>("HashMap iterators").depends_on<Emplace>()([] {
     A::reset_counts();
     HashMap<SharedPtr<B>, A> hmap{nullptr};
+    const auto & cref_hmap = hmap;
     hmap.reserve(3);
     A a, b, c;
     std::set<int> ids;
@@ -330,7 +340,29 @@ describe("HashMap iterators")/*.depends_on<Emplace>()*/([] {
             ids.erase(key);
         }
         return test_that(ids.empty());
+    }).
+    mark_it("iterating pairs using for-range, are reference pairs", [&] {
+        using RefPair = HashMap<SharedPtr<B>, A>::Iterator::Reference;
+        A new_c;
+        for (auto pair : hmap) {
+            if (pair.second.id() == c.id()) {
+                pair.second = new_c;
+            }
+        }
+        auto itr = std::find_if
+            (hmap.begin(), hmap.end(),
+             [&new_c](const RefPair & pair)
+             { return pair.second.id() == new_c.id(); });
+        return test_that(itr != hmap.end());
     });
+    static_assert(
+        std::is_same_v<decltype(hmap.cbegin()), decltype(cref_hmap.begin())>,
+        "cbegin will return the same type for begin on constant map"
+    );
+    static_assert(
+        std::is_same_v<decltype(hmap.cend()), decltype(cref_hmap.end())>,
+        "cend will return the same type for begin on constant map"
+    );
 });
 
 return [] {};

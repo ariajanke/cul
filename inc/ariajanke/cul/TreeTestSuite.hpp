@@ -205,6 +205,8 @@ class TreeTestPriv {
 
     template <typename TestedType>
     static std::size_t type_to_id();
+
+    struct PlainDescribe final {};
 }; // end of class TreeTestPriv
 
 
@@ -378,7 +380,13 @@ inline Described::~Described()
 template <typename DependedType>
 Described Described::depends_on() {
     using namespace cul::exceptions_abbr;
+    using PlainDescribe = TreeTestPriv::PlainDescribe;
     const auto depend_type_id = TreeTestPriv::type_to_id<DependedType>();
+    if (m_depended_type == TreeTestPriv::type_to_id<PlainDescribe>() &&
+        depend_type_id  != TreeTestPriv::type_to_id<PlainDescribe>()   )
+    {
+        throw RtError{"Untyped describes may not depend on anything"};
+    }
     if (   m_depended_type != DescribeType::k_no_dependancies
         && m_depended_type != depend_type_id)
     {
@@ -406,21 +414,19 @@ Described TreeTestSuite::describe(const char * desc) {
     using namespace cul::exceptions_abbr;
     auto test_type_id = TreeTestPriv::type_to_id<TestedType>();
     auto & blocks = m_describes[test_type_id].blocks;
+    auto & depended_type =
+        m_describes[test_type_id].depended_type;
     blocks.push_back(DescribeType::Block{});
     DescribeType::Block & block = blocks.back();
     block.description = desc;
     return Described
-        {block, m_describes[test_type_id].depended_type,
+        {block, depended_type,
          TreeTestPriv::SuiteForDescribed{m_describes, m_has_active_desribe}};
 }
 
 inline Described TreeTestSuite::describe(const char * desc) {
-    class Impl final {};
-    class DepImpl final {};
-
-    // force it as having passed
-    m_describes[TreeTestPriv::type_to_id<DepImpl>()].all_passes = true;
-    return describe<Impl>(desc).depends_on<DepImpl>();
+    struct Impl final {};
+    return describe<Impl>(desc).depends_on<TreeTestPriv::PlainDescribe>();
 }
 
 inline int TreeTestSuite::run_tests() {
@@ -460,6 +466,7 @@ inline Describer & TreeTestSuite::current_describer() const {
      std::map<std::size_t, DescribeType> & already_run_describes,
      Describer *& describer, std::ostream * out)
 {
+    using PlainDescribe = TreeTestPriv::PlainDescribe;
     bool rv = true;
     for (auto itr = unrun_describes.begin(); itr != unrun_describes.end(); ) {
         auto run_describe_ = [itr, &describer, out]
@@ -475,7 +482,9 @@ inline Describer & TreeTestSuite::current_describer() const {
             return next_itr;
         };
 
-        if (itr->second.depended_type == DescribeType::k_no_dependancies) {
+        if (itr->second.depended_type == DescribeType::k_no_dependancies ||
+            itr->second.depended_type == TreeTestPriv::type_to_id<PlainDescribe>())
+        {
             // no dependants
             rv = run_describe_() && rv;
             itr = mark_as_ran(itr);

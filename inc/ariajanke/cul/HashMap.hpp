@@ -162,14 +162,6 @@ public:
     Iterator end() noexcept
         { return make_iterator(m_bucket_container.size()); }
 
-    template <typename OtherKeyType, typename ... ArgTypes>
-    Iterator ensure(const OtherKeyType & key, ArgTypes &&... args)
-        { return std::get<0>(emplace_impl(OtherKeyType{key}, std::forward<ArgTypes>(args)...)); }
-
-    template <typename OtherKeyType, typename ... ArgTypes>
-    Iterator ensure(OtherKeyType && key, ArgTypes &&... args)
-        { return std::get<0>(emplace_impl(std::move(key), std::forward<ArgTypes>(args)...)); }
-
     Iterator erase(const Iterator &);
 
     Extraction extract(const Iterator &);
@@ -519,10 +511,10 @@ typename MACRO_HASHMAP_CLASSNAME::Extraction
         throw std::invalid_argument
             {"Cannot extract/erase at the end position of the container"};
     }
+
     auto index = Iterator::detail_bucket_index_of(iterator);
     const auto beg_ = m_bucket_container.begin();
     auto bucket = beg_ + index;
-
     for (index = probe_next(index); true; index = probe_next(index)) {
         assert(index < m_bucket_container.size());
         auto index_itr = beg_ + index;
@@ -553,16 +545,10 @@ MACRO_HASHMAP_TEMPLATES
 void MACRO_HASHMAP_CLASSNAME::rehash
     (std::size_t for_at_least_this_many_elements)
 {
-    if (is_empty()) {
-        reserve(2);
-        return;
-    }
-
     HashMap temp{m_empty_key};
-    temp.reserve(std::min(m_bucket_container.size()*k_load_factor,
+    temp.reserve(std::max(m_bucket_container.size()*k_load_factor,
                           for_at_least_this_many_elements));
-    auto itr = begin();
-    while (itr != end()) {
+    for (auto itr = begin(); itr != end(); ) {
         assert(!KeyEquality{}(itr->first, m_empty_key));
         auto extraction = extract(itr);
         temp.emplace(std::move(extraction.key),
@@ -576,6 +562,9 @@ MACRO_HASHMAP_TEMPLATES
 void MACRO_HASHMAP_CLASSNAME::reserve
     (std::size_t for_at_least_this_many_elements)
 {
+    if (for_at_least_this_many_elements <= m_bucket_container.size())
+        { return; }
+
     Bucket empty_bucket = std::make_pair(m_empty_key, ElementSpace{});
     m_bucket_container.resize
         (detail::nearest_base2_number
@@ -623,20 +612,19 @@ template <typename OtherKeyType, typename ... ArgTypes>
     }
 
     if (size() + 1 > capacity())
-        { rehash(size()*2); }
+        { rehash((size() + 1)*2); }
 
-    auto index = key_to_index(key);
-    while (true) {
+    for (auto index = key_to_index(key); true; index = probe_next(index)) {
         auto & bucket = m_bucket_container[index];
         if (KeyEquality{}(bucket.first, m_empty_key)) {
             bucket.first = std::move(key);
-            new (&bucket.second) ElementType{std::forward<ArgTypes>(element_args)...};
+            new (&bucket.second)
+                ElementType{std::forward<ArgTypes>(element_args)...};
             ++m_size;
             return Insertion{true, make_iterator(index)};
         } else if (KeyEquality{}(bucket.first, key)) {
             return Insertion{false, make_iterator(index)};
         }
-        index = probe_next(index);
     }
 }
 

@@ -219,6 +219,21 @@ describe<Move>("HashMap move").depends_on<Iterators>()([] {
         auto key = beg->first;
         auto beg2 = std::move(beg);
         return test_that(beg2->first == key);
+    }).
+    mark_it("copy assignment okay", [&] {
+        HashMap<std::size_t, A> hmap2{5};
+        hmap2.insert(0, A{});
+        hmap2 = hmap;
+        for (auto [key, el] : hmap) {
+            keys.erase(key);
+        }
+        return test_that(hmap2.size() == hmap.size() && keys.empty());
+    }).
+    mark_it("move assignment okay", [&] {
+        HashMap<std::size_t, A> hmap2{5};
+        hmap2.insert(0, A{});
+        hmap2 = std::move(hmap);
+        return test_that(hmap2.size() == 3);
     });
 });
 

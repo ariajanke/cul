@@ -455,7 +455,6 @@ MACRO_ITERATOR_TEMPLATES
     return PairWrapperImpl{bucket.first, &bucket.second};
 }
 
-
 // ----------------------------------------------------------------------------
 
 MACRO_HASHMAP_TEMPLATES
@@ -481,9 +480,9 @@ MACRO_HASHMAP_TEMPLATES
 MACRO_HASHMAP_CLASSNAME & MACRO_HASHMAP_CLASSNAME::operator =
     (const HashMap & rhs)
 {
-    if (rhs != &rhs) {
+    if (this != &rhs) {
         HashMap temp{rhs};
-        swap(rhs);
+        swap(temp);
     }
     return *this;
 }
@@ -492,7 +491,7 @@ MACRO_HASHMAP_TEMPLATES
 MACRO_HASHMAP_CLASSNAME & MACRO_HASHMAP_CLASSNAME::operator =
     (HashMap && rhs)
 {
-    if (rhs != &rhs)
+    if (this != &rhs)
         { swap(rhs); }
     return *this;
 }

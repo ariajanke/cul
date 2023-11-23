@@ -118,7 +118,7 @@ const std::vector<sf::Vertex> & DrawText::verticies() const
 {
     auto states_ = states;
     states_.texture = &m_font->texture();
-    target.draw(m_verticies.data(), m_verticies.size(), k_primitive_type, states);
+    target.draw(m_verticies.data(), m_verticies.size(), k_primitive_type, states_);
 }
 
 /* private */ sf::Vector2f DrawText::push_character(sf::Vector2f r, char code) {

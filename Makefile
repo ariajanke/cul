@@ -1,6 +1,6 @@
 CXX = g++
 LD = g++
-CXXFLAGS = -std=c++17 -I./inc -O3 -Wall -pedantic -Werror -fno-pretty-templates -DMACRO_PLATFORM_LINUX -Wno-deprecated-declarations
+CXXFLAGS = -std=c++17 -I./inc -O3 -Wall -pedantic -Werror -fno-pretty-templates -DMACRO_PLATFORM_LINUX -Wno-deprecated-declarations -I./lib/SFML/include
 SOURCES  = $(shell find src | grep '[.]cpp$$')
 OBJECTS_DIR = .release-build
 OUTPUT = libcommon.a

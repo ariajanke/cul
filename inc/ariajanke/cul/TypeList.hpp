@@ -279,11 +279,12 @@ class TypeList<Head, Types...> {
 
     template <template <typename> class PredicateTemplate>
     struct RemoveIf_ {
-        static constexpr const bool k_should_remove_head = std::is_base_of_v<std::true_type, PredicateTemplate<Head>>;
+        static constexpr const bool k_should_remove_head =
+            std::is_base_of_v<std::true_type, PredicateTemplate<Head>>;
         using RiTailList = typename TailList_::template RemoveIf<PredicateTemplate>;
         using List = std::conditional_t<k_should_remove_head,
             RiTailList,
-            typename RiTailList::template SetWithHead<Head>
+            typename RiTailList::template ListWithHead<Head>
         >;
     };
 
@@ -374,7 +375,16 @@ public:
 
 namespace detail {
 
-class TypeListTestsPriv {
+class TypeListTestsPrivMore {
+    template <typename T>
+    struct RemoveIfTest1 final : public std::false_type {};
+};
+
+template <>
+struct TypeListTestsPrivMore::RemoveIfTest1<int> final :
+    public std::true_type {};
+
+class TypeListTestsPriv : public TypeListTestsPrivMore {
     struct A final {};
     struct B final {};
     struct C final {};
@@ -423,6 +433,11 @@ class TypeListTestsPriv {
     static_assert(TypeList<A, B, C, E, F>::Slice<2, 4>::kt_equal_to_list<C, E>);
     static_assert(!TypeList<A, B, C, E, F>::Slice<2, 3>::kt_equal_to_list<C, E>);
     static_assert(!TypeList<A, B, C, E, F>::Slice<2, 4>::kt_equal_to_list<C, E, F>);
+    // RemoveIf
+    template <typename T>
+    using RemoveIfTest1 = TypeListTestsPrivMore::RemoveIfTest1<T>;
+    static_assert(TypeList<>::RemoveIf<RemoveIfTest1>::kt_equal_to_list<>);
+    static_assert(TypeList<int>::RemoveIf<RemoveIfTest1>::kt_equal_to_list<>);
     // Fork
     static_assert(std::is_same_v<TypeList<>::Fork::MiddleType, TypeTag<void>>);
     static_assert(TypeList<>::Fork::Left::kt_equal_to_list<>);

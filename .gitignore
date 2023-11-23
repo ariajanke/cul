@@ -1,14 +1,10 @@
 .*
-!/.gitignore
 *.user
 *.VC.db
 *.filters
 *.opendb
 *.pro.user*
-!.travis.yml
-msvc/erfindung.VC.db
-libcommon.a
-libcommon-d.a
 html
-!.github/workflows/main.yml
+!.gitignore
+!.github/workflows
 

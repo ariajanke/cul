@@ -28,4 +28,5 @@ jobs:
       - name: Build and Run tests
         run: |
           git clone https://github.com/SFML/SFML.git lib/SFML
+          git clone https://github.com/g-truc/glm.git lib/glm
           make test

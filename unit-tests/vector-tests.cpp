@@ -144,7 +144,7 @@ int main() {
     }
     {
     sf::Vector2i a { 50, 20 }, b;
-    a + b;
+    (void)(a + b);
     std::cout << std::boolalpha;
     std::cout << cul::magnitude(a) << std::endl;
 

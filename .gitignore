@@ -1,4 +1,3 @@
-.*
 *.user
 *.VC.db
 *.filters
@@ -6,5 +5,7 @@
 *.pro.user*
 html
 !.gitignore
-!.github/workflows
-
+!.github/workflows/main.yml
+*.
+*.release-build
+unit-tests/.*

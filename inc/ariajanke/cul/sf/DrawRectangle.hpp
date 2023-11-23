@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2022 Aria Janke
+    Copyright (c) 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,7 @@ public:
         (float x_, float y_, float width_ = 0.f, float height_ = 0.f,
          sf::Color clr_ = sf::Color::White);
 
-    ~DrawRectangle() override;
+    ~DrawRectangle() final;
 
     void set_x(float) noexcept;
 
@@ -94,10 +94,9 @@ public:
 
     sf::Color color() const noexcept;
 
-protected:
-    void draw(sf::RenderTarget &, sf::RenderStates) const override;
-
 private:
+    void draw(sf::RenderTarget &, const sf::RenderStates &) const final;
+
     std::array<sf::Vertex, k_vertex_count> m_vertices;
 };
 

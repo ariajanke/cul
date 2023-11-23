@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2022 Aria Janke
+    Copyright (c) 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,12 @@
 
 #include <SFML/Graphics.hpp>
 
+namespace {
+
+static constexpr const auto k_triangle_strip = sf::PrimitiveType::TriangleStrip;
+
+} // end of <anonymous> namespace
+
 namespace cul {
 
 DrawRectangle::DrawRectangle
@@ -38,7 +44,7 @@ DrawRectangle::DrawRectangle
     set_color(clr_);
 }
 
-/* override */ DrawRectangle::~DrawRectangle() {}
+DrawRectangle::~DrawRectangle() {}
 
 void DrawRectangle::set_x(float x_) noexcept { set_position(x_, y()); }
 
@@ -105,17 +111,8 @@ sf::Vector2f DrawRectangle::position() const noexcept
 sf::Color DrawRectangle::color() const noexcept
     { return m_vertices[k_top_left].color; }
 
-/* virtual protected */ void DrawRectangle::draw
-    (sf::RenderTarget & target, sf::RenderStates states) const
-{
-#   if 0
-    // deprecated from SFML
-    target.draw(&*m_vertices.begin(), k_vertex_count, sf::Quads, states);
-#   else
-    target.draw(m_vertices.data(), m_vertices.size(), sf::TriangleStrip, states);
-    //target.draw(m_vertices.data(), m_vertices.size() - 1, sf::Triangles, states);
-    //target.draw(m_vertices.data() + 1, m_vertices.size() - 1, sf::Triangles, states);
-#   endif
-}
+/* private */ void DrawRectangle::draw
+    (sf::RenderTarget & target, const sf::RenderStates & states) const
+{ target.draw(m_vertices.data(), m_vertices.size(), k_triangle_strip, states); }
 
 } // end of cul namespace

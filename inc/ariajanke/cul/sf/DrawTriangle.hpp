@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2022 Aria Janke
+    Copyright 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -73,7 +73,7 @@ public:
     void set_color(sf::Color);
 
 private:
-    void draw(sf::RenderTarget &, sf::RenderStates) const override;
+    void draw(sf::RenderTarget &, const sf::RenderStates &) const final;
 
     std::array<sf::Vertex, k_vertex_count> m_verticies;
 };

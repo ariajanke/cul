@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2022 Aria Janke
+    Copyright 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -85,7 +85,7 @@ public:
     Iterator end() const;
 
 private:
-    void draw(sf::RenderTarget &, sf::RenderStates) const final;
+    void draw(sf::RenderTarget &, const sf::RenderStates &) const final;
 
     float thickness() const;
 

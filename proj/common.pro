@@ -38,22 +38,23 @@ contains(CONFIG, release) {
     TARGET = common-test-app
 }
 
+INCLUDEPATH += ../lib/SFML/include
 QMAKE_CXXFLAGS += -std=c++17 -DMACRO_ARIAJANKE_CUL_ENABLE_TYPELIST_TESTS
 QMAKE_LFLAGS   += -std=c++17
-LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
-                  -L/usr/lib/x86_64-linux-gnu
+#LIBS           += -lsfml-graphics -lsfml-window -lsfml-system \
+#                  -L/usr/lib/x86_64-linux-gnu
 
 SOURCES += \
-    ../src/BitmapFont.cpp              \
-    ../src/CurrentWorkingDirectory.cpp \
+    #../src/BitmapFont.cpp              \
+    #../src/CurrentWorkingDirectory.cpp \
     \ # SFML Utilities
-    ../src/sf-DrawText.cpp             \
-    ../src/sf-DrawRectangle.cpp        \
-    ../src/sf-DrawTriangle.cpp         \
-    ../src/sf-Util.cpp                 \
-    ../src/sf-DrawLine.cpp             \
-    ../src/sf-8x8Font.cpp              \
-    ../src/sf-8x16Font.cpp
+    #../src/sf-DrawText.cpp             \
+    #../src/sf-DrawRectangle.cpp        \
+    #../src/sf-DrawTriangle.cpp         \
+    #../src/sf-Util.cpp                 \
+    #../src/sf-DrawLine.cpp             \
+    #../src/sf-8x8Font.cpp              \
+    #../src/sf-8x16Font.cpp
 
 HEADERS += \
     ../../../../../media/aria/UBUNTU/home/aria/dev/mapproject/src/GlmVectorTraits.hpp \
@@ -84,6 +85,7 @@ HEADERS += \
     ../inc/ariajanke/cul/OptionalEither.hpp          \
     ../inc/ariajanke/cul/detail/either-helpers.hpp   \
     ../inc/ariajanke/cul/EitherFold.hpp              \
+    ../inc/ariajanke/cul/HashMap.hpp                 \
     \ # SFML Utilities
     ../inc/ariajanke/cul/sf/DrawText.hpp             \
     ../inc/ariajanke/cul/sf/DrawRectangle.hpp        \
@@ -111,7 +113,8 @@ SOURCES += \
     \#../unit-tests/test-new-vectors.cpp \
     \#../unit-tests/sample-tree-test-suite.cpp \
     \#../unit-tests/test-tree-test-suite-p2.cpp \
-    ../unit-tests/test-either.cpp
+    \#../unit-tests/test-either.cpp
+    ../unit-tests/test-HashMap.cpp
 
 INCLUDEPATH += \
     ../inc

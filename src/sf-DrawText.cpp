@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2022 Aria Janke
+    Copyright 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -114,10 +114,11 @@ const std::vector<sf::Vertex> & DrawText::verticies() const
     { return m_verticies; }
 
 /* private */ void DrawText::draw
-    (sf::RenderTarget & target, sf::RenderStates states) const
+    (sf::RenderTarget & target, const sf::RenderStates & states) const
 {
-    states.texture = &m_font->texture();
-    target.draw(m_verticies.data(), m_verticies.size(), k_primitive_type, states);
+    auto states_ = states;
+    states_.texture = &m_font->texture();
+    target.draw(m_verticies.data(), m_verticies.size(), k_primitive_type, states_);
 }
 
 /* private */ sf::Vector2f DrawText::push_character(sf::Vector2f r, char code) {
@@ -169,7 +170,7 @@ public:
     cul::Size2<int> character_size() const final
         { return m_font->character_size(); }
 
-    void setup(const GridBitmapFont &);
+    [[nodiscard]] bool setup(const GridBitmapFont &);
 
     bool has_font() const { return m_font; }
 
@@ -183,7 +184,9 @@ const cul::SfBitmapFont & get_builtin_font(BuiltinFont bfont) {
         = cul::make_filled_array<BitmapFont::k_builtin_font_count, FontPtr>(nullptr);
     if (s_fonts[bfont]) return *s_fonts[bfont];
     auto ptr = std::make_unique<SfBitmapFontComplete>();
-    ptr->setup(GridBitmapFont::load_builtin_font(bfont));
+    if (!ptr->setup(GridBitmapFont::load_builtin_font(bfont))) {
+        throw std::runtime_error{"cannot load builtin font"};
+    }
     assert(ptr->has_font());
     s_fonts[bfont] = std::move(ptr);
     return *s_fonts[bfont];
@@ -207,7 +210,7 @@ std::array<sf::Vector2f, k_rect_count> to_texture_positions
 
 // ----------------------------------------------------------------------------
 
-void SfBitmapFontComplete::setup(const GridBitmapFont & font) {
+bool SfBitmapFontComplete::setup(const GridBitmapFont & font) {
     // terse, but computationally intense
     using namespace cul;
     m_font = &font;
@@ -217,7 +220,7 @@ void SfBitmapFontComplete::setup(const GridBitmapFont & font) {
     for (Vector2<int> r; r != grid_texture.end_position(); r = grid_texture.next(r)) {
         grid_texture(r) = DrawText::color_for_pixel(pixels(r));
     }
-    m_texture.loadFromImage(to_image(grid_texture));
+    return m_texture.loadFromImage(to_image(grid_texture));
 }
 
 } // end of <anonymous> namespace

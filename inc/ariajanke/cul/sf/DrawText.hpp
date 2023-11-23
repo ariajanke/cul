@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2022 Aria Janke
+    Copyright 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -176,7 +176,8 @@ public:
 
 private:
     static constexpr const int k_verticies_per_character = 2*3;
-    void draw(sf::RenderTarget &, sf::RenderStates) const final;
+
+    void draw(sf::RenderTarget &, const sf::RenderStates &) const final;
 
     sf::Vector2f push_character(sf::Vector2f, char);
 

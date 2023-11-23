@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright 2022 Aria Janke
+    Copyright 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
@@ -92,7 +92,7 @@ Iterator DrawLine::begin() const { return m_verticies.begin(); }
 Iterator DrawLine::end() const { return m_verticies.end(); }
 
 /* private */ void DrawLine::draw
-    (sf::RenderTarget & target, sf::RenderStates states) const
+    (sf::RenderTarget & target, const sf::RenderStates & states) const
 { target.draw(m_verticies.data(), m_verticies.size(), k_primitive_type, states); }
 
 /* private */ float DrawLine::thickness() const {

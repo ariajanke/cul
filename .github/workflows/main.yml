@@ -1,0 +1,20 @@
+name: Unit Tests
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and Run tests
+        run: |
+          git clone https://github.com/SFML/SFML.git lib/SFML
+          git clone https://github.com/g-truc/glm.git lib/glm
+          make test

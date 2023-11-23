@@ -213,7 +213,6 @@ private:
         { return Hasher{}(key) & size_mask(); }
 
     std::size_t size_mask() const noexcept
-        // why we need base 2 numbers
         { return m_bucket_container.size() - 1; }
 
     Extraction extract_bucket_and_advance
@@ -266,11 +265,7 @@ public:
         { return itr.m_index; }
 
     static HashMapIteratorImpl detail_advance_past_empty
-        (HashMapIteratorImpl && itr)
-    {
-        itr.advance_past_empty_();
-        return std::move(itr);
-    }
+        (HashMapIteratorImpl && itr);
 
     HashMapIteratorImpl
         (std::size_t index,
@@ -300,10 +295,7 @@ public:
 private:
     bool equal_to(const HashMapIteratorImpl &) const;
 
-    PairWrapperImpl element() const {
-        auto & bucket = (*m_container)[m_index];
-        return PairWrapperImpl{bucket.first, &bucket.second};
-    }
+    PairWrapperImpl element() const;
 
     auto key() const { return (*m_container)[m_index].first; }
 
@@ -379,6 +371,15 @@ inline std::size_t nearest_base2_number(std::size_t n) {
     HashMapIteratorImpl<KeyT, ElementT, AllocatorT, KeyEqualT, kt_is_constant>
 
 MACRO_ITERATOR_TEMPLATES
+/* static */ MACRO_ITERATOR_CLASSNAME
+    MACRO_ITERATOR_CLASSNAME::detail_advance_past_empty
+    (HashMapIteratorImpl && itr)
+{
+    itr.advance_past_empty_();
+    return std::move(itr);
+}
+
+MACRO_ITERATOR_TEMPLATES
 MACRO_ITERATOR_CLASSNAME::HashMapIteratorImpl
     (std::size_t index_,
      BucketContainerPtr container_,
@@ -445,6 +446,16 @@ MACRO_ITERATOR_TEMPLATES
     (const HashMapIteratorImpl & rhs) const
 { return m_index == rhs.m_index && m_container == rhs.m_container; }
 
+MACRO_ITERATOR_TEMPLATES
+/* private */
+    typename MACRO_ITERATOR_CLASSNAME::PairWrapperImpl
+    MACRO_ITERATOR_CLASSNAME::element() const
+{
+    auto & bucket = (*m_container)[m_index];
+    return PairWrapperImpl{bucket.first, &bucket.second};
+}
+
+
 // ----------------------------------------------------------------------------
 
 MACRO_HASHMAP_TEMPLATES
@@ -492,7 +503,7 @@ void MACRO_HASHMAP_CLASSNAME::clear() noexcept {
         if (KeyEquality{}(bucket.first, m_empty_key))
             { continue; }
         bucket.first = m_empty_key;
-        bucket.second = ElementType{};
+        reinterpret_cast<ElementType *>(&bucket.second)->~ElementType();
     }
     m_size = 0;
 }
@@ -665,14 +676,12 @@ template <typename OtherKeyType>
     if (KeyEquality{}(key, m_empty_key))
         { return m_bucket_container.size(); }
 
-    auto index = key_to_index(key);
-    while (true) {
+    for (auto index = key_to_index(key); true; index = probe_next(index)) {
         auto & bucket = m_bucket_container[index];
         if (KeyEquality{}(bucket.first, key))
             { return index; }
         if (KeyEquality{}(bucket.first, m_empty_key))
             { return m_bucket_container.size(); }
-        index = probe_next(index);
     }
 }
 

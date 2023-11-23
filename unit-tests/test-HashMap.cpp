@@ -53,9 +53,6 @@ using namespace tree_ts;
 #define mark_it mark_source_position(__LINE__, __FILE__).it
 
 template <typename T>
-using UniquePtr = std::unique_ptr<T>;
-
-template <typename T>
 using SharedPtr = std::shared_ptr<T>;
 
 using std::make_shared, std::make_unique;
@@ -124,6 +121,8 @@ struct Insert final {};
 struct Extract final {};
 struct Rehash final {};
 struct Iterators final {};
+struct Clear final {};
+struct Move final {};
 
 describe<Reserve>("HashMap#reserve")([] {
     A::reset_counts();
@@ -179,6 +178,50 @@ describe<Emplace>("HashMap#emplace").depends_on<Reserve>()([] {
     });
 });
 
+describe<Clear>("HashMap#clear").depends_on<Iterators>()([] {
+    A::reset_counts();
+    HashMap<SharedPtr<B>, A> hmap{nullptr};
+    hmap.reserve(3);
+    hmap.emplace(make_shared<B>(), A{});
+    hmap.emplace(make_shared<B>(), A{});
+    hmap.clear();
+    mark_it("sets size to zero", [&] {
+        return test_that(hmap.is_empty());
+    }).
+    mark_it("iterates no elements", [&] {
+        int i = 0;
+        for (auto itr = hmap.begin(); itr != hmap.end(); ++itr) {
+            ++i;
+        }
+        return test_that(i == 0);
+    }).
+    mark_it("destroys all instances of elements", [] {
+        return test_that(A::instance_count() == 0);
+    });
+});
+
+describe<Move>("HashMap move").depends_on<Iterators>()([] {
+    A a, b, c;
+    HashMap<std::size_t, A> hmap{empty_key};
+    hmap.insert(a_key, a);
+    hmap.insert(b_key, b);
+    hmap.insert(c_key, c);
+    std::set<std::size_t> keys = { a_key, b_key, c_key };
+    mark_it("moving preserves elements", [&] {
+        auto map = std::move(hmap);
+        for (auto [key, el] : map) {
+            keys.erase(key);
+        }
+        return test_that(keys.empty());
+    }).
+    mark_it("moving iterators preseves okay", [&] {
+        auto beg = hmap.begin();
+        auto key = beg->first;
+        auto beg2 = std::move(beg);
+        return test_that(beg2->first == key);
+    });
+});
+
 describe<Insert>("HashMap#insert").depends_on<Emplace>()([] {
     mark_it("does not consume the key passed", [] {
         HashMap<SharedPtr<B>, A> hmap{nullptr};
@@ -218,7 +261,6 @@ describe<Extract>("HashMap#extract").depends_on<Find>()([] {
     hmap.insert(a_key, a);
     hmap.insert(b_key, b);
     hmap.insert(c_key, c);
-    // in order for the tests to be valid
     assert(hmap.bucket_count() == 8);
     mark_it("can succesfully extract an element", [&] {
         auto ex = hmap.extract(hmap.find(b_key));
@@ -267,14 +309,23 @@ describe<Extract>("HashMap#extract").depends_on<Find>()([] {
 });
 
 describe<Rehash>("HashMap#rehash").depends_on<Emplace>()([] {
-    // no copying elements OR keys >:3!!
     A::reset_counts();
     HashMap<std::size_t, A> hmap{empty_key};
     A a, b, c, d;
-    hmap.insert(a_key, a);
-    hmap.insert(b_key, b);
-    hmap.insert(c_key, c);
-    hmap.insert(d_key, d);
+    auto add_elements = [&] {
+        hmap.insert(a_key, a);
+        hmap.insert(b_key, b);
+        hmap.insert(c_key, c);
+        hmap.insert(d_key, d);
+    };
+    mark_it("does not copy anything while rehashing", [&] {
+        auto old_copy_count = A::copy_count();
+        add_elements();
+        // Note: insertions force at least four copies
+        //       we're interested to see that the rehash itself does not copy
+        return test_that(old_copy_count + 4 == A::copy_count());
+    }).
+    next([&] { add_elements(); }).
     mark_it("insertions causing a rehash, all elements remain accessible", [&] {
         std::set<std::size_t> keys = { a_key, b_key, c_key, d_key };
         for (const auto & [key, element] : hmap) {
@@ -354,6 +405,11 @@ describe<Iterators>("HashMap iterators").depends_on<Emplace>()([] {
              [&new_c](const RefPair & pair)
              { return pair.second.id() == new_c.id(); });
         return test_that(itr != hmap.end());
+    }).
+    mark_it("begin returns a valid key (advances past empty)", [&] {
+        HashMap<std::size_t, A> hmap{empty_key};
+        hmap.insert(b_key, b);
+        return test_that(hmap.begin()->first == b_key);
     });
     static_assert(
         std::is_same_v<decltype(hmap.cbegin()), decltype(cref_hmap.begin())>,

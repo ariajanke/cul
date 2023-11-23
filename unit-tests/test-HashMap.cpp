@@ -25,8 +25,6 @@
 *****************************************************************************/
 
 #include <ariajanke/cul/TreeTestSuite.hpp>
-#include <ariajanke/cul/detail/either-helpers.hpp>
-#include <ariajanke/cul/OptionalEither.hpp>
 #include <ariajanke/cul/HashMap.hpp>
 
 #include <memory>

@@ -55,15 +55,10 @@ Disadvantages:
 
 #include <ariajanke/cul/Util.hpp>
 
-#include <algorithm>
-#include <limits>
 #include <stdexcept>
 #include <vector>
-#include <optional>
 
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
 
 namespace cul {
 

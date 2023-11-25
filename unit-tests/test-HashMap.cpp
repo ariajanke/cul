@@ -265,6 +265,14 @@ describe<Find>("HashMap#find").depends_on<Emplace>()([] {
     }).
     mark_it("correctly finds element with conflicting index", [&] {
         return test_that(hmap.find(d_key)->second.id() == d.id());
+    }).
+    mark_it("find on empty hash map, returns end iterator", [] {
+        HashMap<std::size_t, A> hmap{empty_key};
+        return test_that(hmap.find(a_key) == hmap.end());
+    }).
+    mark_it("find on cleared hash map, returns end iterator", [&] {
+        hmap.clear();
+        return test_that(hmap.find(a_key) == hmap.end());
     });
 });
 

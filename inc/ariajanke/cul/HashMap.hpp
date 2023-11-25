@@ -672,7 +672,7 @@ template <typename OtherKeyType>
 /* private */ std::size_t MACRO_HASHMAP_CLASSNAME::find_impl
     (const OtherKeyType & key) const noexcept
 {
-    if (KeyEquality{}(key, m_empty_key))
+    if (KeyEquality{}(key, m_empty_key) || m_bucket_container.empty())
         { return m_bucket_container.size(); }
 
     for (auto index = key_to_index(key); true; index = probe_next(index)) {

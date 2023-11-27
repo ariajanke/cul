@@ -130,6 +130,8 @@ public:
 
     HashMap(HashMap &&);
 
+    ~HashMap();
+
     HashMap & operator = (const HashMap &);
 
     HashMap & operator = (HashMap &&);
@@ -475,6 +477,15 @@ MACRO_HASHMAP_CLASSNAME::HashMap(HashMap && rhs):
     m_empty_key(std::move(rhs.m_empty_key)),
     m_bucket_container(std::move(rhs.m_bucket_container)),
     m_size(std::move(rhs.m_size)) {}
+
+MACRO_HASHMAP_TEMPLATES
+MACRO_HASHMAP_CLASSNAME::~HashMap() {
+    for (auto & bucket : m_bucket_container) {
+        if (KeyEquality{}(bucket.first, m_empty_key))
+            { continue; }
+        reinterpret_cast<ElementType *>(&bucket.second)->~ElementType();
+    }
+}
 
 MACRO_HASHMAP_TEMPLATES
 MACRO_HASHMAP_CLASSNAME & MACRO_HASHMAP_CLASSNAME::operator =

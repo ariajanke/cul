@@ -184,7 +184,14 @@ describe<Clear>("HashMap#clear").depends_on<Iterators>()([] {
     hmap.reserve(3);
     hmap.emplace(make_shared<B>(), A{});
     hmap.emplace(make_shared<B>(), A{});
-    hmap.clear();
+
+    mark_it("(destructor) cleans up all instances of elements", [&] {
+        {
+        auto hmap2 = std::move(hmap);
+        }
+        return test_that(A::instance_count() == 0);
+    }).
+    next([&] { hmap.clear(); }).
     mark_it("sets size to zero", [&] {
         return test_that(hmap.is_empty());
     }).

@@ -29,9 +29,6 @@
 #include <ariajanke/cul/FunctionTraits.hpp>
 #include <ariajanke/cul/Either.hpp>
 
-#include <variant>
-#include <optional>
-
 #include <cassert>
 
 using namespace cul::exceptions_abbr;
@@ -67,6 +64,7 @@ void tests_execute_in_dependant_order();
 void multiple_describes_work();
 void failing_dependee_does_not_run_depender();
 void depender_without_dependee_never_runs();
+void depender_runs_if_explicitly_made_to_pass();
 void typeless_describes();
 void depends_on_type_mismatch_throws();
 void it_cases_surpress_exceptions();
@@ -82,16 +80,27 @@ int main() {
     assert(cul::tree_ts::run_tests() == 0);
 
     // the test program should freaking crash if any test fails
-    tests_execute_in_dependant_order();
-    multiple_describes_work();
-    failing_dependee_does_not_run_depender();
-    depender_without_dependee_never_runs();
-    typeless_describes();
-    depends_on_type_mismatch_throws();
-    it_cases_surpress_exceptions();
-    it_handles_failures_correctly();
-    it_does_not_stop_with_failed_describe();
-    it_throws_on_empty_describes();
+
+    const std::array funcs = {
+        tests_execute_in_dependant_order,
+        multiple_describes_work,
+        failing_dependee_does_not_run_depender,
+        depender_without_dependee_never_runs,
+        depender_runs_if_explicitly_made_to_pass,
+        typeless_describes,
+        depends_on_type_mismatch_throws,
+        it_cases_surpress_exceptions,
+        it_handles_failures_correctly,
+        it_does_not_stop_with_failed_describe,
+        it_throws_on_empty_describes
+    };
+
+    for (auto f : funcs) {
+        cul::tree_ts::TreeTestSuite::instance() =
+            cul::tree_ts::TreeTestSuite{};
+        f();
+    }
+
     return 0;
 }
 
@@ -109,7 +118,7 @@ void tests_execute_in_dependant_order() {
             order.enforce_step(2);
             return test_that(true);
         });
-    });
+    }).
     describe<A>("A in another describe block")([] {
         mark_it("does something unexpected", [] {
             order.enforce_step(0);
@@ -133,7 +142,7 @@ void multiple_describes_work() {
             order.enforce_step(1);
             return test_that(true);
         });
-    });
+    }).
     describe<A>("A in another describe block")([] {
         mark_it("does something unexpected", [] {
             return test_that(true);
@@ -148,7 +157,7 @@ void failing_dependee_does_not_run_depender() {
         mark_it("fails a test", [] {
             return test_that(false);
         });
-    });
+    }).
     describe<DUsesC>("should not run at all").depends_on<C>()([] {
         // no worries, right?
         assert(false);
@@ -163,6 +172,25 @@ void depender_without_dependee_never_runs() {
         assert(false);
     });
     run_tests();
+}
+
+void depender_runs_if_explicitly_made_to_pass() {
+    using namespace cul::tree_ts;
+    static bool did_run_test = false;
+    TreeTestSuite::instance().
+        describe<DUsesC>("Depender still runs if it's an undescribed type and "
+                         "the test suite is explicitly set to pass all "
+                         "undescribeds").
+        depends_on<C>()
+        ([] {
+            mark_it("should run this test", [] {
+                did_run_test = true;
+                return test_that(true);
+            });
+        }).
+        pass_all_undescribed_types().
+        run_tests();
+    assert(did_run_test);
 }
 
 void typeless_describes() {

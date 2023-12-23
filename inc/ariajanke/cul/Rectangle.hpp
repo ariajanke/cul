@@ -2,7 +2,7 @@
 
     MIT License
 
-    Copyright (c) 2022 Aria Janke
+    Copyright (c) 2023 Aria Janke
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -26,40 +26,10 @@
 
 #pragma once
 
-#include <ariajanke/cul/VectorTraits.hpp>
+#include <ariajanke/cul/Vector2.hpp>
 
 namespace cul {
 
-/** Defines a 2D vector for a given scalar type.
- *
- *  Types defined with this template are useable with many of the utility
- *  functions.
- *
- *  When defined, many vector operators are also (as per its Traits defined
- *  later). They are as follows:
- *  - unary negation
- *  - vector addition (and compound)
- *  - vector subtraction (and compound)
- *  - scalar multiplication (and compound)
- *  - scalar division (and compound)
- *  - equality
- *  - inequality
- */
-template <typename T>
-struct Vector2 {
-    constexpr Vector2() {}
-
-    constexpr Vector2(T x_, T y_): x(x_), y(y_) {}
-
-    template <typename U>
-    constexpr explicit Vector2(U x_, U y_): x(T(x_)), y(T(y_)) {}
-
-    template <typename U>
-    constexpr explicit Vector2(const Vector2<U> & r): x(T(r.x)), y(T(r.y)) {}
-
-    T x = 0, y = 0;
-};
-#if 0
 template <typename T>
 struct Size2 {
     constexpr Size2() {}
@@ -98,8 +68,7 @@ struct Rectangle {
 
     T left = 0, top = 0, width = 0, height = 0;
 };
-#endif
-#if 0
+
 template <typename T>
 constexpr bool operator ==
     (const cul::Rectangle<T> & lhs, const cul::Rectangle<T> & rhs) noexcept
@@ -127,48 +96,11 @@ bool is_contained_in(const Vector2<T> & r, const Rectangle<T> & rect) noexcept {
     return    r.x >=  rect.left               && r.y >=  rect.top
            && r.x <  (rect.left + rect.width) && r.y <  (rect.top + rect.height);
 }
-#endif
-// ------- trait definitions for Vector2 and Size2, which maybe ignored -------
+
+// ----------------------------------------------------------------------------
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
-template <typename T>
-struct VectorTraits<Vector2<T>> final {
-    static constexpr const bool k_is_vector_type = true;
-
-    static constexpr const bool k_should_define_operators = true;
-
-    using ScalarType = T;
-
-    template <int kt_idx, typename=int>
-    struct Get final {};
-
-    template <typename U>
-    struct Get<0, U> final {
-        constexpr ScalarType operator () (const Vector2<T> & r) const
-            { return r.x; }
-    };
-
-    template <typename U>
-    struct Get<1, U> final {
-        constexpr ScalarType operator () (const Vector2<T> & r) const
-            { return r.y; }
-    };
-
-    template <int kt_idx>
-    static constexpr ScalarType get(const Vector2<T> &);
-
-    struct Make final {
-        constexpr Vector2<T> operator () (const T & x, const T & y) const
-            { return Vector2<T>{x, y}; }
-    };
-
-    template <typename U>
-    using ChangeScalarType = Vector2<U>;
-
-    static constexpr const int k_dimension_count = 2;
-};
-#if 0
 template <typename T>
 struct VectorTraits<Size2<T>> final {
     static constexpr const bool k_is_vector_type = true;
@@ -205,7 +137,7 @@ struct VectorTraits<Size2<T>> final {
 
     static constexpr const int k_dimension_count = 2;
 };
-#endif
+
 #endif
 
 } // end of cul namespace

@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include <ariajanke/cul/Vector2.hpp>
+#include <ariajanke/cul/Rectangle.hpp>
 
 namespace cul {
 

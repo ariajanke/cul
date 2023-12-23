@@ -30,21 +30,12 @@
 
 #include <iterator>
 #include <type_traits>
-#include <stdexcept>
 #include <tuple>
 #include <array>
 
-#include <cmath> // include cmath you coward
+#include <cmath>
 
 namespace cul {
-
-namespace exceptions_abbr {
-
-using RtError  = std::runtime_error;
-using InvArg   = std::invalid_argument;
-using OorError = std::out_of_range;
-
-} // end of exceptions_abbr namespace -> into ::cul
 
 template <typename Func, typename Iter>
 void quad_range(Iter beg, Iter end, Func && func);
@@ -158,16 +149,18 @@ using Tuple = std::tuple<Types...>;
 // second high bounds where f(second) = true
 template <typename T, typename Func>
 std::enable_if_t<std::is_floating_point_v<T>,
-    Tuple<T, T>> find_smallest_diff
+    Tuple<T, T>>
+    find_smallest_diff
     (Func && f, T hint = T(0.5), T error = T(0.0005));
 
 template <typename T, typename Func>
-inline std::enable_if_t<std::is_floating_point_v<T>, T> find_highest_false
+std::enable_if_t<std::is_floating_point_v<T>, T>
+    find_highest_false
     (Func && f, T hint = T(0.5), T error = T(0.0005))
 { return std::get<0>(find_smallest_diff(std::move(f), hint, error)); }
 
 template <typename T, typename Func>
-inline std::enable_if_t<std::is_floating_point_v<T>, T>
+std::enable_if_t<std::is_floating_point_v<T>, T>
     find_lowest_true(Func && f, T hint = T(0.5), T error = T(0.0005))
 { return std::get<1>(find_smallest_diff(std::move(f), hint, error)); }
 
@@ -271,12 +264,13 @@ void quad_range(std::initializer_list<T> && ilist, Func && f)
 
 template <typename T>
 EnableArithmetic<T> normalize(T t) {
-    using namespace exceptions_abbr;
     if (t == 0) {
-        throw InvArg("normalize: attempted to normalize a zero 'vector'.");
+        throw std::invalid_argument
+            {"normalize: attempted to normalize a zero 'vector'."};
     }
     if (!is_real(t)) {
-        throw InvArg("normalize: attempted to normalize a non real number.");
+        throw std::invalid_argument
+            {"normalize: attempted to normalize a non real number."};
     }
     return t / magnitude(t);
 }
@@ -285,12 +279,10 @@ template <typename T, typename Func>
 std::enable_if_t<std::is_floating_point_v<T>,
     Tuple<T, T>> find_smallest_diff(Func && f, T hint, T error)
 {
-    using namespace exceptions_abbr;
     if (f(0)) {
-        throw InvArg("find_smallest_diff: f(0) is true.");
-    }
-    if (!f(1)) {
-        throw InvArg("find_smallest_diff: f(1) is false.");
+        throw std::invalid_argument{"find_smallest_diff: f(0) is true."};
+    } else if (!f(1)) {
+        throw std::invalid_argument{"find_smallest_diff: f(1) is false."};
     }
 
     bool fg   = f(hint);

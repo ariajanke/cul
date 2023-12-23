@@ -4,6 +4,7 @@ import pathlib
 import datetime
 import time
 import platform
+import re
 
 class FileWatch:
   def __init__(self, filepath: str) -> None:
@@ -23,13 +24,23 @@ class FileWatch:
 def printOnUpdate(fn):
   print(f"{fn} has been updated!")
 
-watchers = []
-for root, dirs, filenames in os.walk('unit-tests'):
-  for filename in filenames:
-    print(f"Watching file {root}/{filename}")
-    watchers.append(FileWatch(f"{root}/{filename}"))
+def main():
+  watchers = []
+  for root, dirs, filenames in os.walk('unit-tests'):
+    for filename in filenames:
+      if re.match(r'.+-tests\.cpp$', filename) == None:
+        continue
+      print(f"Watching file {root}/{filename}")
+      watchers.append(FileWatch(f"{root}/{filename}"))
 
-while True:
-  for watcher in watchers:
-    watcher.checkRefresh(printOnUpdate)
-  time.sleep(2)
+  if len(watchers) == 0:
+    print('No files to watch!')
+    return
+
+  while True:
+    for watcher in watchers:
+      watcher.checkRefresh(printOnUpdate)
+    time.sleep(2)
+
+if __name__ == "__main__":
+  main()

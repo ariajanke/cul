@@ -35,8 +35,9 @@ using GridVector = cul::Grid<sf::Color>::Vector;
 namespace cul {
 
 sf::Image to_image(const Grid<sf::Color> & grid) {
-    sf::Image img;
-    img.create(sf::Vector2u(grid.width(), grid.height()));
+    sf::Image img{sf::Vector2u{
+        unsigned(grid.width ()),
+        unsigned(grid.height())}};
     for (GridVector r; r != grid.end_position(); r = grid.next(r)) {
         img.setPixel(convert_to<sf::Vector2u>(r), grid(r));
     }

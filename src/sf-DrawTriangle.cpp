@@ -85,7 +85,7 @@ void DrawTriangle::set_color(sf::Color color_) {
 }
 
 /* private */ void DrawTriangle::draw
-    (sf::RenderTarget & target, const sf::RenderStates & states) const
+    (sf::RenderTarget & target, sf::RenderStates states) const
 { target.draw(m_verticies.data(), m_verticies.size(), k_triangles, states); }
 
 } // end of cul namespace

@@ -148,7 +148,7 @@ public:
         { return m_bucket_container.size() / k_load_factor; }
 
     ConstIterator cbegin() const noexcept
-        { return make_iterator(0).advance_past_empty(); }
+        { return advance_past_empty(make_iterator(0)); }
 
     ConstIterator cend() const noexcept
         { return make_iterator(m_bucket_container.size()); }
@@ -198,6 +198,9 @@ private:
 
     static Iterator advance_past_empty(Iterator && itr)
         { return Iterator::detail_advance_past_empty(std::move(itr)); }
+
+    static ConstIterator advance_past_empty(ConstIterator && itr)
+        { return ConstIterator::detail_advance_past_empty(std::move(itr)); }
 
     static void swap_buckets(BucketIterator & lhs, BucketIterator & rhs) noexcept;
 

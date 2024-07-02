@@ -112,7 +112,7 @@ sf::Color DrawRectangle::color() const noexcept
     { return m_vertices[k_top_left].color; }
 
 /* private */ void DrawRectangle::draw
-    (sf::RenderTarget & target, const sf::RenderStates & states) const
+    (sf::RenderTarget & target, sf::RenderStates states) const
 { target.draw(m_vertices.data(), m_vertices.size(), k_triangle_strip, states); }
 
 } // end of cul namespace

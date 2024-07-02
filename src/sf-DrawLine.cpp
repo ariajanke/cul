@@ -92,7 +92,7 @@ Iterator DrawLine::begin() const { return m_verticies.begin(); }
 Iterator DrawLine::end() const { return m_verticies.end(); }
 
 /* private */ void DrawLine::draw
-    (sf::RenderTarget & target, const sf::RenderStates & states) const
+    (sf::RenderTarget & target, sf::RenderStates states) const
 { target.draw(m_verticies.data(), m_verticies.size(), k_primitive_type, states); }
 
 /* private */ float DrawLine::thickness() const {
@@ -120,7 +120,10 @@ Iterator DrawLine::end() const { return m_verticies.end(); }
     auto init_angle = directed_angle_between(a - b, make_unit_start());
     auto mk_vertex = [thickness, init_angle, color](sf::Vector2f pt, float ang_dir) {
         auto theta = init_angle + ang_dir*(k_pi * 0.5f);
-        return sf::Vertex(pt + to_polar(theta, thickness * 0.5f), color);
+        sf::Vertex vtx;
+        vtx.position = pt + to_polar(theta, thickness * 0.5f);
+        vtx.color = color;
+        return vtx;
     };
 
     m_verticies[k_a_up  ] = mk_vertex(a,  1.f);

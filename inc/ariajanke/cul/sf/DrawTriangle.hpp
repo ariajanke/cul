@@ -73,7 +73,7 @@ public:
     void set_color(sf::Color);
 
 private:
-    void draw(sf::RenderTarget &, const sf::RenderStates &) const final;
+    void draw(sf::RenderTarget &, sf::RenderStates) const final;
 
     std::array<sf::Vertex, k_vertex_count> m_verticies;
 };

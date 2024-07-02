@@ -440,6 +440,13 @@ describe<Iterators>("HashMap iterators").depends_on<Emplace>()([] {
         HashMap<std::size_t, A> hmap{empty_key};
         hmap.insert(b_key, b);
         return test_that(hmap.begin()->first == b_key);
+    }).
+    mark_it("can iterate using const iterators", [&] {
+        for (auto itr = cref_hmap.begin(); itr != cref_hmap.end(); ++itr) {
+            auto & el = itr->second;
+            ids.erase(el.id());
+        }
+        return test_that(ids.empty());
     });
     static_assert(
         std::is_same_v<decltype(hmap.cbegin()), decltype(cref_hmap.begin())>,

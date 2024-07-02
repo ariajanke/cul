@@ -114,7 +114,7 @@ const std::vector<sf::Vertex> & DrawText::verticies() const
     { return m_verticies; }
 
 /* private */ void DrawText::draw
-    (sf::RenderTarget & target, const sf::RenderStates & states) const
+    (sf::RenderTarget & target, sf::RenderStates states) const
 {
     auto states_ = states;
     states_.texture = &m_font->texture();
@@ -138,7 +138,11 @@ const std::vector<sf::Vertex> & DrawText::verticies() const
             return texture_pos[idx] - texture_pos[k_top_left];
         };
         const auto & k_white = sf::Color::White;
-        return Vertex(r + diff_for(idx), k_white, texture_pos[idx]);
+        Vertex vtx;
+        vtx.position = r + diff_for(idx);
+        vtx.color = k_white;
+        vtx.texCoords = texture_pos[idx];
+        return vtx;
     };
 
     std::array<Vertex, k_rect_count> verticies;
@@ -162,7 +166,7 @@ using FontPtr = std::unique_ptr<const cul::SfBitmapFont>;
 
 class SfBitmapFontComplete final : public cul::SfBitmapFont {
 public:
-    const sf::Texture & texture() const final { return m_texture; }
+    const sf::Texture & texture() const final { return *m_texture; }
 
     cul::Vector2<int> operator () (char code) const final
         { return (*m_font)(code); }
@@ -175,7 +179,7 @@ public:
     bool has_font() const { return m_font; }
 
 private:
-    sf::Texture m_texture;
+    std::optional<sf::Texture> m_texture;
     const GridBitmapFont * m_font = nullptr;
 };
 
@@ -220,7 +224,8 @@ bool SfBitmapFontComplete::setup(const GridBitmapFont & font) {
     for (Vector2<int> r; r != grid_texture.end_position(); r = grid_texture.next(r)) {
         grid_texture(r) = DrawText::color_for_pixel(pixels(r));
     }
-    return m_texture.loadFromImage(to_image(grid_texture));
+    m_texture = sf::Texture::loadFromImage(to_image(grid_texture));
+    return m_texture.has_value();
 }
 
 } // end of <anonymous> namespace

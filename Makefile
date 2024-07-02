@@ -44,4 +44,3 @@ test: $(OUTPUT)
 	./unit-tests/.tts
 	./unit-tests/.tef
 	./unit-tests/.thm
-

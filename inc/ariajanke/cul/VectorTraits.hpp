@@ -26,7 +26,6 @@
 
 #pragma once
 
-#include <type_traits>
 #include <stdexcept>
 
 #include <ariajanke/cul/Util.hpp>
@@ -228,13 +227,15 @@ public:
     static constexpr EnableIf<k_is_vector_type<Vec>, Vec> plus
         (const Vec & l, const Vec & r, Types && ... comps)
     {
-        using std::forward;
         if constexpr (kt_idx >= k_dim_count) {
-            return Make{}( forward<Types>(comps)... );
+            return Make{}( std::forward<Types>(comps)... );
         } else {
             using GetComp = Get<kt_idx>;
-            return plus<kt_idx + 1>(l, r, forward<Types>(comps)...,
-                                    GetComp{}(l) + GetComp{}(r));
+            return plus<kt_idx + 1>
+                (l,
+                 r,
+                 std::forward<Types>(comps)...,
+                 GetComp{}(l) + GetComp{}(r));
         }
     }
 
@@ -242,13 +243,15 @@ public:
     static constexpr EnableIf<k_is_vector_type<Vec>, Vec> sub
         (const Vec & l, const Vec & r, Types && ... comps)
     {
-        using std::forward;
         if constexpr (kt_idx >= k_dim_count) {
-            return Make{}( forward<Types>(comps)... );
+            return Make{}( std::forward<Types>(comps)... );
         } else {
             using GetComp = Get<kt_idx>;
-            return sub<kt_idx + 1>(l, r, forward<Types>(comps)...,
-                                   GetComp{}(l) - GetComp{}(r));
+            return sub<kt_idx + 1>
+                (l,
+                 r,
+                 std::forward<Types>(comps)...,
+                 GetComp{}(l) - GetComp{}(r));
         }
     }
 
@@ -256,12 +259,14 @@ public:
     static constexpr EnableIf<k_is_vector_type<Vec>, Vec> mul
         (const Vec & l, const ScalarType & a, Types && ... comps)
     {
-        using std::forward;
         if constexpr (kt_idx >= k_dim_count) {
-            return Make{}( forward<Types>(comps)... );
+            return Make{}( std::forward<Types>(comps)... );
         } else {
-            return mul<kt_idx + 1>(l, a, std::forward<Types>(comps)...,
-                                   Get<kt_idx>{}(l)*a);
+            return mul<kt_idx + 1>
+                (l,
+                 a,
+                 std::forward<Types>(comps)...,
+                 Get<kt_idx>{}(l)*a);
         }
     }
 
@@ -269,12 +274,14 @@ public:
     static constexpr EnableIf<k_is_vector_type<Vec>, Vec> div
         (const Vec & l, const ScalarType & a, Types && ... comps)
     {
-        using std::forward;
         if constexpr (kt_idx >= k_dim_count) {
-            return Make{}( forward<Types>(comps)... );
+            return Make{}( std::forward<Types>(comps)... );
         } else {
-            return div<kt_idx + 1>(l, a, forward<Types>(comps)...,
-                                   Get<kt_idx>{}(l) / a);
+            return div<kt_idx + 1>
+                (l,
+                 a,
+                 std::forward<Types>(comps)...,
+                 Get<kt_idx>{}(l) / a);
         }
     }
 
@@ -282,14 +289,13 @@ public:
     static constexpr EnableIf<k_is_vector_type<Vec>, DestVec>
         convert(const Vec & r, Types && ... comps)
     {
-        using std::forward;
         using DestMake = typename VectorTraits<DestVec>::Make;
         using DestScalar = ScalarTypeOf<DestVec>;
         if constexpr (kt_idx >= k_dim_count) {
-            return DestMake{}( forward<Types>(comps)... );
+            return DestMake{}( std::forward<Types>(comps)... );
         } else {
             return convert<DestVec, kt_idx + 1>
-                (r, forward<Types>(comps)..., DestScalar(Get<kt_idx>{}(r)));
+                (r, std::forward<Types>(comps)..., DestScalar(Get<kt_idx>{}(r)));
         }
     }
 
@@ -297,11 +303,11 @@ public:
     static constexpr EnableIf<k_is_vector_type<Vec>, Vec>
         make_from_single_scalar(const ScalarType & a, Types && ... comps)
     {
-        using std::forward;
         if constexpr (kt_idx >= k_dim_count) {
-            return Make{}( forward<Types>(comps)... );
+            return Make{}( std::forward<Types>(comps)... );
         } else {
-            return make_from_single_scalar<kt_idx +1>(a, forward<Types>(comps)..., a);
+            return make_from_single_scalar<kt_idx +1>
+                (a, std::forward<Types>(comps)..., a);
         }
     }
 };
